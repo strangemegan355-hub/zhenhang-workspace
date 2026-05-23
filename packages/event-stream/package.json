@@ -1,0 +1,11 @@
+{
+  "name": "@zhenhang/event-stream",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@zhenhang/realtime-protocol": "0.1.0",
+    "@zhenhang/runtime-bus": "0.1.0"
+  }
+}

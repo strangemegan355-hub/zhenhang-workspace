@@ -1,0 +1,14 @@
+{
+  "name": "@zhenhang/formula-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@zhenhang/formula-engine": "0.1.0",
+    "@zhenhang/formula-dag": "0.1.0",
+    "@zhenhang/runtime-bus": "0.1.0",
+    "@zhenhang/runtime-graph": "0.1.0",
+    "@zhenhang/runtime-telemetry": "0.1.0"
+  }
+}

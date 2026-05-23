@@ -1,0 +1,7 @@
+{{ title }}
+Quote No: {{ quote_no }}
+
+Items:
+{% for item in items %}
+- {{ item.item_code }} | {{ item.item_name }} | qty={{ item.quantity }} | price={{ item.unit_price }} | total={{ item.line_total }}
+{% endfor %}

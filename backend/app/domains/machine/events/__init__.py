@@ -1,0 +1,1 @@
+"""Machine domain events."""

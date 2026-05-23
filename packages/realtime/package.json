@@ -1,0 +1,13 @@
+{
+  "name": "@zhenhang/realtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@zhenhang/realtime-gateway": "0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}

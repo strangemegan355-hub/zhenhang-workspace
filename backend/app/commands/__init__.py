@@ -1,0 +1,1 @@
+"""CQRS command layer entry."""

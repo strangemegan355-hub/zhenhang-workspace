@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@zhenhang/realtime-protocol": ["packages/realtime-protocol/src/index.ts"],
+      "@zhenhang/query-policy-registry": ["packages/query-policy-registry/src/index.ts"],
+      "@zhenhang/dependency-analyzer": ["packages/dependency-analyzer/src/cli.mjs"],
+      "@zhenhang/workflow-runtime": ["packages/workflow-runtime/src/index.ts"],
+      "@zhenhang/quote-runtime": ["packages/quote-runtime/src/index.ts"],
+      "@zhenhang/ai-command": ["packages/ai-command/src/index.ts"],
+      "@zhenhang/runtime-telemetry": ["packages/runtime-telemetry/src/index.ts"],
+      "@zhenhang/event-stream": ["packages/event-stream/src/index.ts"],
+      "@zhenhang/runtime-devtools": ["packages/runtime-devtools/src/index.tsx"],
+      "@zhenhang/formula-engine": ["packages/formula-engine/src/index.ts"],
+      "@zhenhang/ai-runtime": ["packages/ai-runtime/src/index.ts"],
+      "@zhenhang/runtime-bus": ["packages/runtime-bus/src/index.ts"],
+      "@zhenhang/runtime-graph": ["packages/runtime-graph/src/index.ts"],
+      "@zhenhang/telemetry-pipeline": ["packages/telemetry-pipeline/src/index.ts"],
+      "@zhenhang/formula-runtime": ["packages/formula-runtime/src/index.ts"],
+      "@zhenhang/agent-runtime": ["packages/agent-runtime/src/index.ts"],
+      "@zhenhang/runtime-scheduler": ["packages/runtime-scheduler/src/index.ts"],
+      "@zhenhang/distributed-runtime": ["packages/distributed-runtime/src/index.ts"],
+      "@zhenhang/runtime-persistence": ["packages/runtime-persistence/src/index.ts"],
+      "@zhenhang/formula-dag": ["packages/formula-dag/src/index.ts"],
+      "@zhenhang/agent-os": ["packages/agent-os/src/index.ts"],
+      "@zhenhang/runtime-consistency": ["packages/runtime-consistency/src/index.ts"],
+      "@zhenhang/distributed-coordination": ["packages/distributed-coordination/src/index.ts"],
+      "@zhenhang/runtime-storage": ["packages/runtime-storage/src/index.ts"],
+      "@zhenhang/agent-governance": ["packages/agent-governance/src/index.ts"],
+      "@zhenhang/runtime-security": ["packages/runtime-security/src/index.ts"],
+      "@zhenhang/runtime-transaction": ["packages/runtime-transaction/src/index.ts"],
+      "@zhenhang/consensus-coordination": ["packages/consensus-coordination/src/index.ts"],
+      "@zhenhang/runtime-event-store": ["packages/runtime-event-store/src/index.ts"],
+      "@zhenhang/agent-policy-engine": ["packages/agent-policy-engine/src/index.ts"],
+      "@zhenhang/runtime-fault-tolerance": ["packages/runtime-fault-tolerance/src/index.ts"]
+    }
+  }
+}

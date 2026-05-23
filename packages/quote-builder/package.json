@@ -1,0 +1,17 @@
+{
+  "name": "@zhenhang/quote-builder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.tsx",
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.13.12",
+    "@zhenhang/formula-engine": "0.1.0",
+    "@zhenhang/quote-runtime": "0.1.0",
+    "@zhenhang/ui": "0.1.0",
+    "@zhenhang/workflow-ui": "0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}

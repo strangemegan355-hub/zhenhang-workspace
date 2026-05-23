@@ -1,0 +1,66 @@
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import Field, PostgresDsn, RedisDsn, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        env_ignore_empty=True,
+    )
+
+    app_name: str = "Zhenhang ERP API"
+    app_env: Literal["local", "dev", "staging", "prod"] = "local"
+    debug: bool = False
+    api_v1_prefix: str = "/api/v1"
+
+    secret_key: str = Field(..., min_length=32)
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
+    refresh_token_expire_minutes: int = 60 * 24 * 7
+
+    database_url: PostgresDsn = Field(
+        default="postgresql+psycopg://erp:erp@localhost:5432/erp_db",
+    )
+
+    redis_url: RedisDsn = Field(default="redis://localhost:6379/0")
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_secure: bool = False
+    minio_bucket: str = "erp-files"
+
+    cors_origins: list[str] = Field(default_factory=list)
+
+    default_tenant_code: str = "default"
+
+    realtime_hot_retention_days: int = Field(default=7, ge=1, le=90)
+    realtime_replay_retention_days: int = Field(default=3, ge=1, le=30)
+    realtime_archive_retention_days: int = Field(default=90, ge=7, le=365)
+    realtime_retention_batch_size: int = Field(default=2000, ge=100, le=20000)
+
+    maintenance_interval_seconds: int = Field(default=300, ge=60, le=86400)
+
+    mes_enabled: bool = Field(default=True)
+    mes_signal_stale_seconds: int = Field(default=120, ge=30, le=3600)
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def split_cors(cls, v: str | list[str]) -> list[str]:
+        if isinstance(v, str):
+            if not v.strip():
+                return []
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

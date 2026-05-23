@@ -1,0 +1,1 @@
+"""Quote infrastructure adapters."""

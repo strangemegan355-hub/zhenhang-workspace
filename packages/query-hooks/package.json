@@ -1,0 +1,12 @@
+{
+  "name": "@zhenhang/query-hooks",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@zhenhang/query-policy-registry": "0.1.0",
+    "@tanstack/react-query": "^5.90.5",
+    "@zhenhang/http-client": "0.1.0"
+  }
+}
