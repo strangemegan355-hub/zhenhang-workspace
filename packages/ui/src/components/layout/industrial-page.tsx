@@ -7,10 +7,13 @@ export function IndustrialPage({
   children,
   className,
   gap = "md",
+  fill = false,
 }: {
   children: ReactNode;
   className?: string;
   gap?: "sm" | "md" | "lg";
+  /** Stretch to fill parent main workspace (list / master-data pages) */
+  fill?: boolean;
 }) {
   const gapPx =
     gap === "sm"
@@ -20,7 +23,10 @@ export function IndustrialPage({
         : interactionTokens.layout.sectionGapMd;
 
   return (
-    <div className={cn("flex flex-col", className)} style={{ gap: gapPx }}>
+    <div
+      className={cn("flex flex-col", fill && "flex-1 min-h-[calc(100vh-5.5rem)]", className)}
+      style={{ gap: gapPx }}
+    >
       {children}
     </div>
   );
