@@ -11,11 +11,13 @@ type PlanRow = {
   id: string;
   unitLabel: string;
   status: string;
+  statusDisplay: string;
   plannedStart: string;
   plannedEnd: string;
   actualStart: string;
   actualEnd: string;
   customerAccepted: boolean;
+  customerAcceptedDisplay: string;
   installCount: number;
   commCount: number;
 };
@@ -66,18 +68,23 @@ export default function InstallationPage() {
         `/api/v1/equipment-units/${unitId}/installation-plans`
       );
       setPlans(
-        (resp.data ?? []).map((p: Record<string, unknown>) => ({
-          id: String(p.id ?? ""),
-          unitLabel: String(p.equipment_unit_id ?? "").slice(0, 8),
-          status: String(p.status ?? ""),
-          plannedStart: String(p.planned_start_date ?? "").slice(0, 10),
-          plannedEnd: String(p.planned_end_date ?? "").slice(0, 10),
-          actualStart: String(p.actual_start_date ?? "").slice(0, 10),
-          actualEnd: String(p.actual_end_date ?? "").slice(0, 10),
-          customerAccepted: Boolean(p.customer_accepted),
-          installCount: Array.isArray(p.install_items) ? (p.install_items as unknown[]).length : 0,
-          commCount: Array.isArray(p.commissioning_items) ? (p.commissioning_items as unknown[]).length : 0,
-        }))
+        (resp.data ?? []).map((p: Record<string, unknown>) => {
+          const rawStatus = String(p.status ?? "");
+          return {
+            id: String(p.id ?? ""),
+            unitLabel: String(p.equipment_unit_id ?? "").slice(0, 8),
+            status: rawStatus,
+            statusDisplay: STATUS_LABEL[rawStatus] ?? rawStatus,
+            plannedStart: String(p.planned_start_date ?? "").slice(0, 10),
+            plannedEnd: String(p.planned_end_date ?? "").slice(0, 10),
+            actualStart: String(p.actual_start_date ?? "").slice(0, 10) || "-",
+            actualEnd: String(p.actual_end_date ?? "").slice(0, 10) || "-",
+            customerAccepted: Boolean(p.customer_accepted),
+            customerAcceptedDisplay: Boolean(p.customer_accepted) ? "已验收" : "未验收",
+            installCount: Array.isArray(p.install_items) ? (p.install_items as unknown[]).length : 0,
+            commCount: Array.isArray(p.commissioning_items) ? (p.commissioning_items as unknown[]).length : 0,
+          };
+        })
       );
     } catch {
       setPlans([]);
@@ -347,17 +354,13 @@ export default function InstallationPage() {
         persistenceKey="installation-plans-v1"
         exportFilename="installation-plans"
         columns={[
-          { key: "unitLabel", title: "设备", canView: true, fixed: "left", width: 80, render: (_, row: PlanRow) => row.unitLabel },
-          { key: "status", title: "状态", canView: true, width: 80, render: (_, row: PlanRow) => (
-            <span className={STATUS_COLOR[row.status] ?? ""}>{STATUS_LABEL[row.status] ?? row.status}</span>
-          )},
+          { key: "unitLabel", title: "设备", canView: true, fixed: "left", width: 80 },
+          { key: "statusDisplay", title: "状态", canView: true, width: 80 },
           { key: "plannedStart", title: "计划开始", canView: true, width: 100 },
           { key: "plannedEnd", title: "计划结束", canView: true, width: 100 },
-          { key: "actualStart", title: "实际开始", canView: true, width: 100, render: (_, row: PlanRow) => row.actualStart || "-" },
-          { key: "actualEnd", title: "实际结束", canView: true, width: 100, render: (_, row: PlanRow) => row.actualEnd || "-" },
-          { key: "customerAccepted", title: "客户验收", canView: true, width: 80, render: (_, row: PlanRow) => (
-            row.customerAccepted ? <span className="text-emerald-400">已验收</span> : <span className="text-gray-400">未验收</span>
-          )},
+          { key: "actualStart", title: "实际开始", canView: true, width: 100 },
+          { key: "actualEnd", title: "实际结束", canView: true, width: 100 },
+          { key: "customerAcceptedDisplay", title: "客户验收", canView: true, width: 80 },
           { key: "installCount", title: "安装项", canView: true, width: 60 },
           { key: "commCount", title: "调试项", canView: true, width: 60 },
         ]}

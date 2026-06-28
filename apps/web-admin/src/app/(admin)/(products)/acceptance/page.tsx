@@ -179,7 +179,7 @@ export default function AcceptancePage() {
         recordNo: String(r.record_no ?? ""),
         inspectorName: String(r.inspector_name ?? ""),
         testDate: String(r.test_date ?? "").slice(0, 10),
-        status: String(r.status ?? ""),
+        status: STATUS_LABEL[String(r.status ?? "")] ?? String(r.status ?? ""),
         overallResult: String(r.overall_result ?? "-"),
         punchCount: Array.isArray(r.punch_items) ? (r.punch_items as unknown[]).length : 0,
       }));
@@ -647,9 +647,7 @@ export default function AcceptancePage() {
           { key: "recordNo", title: "编号", canView: true, fixed: "left", width: 170 },
           { key: "inspectorName", title: "检验人", canView: true, width: 100 },
           { key: "testDate", title: "日期", canView: true, width: 110 },
-          { key: "status", title: "状态", canView: true, width: 80, render: (_, row: RecordRow) => (
-            <span className={STATUS_COLOR[row.status] ?? ""}>{STATUS_LABEL[row.status] ?? row.status}</span>
-          )},
+          { key: "status", title: "状态", canView: true, width: 80 },
           { key: "punchCount", title: "整改项", canView: true, width: 70 },
         ]}
         rows={recRows}

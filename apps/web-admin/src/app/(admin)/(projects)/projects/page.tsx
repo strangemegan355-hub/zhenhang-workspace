@@ -15,6 +15,13 @@ import { MasterListPage } from "@/components/master/master-list-page";
 import { ProjectActualCostsPanel } from "@/components/projects/project-actual-costs-panel";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import {
+  dangerActionClass,
+  kpiCardClass,
+  kpiCardLabelClass,
+  kpiCardValueClass,
+  linkActionClass,
+} from "@/lib/form-styles";
 
 type ProjectRow = {
   id: string;
@@ -53,10 +60,10 @@ const emptyForm = {
 function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
   return (
     <div className="flex items-center gap-2">
-      <button type="button" className="text-xs text-blue-400 hover:underline" onClick={onEdit}>
+      <button type="button" className={linkActionClass} onClick={onEdit}>
         修改
       </button>
-      <button type="button" className="text-xs text-red-400 hover:underline" onClick={onDelete}>
+      <button type="button" className={dangerActionClass} onClick={onDelete}>
         删除
       </button>
     </div>
@@ -75,23 +82,23 @@ const LINK_STATUS_HINT: Record<string, string> = {
 };
 
 const HEALTH_TONE: Record<string, string> = {
-  good: "text-emerald-400",
-  warn: "text-amber-400",
-  bad: "text-red-400",
-  unknown: "text-zinc-400",
+  good: "text-[var(--color-success)]",
+  warn: "text-[var(--color-warning)]",
+  bad: "text-[var(--color-danger)]",
+  unknown: "text-[var(--color-text-muted)]",
 };
 
 const VARIANCE_TONE: Record<string, string> = {
-  in_budget: "text-emerald-400",
-  over_budget: "text-red-400",
-  unknown: "text-zinc-400",
+  in_budget: "text-[var(--color-success)]",
+  over_budget: "text-[var(--color-danger)]",
+  unknown: "text-[var(--color-text-muted)]",
 };
 
 function KpiCard({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="rounded border border-zinc-700/80 bg-zinc-900/40 p-3">
-      <div className="text-[11px] text-zinc-500">{label}</div>
-      <div className={`mt-1 text-base font-medium tabular-nums ${tone ?? "text-zinc-100"}`}>{value}</div>
+    <div className={kpiCardClass}>
+      <div className={kpiCardLabelClass}>{label}</div>
+      <div className={`${kpiCardValueClass} ${tone ?? ""}`}>{value}</div>
     </div>
   );
 }

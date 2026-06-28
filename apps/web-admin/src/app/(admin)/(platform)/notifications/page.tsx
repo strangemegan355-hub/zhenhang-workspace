@@ -15,6 +15,7 @@ import {
   useIndustrialShortcuts,
 } from "@zhenhang/ui";
 import { useMemo, useRef, useState } from "react";
+import { fieldInputClass } from "@/lib/form-styles";
 
 export default function NotificationsPage() {
   const [page, setPage] = useState(1);
@@ -59,20 +60,21 @@ export default function NotificationsPage() {
   };
 
   return (
-    <IndustrialPage gap="md">
+    <IndustrialPage gap="md" fill>
       <IndustrialPanel
+        fill
         title="通知中心"
         inlineLoading={query.isFetching && !query.isLoading}
         toolbar={
           <div className="flex items-center gap-3">
-            <input
-              ref={searchRef}
-              type="search"
-              placeholder="筛选标题… (/ 聚焦)"
-              value={search}
-              className="h-8 rounded border border-[#334155] bg-[#0F172A] px-2 text-xs text-[#F8FAFC]"
-              onChange={(e) => setSearch(e.target.value)}
-            />
+              <input
+                ref={searchRef}
+                type="search"
+                placeholder="筛选标题… (/ 聚焦)"
+                value={search}
+                className={fieldInputClass}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             <label className={`flex h-8 items-center gap-2 ${typography.body}`}>
               <input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} />
               仅未读
@@ -82,11 +84,24 @@ export default function NotificationsPage() {
         loading={false}
       >
         {query.isLoading ? (
-          <TableSkeleton rows={8} cols={4} />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <TableSkeleton rows={8} cols={4} />
+          </div>
         ) : query.isError ? (
-          <ErrorBanner message="无法加载通知列表。" onRetry={() => query.refetch()} />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ErrorBanner message="无法加载通知列表。" onRetry={() => query.refetch()} />
+          </div>
         ) : rows.length === 0 ? (
-          <EmptyState message="暂无通知" hint={unreadOnly ? "尝试取消「仅未读」筛选" : undefined} />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <EmptyState
+              message="暂无通知"
+              hint={
+                unreadOnly
+                  ? "当前没有未读通知，可取消「仅未读」查看全部；审批或导出完成后会在此显示"
+                  : "审批通过、驳回或 PDF 导出完成后，系统将推送通知至此"
+              }
+            />
+          </div>
         ) : (
           <DataGrid
             columns={[
