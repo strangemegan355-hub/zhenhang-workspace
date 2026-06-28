@@ -30,7 +30,7 @@ export function ApprovalCenterCard() {
         <p className="py-6 text-center text-sm text-[var(--color-text-muted)]">加载待办…</p>
       ) : display.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <ClipboardList className="mb-2 h-8 w-8 text-[#cbd5e1]" />
+          <ClipboardList className="mb-2 h-8 w-8 text-[var(--color-border)]" />
           <p className="text-sm text-[var(--color-text-muted)]">暂无待审批任务</p>
         </div>
       ) : (

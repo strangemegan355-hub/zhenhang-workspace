@@ -14,7 +14,7 @@ export function NotificationCenterCard() {
   return (
     <DashboardCard title="通知中心" toolbar={<Link href="/notifications" className="flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline">消息中心{unreadCount > 0 ? ` (\${unreadCount})` : ""}<ArrowUpRight className="h-3 w-3" /></Link>}>
       {listQuery.isLoading && !items.length ? <p className="py-6 text-center text-xs text-[var(--color-text-muted)]">加载中…</p> : items.length === 0 ? (
-        <div className="flex flex-col items-center py-8 text-center"><Bell className="mb-2 h-8 w-8 text-[#cbd5e1]" /><p className="text-xs text-[var(--color-text-muted)]">暂无通知</p></div>
+        <div className="flex flex-col items-center py-8 text-center"><Bell className="mb-2 h-8 w-8 text-[var(--color-border)]" /><p className="text-xs text-[var(--color-text-muted)]">暂无通知</p></div>
       ) : (
         <ul className="space-y-1">{items.map((row) => {
           const id = String(row.id ?? "");

@@ -9,7 +9,7 @@ type ReadySnap = { db?: { status?: string; latency_ms?: number }; redis?: { stat
 type MetricsSnap = { api?: { error_rate?: number }; realtime?: { ws_connections_active?: number; sse_connections_active?: number }; worker?: { queue_backlog_pending?: number } };
 type ServiceRow = { key: string; label: string; health: ServiceHealth; detail: string };
 
-const HEALTH_DOT: Record<ServiceHealth, string> = { healthy: "bg-[#22c55e]", warning: "bg-[#f59e0b] animate-pulse", error: "bg-[#ef4444] animate-pulse" };
+const HEALTH_DOT: Record<ServiceHealth, string> = { healthy: "bg-[var(--color-success)]", warning: "bg-[var(--color-warning)] animate-pulse", error: "bg-[var(--color-danger)] animate-pulse" };
 const HEALTH_LABEL: Record<ServiceHealth, string> = { healthy: "正常", warning: "警告", error: "异常" };
 
 export function SystemStatusCard({ metrics, token }: { metrics?: MetricsSnap | null; token?: string | null }) {
@@ -56,7 +56,7 @@ export function SystemStatusCard({ metrics, token }: { metrics?: MetricsSnap | n
           <div key={svc.key} className="flex items-center gap-3 rounded border border-[var(--color-border)] bg-[var(--color-surface-soft)] px-3 py-2.5">
             <span className={`h-2.5 w-2.5 shrink-0 rounded-full \${HEALTH_DOT[svc.health]}`} />
             <div className="min-w-0 flex-1"><p className="text-xs font-medium text-[var(--color-text)]">{svc.label}</p><p className="text-[11px] text-[var(--color-text-muted)]">{svc.detail}</p></div>
-            <span className={`shrink-0 text-[10px] font-semibold \${svc.health === "healthy" ? "text-[#22c55e]" : svc.health === "warning" ? "text-[#f59e0b]" : "text-[#ef4444]"}`}>{HEALTH_LABEL[svc.health]}</span>
+            <span className={`shrink-0 text-[10px] font-semibold \${svc.health === "healthy" ? "text-[var(--color-success)]" : svc.health === "warning" ? "text-[var(--color-warning)]" : "text-[var(--color-danger)]"}`}>{HEALTH_LABEL[svc.health]}</span>
           </div>
         ))}
       </div>
