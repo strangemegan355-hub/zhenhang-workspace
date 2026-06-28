@@ -31,7 +31,7 @@ export function RealtimeNotificationsPanel({ unreadCount = 0 }: { unreadCount?: 
         {items.map((item) => (
           <li
             key={item.id}
-            className="flex items-center justify-between gap-2 border-b border-[#334155]/60 py-2 last:border-0"
+            className="flex items-center justify-between gap-2 border-b border-[var(--color-border-soft)] py-2 last:border-0"
           >
             <div>
               <p className={typography.cardTitle}>{item.title}</p>

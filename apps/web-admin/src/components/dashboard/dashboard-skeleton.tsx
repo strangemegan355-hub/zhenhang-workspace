@@ -17,8 +17,8 @@ export function DashboardSkeleton() {
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-2">
-          <div className={`${typography.pageTitle} opacity-40`}>工业运营驾驶舱</div>
-          <div className={`${typography.caption} opacity-30`}>加载运营数据…</div>
+          <div className={`${typography.pageTitle} opacity-40`}>工作台</div>
+          <div className={`${typography.caption} opacity-30`}>加载业务数据…</div>
         </div>
       </div>
 
