@@ -80,6 +80,41 @@ async def list_accounting_entries(
     )
 
 
+@router.get("/entries/export")
+async def export_accounting_entries(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
+    customer_id: UUID | None = Query(default=None),
+    supplier_id: UUID | None = Query(default=None),
+    entry_kind: str | None = Query(default=None, max_length=32),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+) -> StreamingResponse:
+    await svc.require_accounting_enabled(db)
+    result = await svc.list_entries(
+        db, page=1, page_size=10000,
+        customer_id=customer_id, supplier_id=supplier_id,
+        entry_kind=entry_kind, include_void=False,
+        date_from=date_from, date_to=date_to,
+    )
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["单号", "类型", "客户", "供应商", "摘要", "金额", "已核销", "发生日", "到期日", "状态", "补录"])
+    for e in result.items:
+        writer.writerow([
+            e.entry_no, e.entry_kind, e.customer_id, e.supplier_id,
+            e.title, str(e.amount), str(e.settled_amount),
+            str(e.occurred_on), str(e.due_date) if e.due_date else "",
+            e.status, "是" if e.is_backfill else "",
+        ])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=accounting_entries.csv"},
+    )
+
+
 @router.get("/entries/{entry_id}", response_model=AccountingEntryRead)
 async def get_accounting_entry(
     entry_id: UUID,
@@ -286,58 +321,6 @@ async def reject_procurement_payable_request(
     current: Annotated[User, Depends(require_permissions("business:accounting:approve_procurement_payable"))],
 ) -> ProcurementPayableRequestRead:
     return await ppr_svc.reject_request(db, request_id, current, reason=payload.reason)
-
-
-@router.get("/entries/export")
-async def export_accounting_entries(
-    db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
-    customer_id: UUID | None = Query(default=None),
-    supplier_id: UUID | None = Query(default=None),
-    entry_kind: str | None = Query(default=None, max_length=32),
-    date_from: date | None = Query(default=None),
-    date_to: date | None = Query(default=None),
-) -> StreamingResponse:
-    await svc.require_accounting_enabled(db)
-    from app.schemas.common import PageResponse
-    result = await svc.list_entries(
-        db,
-        page=1,
-        page_size=10000,
-        customer_id=customer_id,
-        supplier_id=supplier_id,
-        entry_kind=entry_kind,
-        include_void=False,
-        date_from=date_from,
-        date_to=date_to,
-    )
-    items: list[AccountingEntryRead] = result.items  # type: ignore[assignment]
-
-    output = StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["单号", "类型", "客户", "供应商", "摘要", "金额", "已核销", "发生日", "到期日", "状态", "补录"])
-    for e in items:
-        writer.writerow([
-            e.entry_no,
-            e.entry_kind,
-            e.customer_id,
-            e.supplier_id,
-            e.title,
-            str(e.amount),
-            str(e.settled_amount),
-            str(e.occurred_on),
-            str(e.due_date) if e.due_date else "",
-            e.status,
-            "是" if e.is_backfill else "",
-        ])
-    output.seek(0)
-    return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=accounting_entries.csv"},
-    )
-
-
 # ── Supplier ledger ──
 
 
@@ -349,15 +332,16 @@ async def register_ledger_supplier(
 ) -> dict:
     await supp_svc.register_supplier(db, payload, current.id)
     detail = await supp_svc.get_supplier_ledger_detail(db, payload.supplier_id)
+    open_count = len([e for e in detail.entries if e.open_amount > 0])
     return {
-        "supplier_id": detail.supplier_id,
+        "supplier_id": str(detail.supplier_id),
         "supplier_name": detail.supplier_name,
         "supplier_code": detail.supplier_code,
         "payable_total": detail.payable_total,
         "paid_total": detail.paid_total,
         "outstanding_total": detail.outstanding_total,
-        "open_bill_count": detail.open_bill_count,
-        "last_occurred_on": None,
+        "open_bill_count": open_count,
+        "last_occurred_on": max((e.occurred_on for e in detail.entries), default=None),
         "is_registered": True,
     }
 
