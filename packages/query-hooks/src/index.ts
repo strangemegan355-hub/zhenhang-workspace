@@ -24,6 +24,7 @@ export * from "./domains/approval-hub";
 export * from "./domains/workshop";
 export * from "./domains/equipment-units";
 export * from "./domains/option-groups";
+export * from "./domains/aftersales";
 
 export {
   getQueryPolicy,

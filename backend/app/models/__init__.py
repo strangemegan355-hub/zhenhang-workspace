@@ -2,6 +2,7 @@
 
 from app.models.accounting_entry import AccountingEntry
 from app.models.accounting_entry_line import AccountingEntryLine
+from app.models.aftersales_service_request import AfterSalesServiceRequest
 from app.models.customer_ledger_account import CustomerLedgerAccount
 from app.models.supplier_ledger_account import SupplierLedgerAccount
 from app.models.associations import role_permission_association, user_role_association
