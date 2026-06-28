@@ -20,7 +20,6 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  dangerActionClass,
   fieldInputClass,
   fieldLabelClass,
   formPanelClass,
@@ -111,7 +110,7 @@ export default function SupplierLedgerPage() {
     try {
       await registerMutation.mutateAsync(supplierId);
       void ledgerQuery.refetch();
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
   };
 
   const handleCreatePayable = async () => {
