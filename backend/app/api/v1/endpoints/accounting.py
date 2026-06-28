@@ -1,7 +1,11 @@
+import csv
+from datetime import date
+from io import StringIO
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import require_permissions
@@ -277,3 +281,53 @@ async def reject_procurement_payable_request(
     current: Annotated[User, Depends(require_permissions("business:accounting:approve_procurement_payable"))],
 ) -> ProcurementPayableRequestRead:
     return await ppr_svc.reject_request(db, request_id, current, reason=payload.reason)
+
+
+@router.get("/entries/export")
+async def export_accounting_entries(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
+    customer_id: UUID | None = Query(default=None),
+    supplier_id: UUID | None = Query(default=None),
+    entry_kind: str | None = Query(default=None, max_length=32),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+) -> StreamingResponse:
+    await svc.require_accounting_enabled(db)
+    from app.schemas.common import PageResponse
+    result = await svc.list_entries(
+        db,
+        page=1,
+        page_size=10000,
+        customer_id=customer_id,
+        supplier_id=supplier_id,
+        entry_kind=entry_kind,
+        include_void=False,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    items: list[AccountingEntryRead] = result.items  # type: ignore[assignment]
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["单号", "类型", "客户", "供应商", "摘要", "金额", "已核销", "发生日", "到期日", "状态", "补录"])
+    for e in items:
+        writer.writerow([
+            e.entry_no,
+            e.entry_kind,
+            e.customer_id,
+            e.supplier_id,
+            e.title,
+            str(e.amount),
+            str(e.settled_amount),
+            str(e.occurred_on),
+            str(e.due_date) if e.due_date else "",
+            e.status,
+            "是" if e.is_backfill else "",
+        ])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=accounting_entries.csv"},
+    )

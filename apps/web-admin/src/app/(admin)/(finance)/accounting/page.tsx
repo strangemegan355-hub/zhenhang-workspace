@@ -15,8 +15,9 @@ import {
   PageHeader,
   WorkspaceToolbarButton,
 } from "@zhenhang/ui";
+import { apiClient } from "@zhenhang/http-client";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   dangerActionClass,
   fieldInputClass,
@@ -187,6 +188,27 @@ export default function AccountingPage() {
     }
   };
 
+  const handleExport = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (customerFilter) params.set("customer_id", customerFilter);
+    if (supplierFilter) params.set("supplier_id", supplierFilter);
+    if (kindFilter) params.set("entry_kind", kindFilter);
+    if (dateFrom) params.set("date_from", dateFrom);
+    if (dateTo) params.set("date_to", dateTo);
+    try {
+      const res = await apiClient.get("/api/v1/accounting/entries/export", { params, responseType: "blob" });
+      const blob = new Blob([res.data as BlobPart], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `accounting_entries_${todayInputValue()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export failed", e);
+    }
+  }, [customerFilter, supplierFilter, kindFilter, dateFrom, dateTo]);
+
   if (!enabled && !statusQuery.isLoading) {
     return (
       <IndustrialPage gap="md" fill>
@@ -210,11 +232,14 @@ export default function AccountingPage() {
         title="收支台账"
         subtitle="按客户筛选账目；老板可补录历史账，入账日期自动为今天"
         actions={
-          canBackfill ? (
-            <WorkspaceToolbarButton onClick={() => setShowBackfill((v) => !v)}>
-              {showBackfill ? "取消补录" : "补录账目"}
-            </WorkspaceToolbarButton>
-          ) : null
+          <>
+            <WorkspaceToolbarButton onClick={handleExport}>导出CSV</WorkspaceToolbarButton>
+            {canBackfill ? (
+              <WorkspaceToolbarButton onClick={() => setShowBackfill((v) => !v)}>
+                {showBackfill ? "取消补录" : "补录账目"}
+              </WorkspaceToolbarButton>
+            ) : null}
+          </>
         }
       />
 
