@@ -324,3 +324,91 @@ async def register_ledger_account(db: AsyncSession, customer_id: UUID, created_b
     await db.commit()
     await db.refresh(obj)
     return obj
+
+
+# ── Supplier ledger ──
+
+from app.models.supplier import Supplier  # noqa: E402
+from app.models.supplier_ledger_account import SupplierLedgerAccount  # noqa: E402
+
+
+async def get_supplier_ledger_account(db: AsyncSession, supplier_id: UUID) -> SupplierLedgerAccount | None:
+    result = await db.execute(
+        select(SupplierLedgerAccount).where(
+            SupplierLedgerAccount.supplier_id == supplier_id,
+            SupplierLedgerAccount.is_deleted.is_(False),
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def register_supplier_ledger_account(db: AsyncSession, supplier_id: UUID, created_by: UUID | None) -> SupplierLedgerAccount:
+    existing = await get_supplier_ledger_account(db, supplier_id)
+    if existing is not None:
+        return existing
+    obj = SupplierLedgerAccount(supplier_id=supplier_id, created_by=created_by)
+    db.add(obj)
+    await db.flush()
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+async def supplier_ledger_rows(db: AsyncSession) -> list[tuple[Supplier, list[AccountingEntry], bool]]:
+    """Suppliers in ledger registry or with confirmed payable/payment."""
+    registered_ids = list(
+        (
+            await db.execute(
+                select(SupplierLedgerAccount.supplier_id).where(
+                    SupplierLedgerAccount.is_deleted.is_(False),
+                )
+            )
+        ).scalars().all()
+    )
+
+    entry_supplier_ids = list(
+        (
+            await db.execute(
+                select(AccountingEntry.supplier_id)
+                .where(
+                    AccountingEntry.is_deleted.is_(False),
+                    AccountingEntry.status == "confirmed",
+                    AccountingEntry.entry_kind.in_(("payable", "payment")),
+                    AccountingEntry.supplier_id.is_not(None),
+                )
+                .distinct()
+            )
+        ).scalars().all()
+    )
+
+    registered_set = {sid for sid in registered_ids if sid is not None}
+    supplier_ids = list(registered_set | {sid for sid in entry_supplier_ids if sid is not None})
+    if not supplier_ids:
+        return []
+
+    suppliers = list(
+        (await db.execute(select(Supplier).where(Supplier.id.in_(supplier_ids), Supplier.is_deleted.is_(False)))).scalars().all()
+    )
+    supplier_map = {s.id: s for s in suppliers}
+
+    payables = (
+        await db.execute(
+            select(AccountingEntry).where(
+                AccountingEntry.is_deleted.is_(False),
+                AccountingEntry.status == "confirmed",
+                AccountingEntry.entry_kind == "payable",
+                AccountingEntry.supplier_id.in_(supplier_ids),
+            )
+        )
+    ).scalars().all()
+
+    by_supplier: dict[UUID, list[AccountingEntry]] = {sid: [] for sid in supplier_ids}
+    for p in payables:
+        if p.supplier_id:
+            by_supplier.setdefault(p.supplier_id, []).append(p)
+
+    return [
+        (supplier_map[sid], by_supplier.get(sid, []), sid in registered_set)
+        for sid in supplier_ids
+        if sid in supplier_map
+    ]

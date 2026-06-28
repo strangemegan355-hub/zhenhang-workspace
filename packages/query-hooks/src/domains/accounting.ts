@@ -415,3 +415,107 @@ export function useCreateProcurementPayableRequestMutation() {
     },
   });
 }
+
+// ── Supplier ledger ──
+
+export function useSupplierLedgerQuery(
+  page = 1,
+  filters?: { outstandingOnly?: boolean; q?: string },
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["accounting", "supplier-ledger", page, filters?.outstandingOnly, filters?.q],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiWrap<PageData>>("/api/v1/accounting/ledger/suppliers", {
+        params: { page, page_size: 20, outstanding_only: filters?.outstandingOnly, q: filters?.q || undefined },
+      });
+      return data.data;
+    },
+    enabled,
+    staleTime: 15_000,
+  });
+}
+
+export function useSupplierLedgerDetailQuery(supplierId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ["accounting", "supplier-ledger-detail", supplierId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiWrap<Record<string, unknown>>>(
+        `/api/v1/accounting/ledger/suppliers/${supplierId}`,
+      );
+      return data.data;
+    },
+    enabled: !!supplierId && enabled,
+  });
+}
+
+export function useRegisterSupplierLedgerMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (supplierId: string) => {
+      const { data } = await apiClient.post<ApiWrap<Record<string, unknown>>>(
+        "/api/v1/accounting/ledger/suppliers",
+        { supplier_id: supplierId },
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["accounting"] });
+    },
+  });
+}
+
+export type SupplierPayablePayload = {
+  amount: number;
+  occurred_on: string;
+  due_date?: string;
+  title: string;
+  remark?: string;
+  is_backfill?: boolean;
+};
+
+export function useCreateSupplierPayableMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ supplierId, body }: { supplierId: string; body: SupplierPayablePayload }) => {
+      const { data } = await apiClient.post<ApiWrap<Record<string, unknown>>>(
+        `/api/v1/accounting/ledger/suppliers/${supplierId}/payables`,
+        body,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["accounting"] });
+    },
+  });
+}
+
+export type PaymentAllocation = {
+  payable_entry_id: string;
+  amount: number;
+};
+
+export type PaymentPayload = {
+  supplier_id: string;
+  amount: number;
+  occurred_on: string;
+  title: string;
+  remark?: string;
+  allocations: PaymentAllocation[];
+};
+
+export function useCreateSupplierPaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: PaymentPayload) => {
+      const { data } = await apiClient.post<ApiWrap<Record<string, unknown>>>(
+        "/api/v1/accounting/ledger/payments",
+        body,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["accounting"] });
+    },
+  });
+}

@@ -17,19 +17,24 @@ from app.schemas.accounting import (
     AccountingEntryRead,
     AccountingModuleStatus,
     CustomerLedgerSummaryRead,
+    LedgerCustomerRegisterPayload,
+    LedgerPayableCreatePayload,
+    LedgerReceivableCreatePayload,
+    LedgerSupplierRegisterPayload,
+    PaymentCreatePayload,
     ProcurementPayableRejectPayload,
     ProcurementPayableRequestRead,
     QuoteReceivableRejectPayload,
     QuoteReceivableRequestRead,
     ReceiptCreatePayload,
-    LedgerCustomerRegisterPayload,
-    LedgerReceivableCreatePayload,
+    SupplierLedgerSummaryRead,
 )
 from app.schemas.common import PageResponse
 from app.services import accounting_service as svc
 from app.services import ledger_service as ledger_svc
 from app.services import procurement_payable_service as ppr_svc
 from app.services import quote_receivable_service as qrr_svc
+from app.services import supplier_ledger_service as supp_svc
 
 router = APIRouter()
 
@@ -331,3 +336,76 @@ async def export_accounting_entries(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=accounting_entries.csv"},
     )
+
+
+# ── Supplier ledger ──
+
+
+@router.post("/ledger/suppliers", response_model=SupplierLedgerSummaryRead, status_code=status.HTTP_201_CREATED)
+async def register_ledger_supplier(
+    payload: LedgerSupplierRegisterPayload,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_permissions("business:accounting:create"))],
+) -> dict:
+    await supp_svc.register_supplier(db, payload, current.id)
+    detail = await supp_svc.get_supplier_ledger_detail(db, payload.supplier_id)
+    return {
+        "supplier_id": detail.supplier_id,
+        "supplier_name": detail.supplier_name,
+        "supplier_code": detail.supplier_code,
+        "payable_total": detail.payable_total,
+        "paid_total": detail.paid_total,
+        "outstanding_total": detail.outstanding_total,
+        "open_bill_count": detail.open_bill_count,
+        "last_occurred_on": None,
+        "is_registered": True,
+    }
+
+
+@router.post("/ledger/suppliers/{supplier_id}/payables", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_supplier_payable(
+    supplier_id: UUID,
+    payload: LedgerPayableCreatePayload,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_permissions("business:accounting:create"))],
+) -> dict:
+    entry = await supp_svc.create_manual_payable(db, supplier_id, payload, current.id)
+    return entry.model_dump()
+
+
+@router.get("/ledger/suppliers", response_model=PageResponse)
+async def list_supplier_ledger(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    outstanding_only: bool = Query(default=False),
+    q: str | None = Query(default=None, max_length=80),
+) -> PageResponse:
+    return await supp_svc.get_supplier_ledger_summaries(
+        db,
+        page=page,
+        page_size=page_size,
+        outstanding_only=outstanding_only,
+        q=q,
+    )
+
+
+@router.get("/ledger/suppliers/{supplier_id}", response_model=dict)
+async def get_supplier_ledger_detail(
+    supplier_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
+) -> dict:
+    detail = await supp_svc.get_supplier_ledger_detail(db, supplier_id)
+    return detail.model_dump()
+
+
+@router.post("/ledger/payments", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_supplier_payment(
+    payload: PaymentCreatePayload,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_permissions("business:accounting:confirm"))],
+) -> dict:
+    entry = await supp_svc.create_payment_with_allocations(db, payload, current.id)
+    return entry.model_dump()

@@ -198,3 +198,56 @@ class LedgerEntryRead(BaseModel):
     remark: str | None = None
     is_backfill: bool
     allocations: list[dict] = Field(default_factory=list)
+
+
+# ── Supplier ledger ──
+
+
+class SupplierLedgerSummaryRead(BaseModel):
+    supplier_id: UUID
+    supplier_name: str
+    supplier_code: str | None = None
+    payable_total: Decimal
+    paid_total: Decimal
+    outstanding_total: Decimal
+    open_bill_count: int
+    last_occurred_on: date | None = None
+    is_registered: bool = False
+
+
+class LedgerSupplierRegisterPayload(BaseModel):
+    supplier_id: UUID
+
+
+class LedgerPayableCreatePayload(BaseModel):
+    amount: Decimal = Field(gt=0)
+    occurred_on: date
+    due_date: date | None = None
+    title: str = Field(min_length=1, max_length=200)
+    remark: str | None = Field(default=None, max_length=500)
+    is_backfill: bool = False
+
+
+class SupplierLedgerDetailRead(BaseModel):
+    supplier_id: UUID
+    supplier_name: str
+    supplier_code: str | None = None
+    is_registered: bool
+    payable_total: Decimal
+    paid_total: Decimal
+    outstanding_total: Decimal
+    entries: list[LedgerEntryRead] = Field(default_factory=list)
+
+
+class PaymentAllocationItem(BaseModel):
+    payable_entry_id: UUID
+    amount: Decimal = Field(gt=0)
+
+
+class PaymentCreatePayload(BaseModel):
+    supplier_id: UUID
+    amount: Decimal = Field(gt=0)
+    occurred_on: date
+    title: str = Field(min_length=1, max_length=200)
+    remark: str | None = Field(default=None, max_length=500)
+    allocations: list[PaymentAllocationItem] = Field(min_length=1)
