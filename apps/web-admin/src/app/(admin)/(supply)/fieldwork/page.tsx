@@ -17,6 +17,7 @@ import {
   usePostFieldworkReceivableMutation,
   useProjectsQuery,
   useUpdateFieldworkRecordMutation,
+  useAftersalesQuery,
   type FieldworkRecordPayload,
 } from "@zhenhang/query-hooks";
 import { IndustrialPage, IndustrialPanel, KpiCard, WorkspaceToolbarButton } from "@zhenhang/ui";
@@ -105,6 +106,7 @@ export default function FieldworkPage() {
   const deleteMutation = useDeleteFieldworkRecordMutation();
   const updateMutation = useUpdateFieldworkRecordMutation();
   const postReceivableMutation = usePostFieldworkReceivableMutation();
+  const aftersalesQuery = useAftersalesQuery(1, { status: "confirmed" });
 
   const data = (query.data as { items?: Record<string, unknown>[]; total?: number } | undefined) ?? {};
   const summary = summaryQuery.data;
@@ -137,6 +139,17 @@ export default function FieldworkPage() {
     [materialsQuery.data],
   );
 
+  const aftersalesOptions = useMemo(
+    () => [
+      { value: "", label: "（不关联）" },
+      ...((aftersalesQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? []).map((a) => ({
+        value: String(a.id ?? ""),
+        label: `${String(a.request_no ?? "")} ${String(a.title ?? "")}`,
+      })),
+    ],
+    [aftersalesQuery.data],
+  );
+
   const projectOptions = useMemo(
     () =>
       ((projectsQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? []).map((p) => ({
@@ -166,6 +179,8 @@ export default function FieldworkPage() {
               ? "已生成"
               : "未生成"
             : "—",
+        serviceRequestId: String(row.service_request_id ?? ""),
+        serviceRequestTitle: String(row.service_request_title ?? ""),
       })),
     [data.items],
   );
@@ -195,6 +210,7 @@ export default function FieldworkPage() {
       hours: Number(repairForm.hours || 0),
       repair_amount: repairForm.repair_amount ? Number(repairForm.repair_amount) : undefined,
       remark: repairForm.remark.trim() || undefined,
+      service_request_id: (repairForm as any).service_request_id || undefined,
     }).then(() => setRepairForm(repairDefaults));
   };
 
@@ -263,8 +279,9 @@ export default function FieldworkPage() {
             { key: "hours", label: "工时(小时)", type: "number" },
             { key: "repair_amount", label: "维修费用(元)", type: "number", placeholder: "可稍后填写" },
             { key: "remark", label: "备注", placeholder: "其他说明" },
+            { key: "service_request_id", label: "关联工单", type: "select", options: aftersalesOptions },
           ]}
-          values={repairForm}
+          values={{ ...repairForm, service_request_id: (repairForm as any).service_request_id || "" }}
           onChange={(key, value) => setRepairForm((s) => ({ ...s, [key]: value }))}
           onSubmit={() => void handleRepairSubmit()}
           onCancel={() => setRepairForm(repairDefaults)}
