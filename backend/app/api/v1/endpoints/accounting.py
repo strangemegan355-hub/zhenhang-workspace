@@ -15,6 +15,7 @@ from app.models.user import User
 from app.schemas.accounting import (
     AccountingEntryCreate,
     AccountingEntryRead,
+    AccountingEntryUpdate,
     AccountingModuleStatus,
     CustomerLedgerSummaryRead,
     LedgerCustomerRegisterPayload,
@@ -141,6 +142,16 @@ async def create_backfill_entry(
 ) -> AccountingEntryRead:
     data = payload.model_copy(update={"is_backfill": True})
     return await svc.create_entry(db, data, current, allow_backfill=True)
+
+
+@router.put("/entries/{entry_id}", response_model=AccountingEntryRead)
+async def update_accounting_entry(
+    entry_id: UUID,
+    payload: AccountingEntryUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("business:accounting:create"))],
+) -> AccountingEntryRead:
+    return await svc.update_entry(db, entry_id, payload)
 
 
 @router.post("/entries/{entry_id}/confirm", response_model=AccountingEntryRead)

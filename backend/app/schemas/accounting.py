@@ -36,6 +36,17 @@ class AccountingEntryCreate(BaseModel):
         return value
 
 
+class AccountingEntryUpdate(BaseModel):
+    customer_id: UUID | None = None
+    supplier_id: UUID | None = None
+    project_id: UUID | None = None
+    amount: Decimal | None = Field(default=None, gt=0)
+    occurred_on: date | None = None
+    due_date: date | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    remark: str | None = Field(default=None, max_length=500)
+
+
 class AccountingEntryLineRead(BaseModel):
     id: UUID
     product_id: UUID | None = None

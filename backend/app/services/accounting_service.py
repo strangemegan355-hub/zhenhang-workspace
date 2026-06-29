@@ -151,6 +151,28 @@ async def create_entry(
     return AccountingEntryRead.model_validate(loaded or obj)
 
 
+async def update_entry(
+    db: AsyncSession,
+    entry_id: UUID,
+    payload,
+) -> AccountingEntryRead:
+    await require_accounting_enabled(db)
+    obj = await repo.get_entry(db, entry_id)
+    if obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Accounting entry not found")
+    if obj.status != "draft":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="仅草稿状态可编辑")
+    updates = payload.model_dump(exclude_unset=True)
+    if "occurred_on" in updates:
+        _validate_dates(updates["occurred_on"], is_backfill=bool(obj.is_backfill))
+    for key, value in updates.items():
+        if value is not None:
+            setattr(obj, key, value)
+    await repo.save_entry(db, obj)
+    loaded = await repo.get_entry(db, entry_id)
+    return AccountingEntryRead.model_validate(loaded or obj)
+
+
 async def confirm_entry(db: AsyncSession, entry_id: UUID) -> AccountingEntryRead:
     await require_accounting_enabled(db)
     obj = await repo.get_entry(db, entry_id)

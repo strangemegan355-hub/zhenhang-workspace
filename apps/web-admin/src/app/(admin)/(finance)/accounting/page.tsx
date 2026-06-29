@@ -31,12 +31,12 @@ import { hasPermission } from "@/lib/access";
 import { useAuthStore } from "@/store/auth-store";
 
 const ENTRY_KIND_OPTIONS = [
-  { value: "receivable", label: "应收" },
-  { value: "payable", label: "应付" },
-  { value: "receipt", label: "收款" },
-  { value: "payment", label: "付款" },
-  { value: "revenue", label: "收入" },
-  { value: "expense", label: "支出" },
+  { value: "receivable", label: "应收", hint: "客户欠款 / 发票已开待收款" },
+  { value: "payable", label: "应付", hint: "欠供应商款 / 收到发票待付款" },
+  { value: "receipt", label: "收款", hint: "实际收到客户的款项" },
+  { value: "payment", label: "付款", hint: "实际支付给供应商的款项" },
+  { value: "revenue", label: "收入", hint: "非主营业务收入（利息、退款等）" },
+  { value: "expense", label: "支出", hint: "日常费用支出（办公用品、差旅等）" },
 ];
 
 const STATUS_LABEL: Record<string, string> = {
@@ -87,6 +87,62 @@ export default function AccountingPage() {
   const [showBackfill, setShowBackfill] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const openDetail = async (id: string) => {
+    if (detailId === id) { setDetailId(null); setDetail(null); return; }
+    setDetailId(id);
+    setDetailLoading(true);
+    try {
+      const { data } = await apiClient.get<{ data: Record<string, unknown> }>(`/api/v1/accounting/entries/${id}`);
+      setDetail(data.data);
+    } catch { setDetail(null); }
+    finally { setDetailLoading(false); }
+  };
+
+  const startEdit = (row: typeof rows[0]) => {
+    setEditingId(row.id);
+    setForm({
+      entry_kind: row.entryKind,
+      customer_id: row.customerId,
+      supplier_id: "",
+      amount: String(Number(row.amount.replace(/,/g, "")) || 0),
+      occurred_on: row.occurredOn,
+      due_date: "",
+      title: row.title,
+      remark: "",
+    });
+    setShowBackfill(true);
+    setFormError(null);
+  };
+
+  const handleEdit = async () => {
+    setFormError(null);
+    if (!editingId) return;
+    if (!form.title.trim()) { setFormError("请填写摘要"); return; }
+    try {
+      const body: Record<string, unknown> = {
+        customer_id: form.customer_id || null,
+        supplier_id: form.supplier_id || null,
+        amount: Number(form.amount),
+        occurred_on: form.occurred_on,
+        due_date: form.due_date || null,
+        title: form.title.trim(),
+        remark: form.remark.trim() || null,
+      };
+      await apiClient.put(`/api/v1/accounting/entries/${editingId}`, body);
+      setForm(defaultForm);
+      setEditingId(null);
+      setShowBackfill(false);
+      void entriesQuery.refetch();
+      if (detailId === editingId) openDetail(editingId);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "编辑失败");
+    }
+  };
 
   const entriesQuery = useAccountingEntriesQuery(
     page,
@@ -243,24 +299,28 @@ export default function AccountingPage() {
         }
       />
 
-      {showBackfill && canBackfill ? (
-        <IndustrialPanel title="补录账目">
+      {showBackfill && (canBackfill || editingId) ? (
+        <IndustrialPanel title={editingId ? "编辑账目" : "补录账目"}>
           <div className={`${formPanelClass} grid gap-3 md:grid-cols-2 lg:grid-cols-3`}>
             <label className="block space-y-1 text-xs">
-              <span className={fieldLabelClass}>账目类型 *</span>
+              <span className={fieldLabelClass}>账目类型 {editingId ? "" : "*"}</span>
               <select
                 className={fieldInputClass}
                 value={form.entry_kind}
+                disabled={!!editingId}
                 onChange={(e) =>
                   setForm((s) => ({ ...s, entry_kind: e.target.value, customer_id: "", supplier_id: "" }))
                 }
               >
                 {ENTRY_KIND_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
+                  <option key={o.value} value={o.value} title={o.hint}>
                     {o.label}
                   </option>
                 ))}
               </select>
+              {ENTRY_KIND_OPTIONS.find(o => o.value === form.entry_kind)?.hint ? (
+                <p className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">{ENTRY_KIND_OPTIONS.find(o => o.value === form.entry_kind)!.hint}</p>
+              ) : null}
             </label>
             {needsCustomer ? (
               <label className="block space-y-1 text-xs">
@@ -348,9 +408,9 @@ export default function AccountingPage() {
           </p>
           {formError ? <p className="mt-2 text-xs text-red-500">{formError}</p> : null}
           <div className="mt-3 flex justify-end gap-2">
-            <WorkspaceToolbarButton onClick={() => setShowBackfill(false)}>取消</WorkspaceToolbarButton>
-            <WorkspaceToolbarButton loading={backfillMutation.isPending} onClick={() => void handleBackfill()}>
-              保存补录
+            <WorkspaceToolbarButton onClick={() => { setShowBackfill(false); setEditingId(null); setForm(defaultForm); }}>取消</WorkspaceToolbarButton>
+            <WorkspaceToolbarButton loading={backfillMutation.isPending} onClick={() => editingId ? void handleEdit() : void handleBackfill()}>
+              {editingId ? "保存修改" : "保存补录"}
             </WorkspaceToolbarButton>
           </div>
         </IndustrialPanel>
@@ -473,8 +533,8 @@ export default function AccountingPage() {
                 </tr>
               ) : (
                 rows.map((row) => (
-                  <tr key={row.id} className={tableBodyRowClass}>
-                    <td className="px-2 py-2">{row.entryNo}</td>
+                  <tr key={row.id} className={`${tableBodyRowClass} cursor-pointer hover:bg-[var(--color-surface-soft)] ${detailId === row.id ? "bg-[var(--color-primary-soft)]" : ""}`} onClick={() => openDetail(row.id)}>
+                    <td className="px-2 py-2 font-mono text-[10px]">{row.entryNo}</td>
                     <td className="px-2 py-2">
                       {KIND_LABEL[row.entryKind] ?? row.entryKind}
                       {row.isBackfill ? (
@@ -488,28 +548,19 @@ export default function AccountingPage() {
                     <td className="px-2 py-2 text-right">{row.amount}</td>
                     <td className="px-2 py-2">{STATUS_LABEL[row.status] ?? row.status}</td>
                     {canConfirm ? (
-                      <td className="px-2 py-2">
+                      <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2">
                           {row.status === "draft" ? (
-                            <button
-                              type="button"
-                              className={linkActionClass}
-                              onClick={() => void confirmMutation.mutateAsync(row.id)}
-                            >
-                              确认
-                            </button>
+                            <>
+                            <button type="button" className={linkActionClass} onClick={() => startEdit(row)}>编辑</button>
+                            <button type="button" className={linkActionClass} onClick={() => void confirmMutation.mutateAsync(row.id)}>确认</button>
+                            </>
                           ) : null}
                           {row.status === "draft" || row.status === "confirmed" ? (
-                            <button
-                              type="button"
-                              className={dangerActionClass}
-                              onClick={() => {
-                                if (!window.confirm(`确定作废账目「${row.entryNo}」吗？`)) return;
-                                void voidMutation.mutateAsync(row.id);
-                              }}
-                            >
-                              作废
-                            </button>
+                            <button type="button" className={dangerActionClass} onClick={() => {
+                              if (!window.confirm(`确定作废账目「${row.entryNo}」吗？`)) return;
+                              void voidMutation.mutateAsync(row.id);
+                            }}>作废</button>
                           ) : null}
                         </div>
                       </td>
@@ -520,6 +571,47 @@ export default function AccountingPage() {
             </tbody>
           </table>
         </div>
+
+        {detailId && detail ? (
+          <IndustrialPanel title={`分录详情 · ${String(detail.entry_no ?? "")}`} toolbar={<WorkspaceToolbarButton onClick={() => { setDetailId(null); setDetail(null); }}>关闭</WorkspaceToolbarButton>}>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 text-xs">
+              <div><span className="text-[var(--color-text-muted)]">类型：</span>{KIND_LABEL[String(detail.entry_kind)] ?? String(detail.entry_kind)}</div>
+              <div><span className="text-[var(--color-text-muted)]">状态：</span>{STATUS_LABEL[String(detail.status)] ?? String(detail.status)}</div>
+              <div><span className="text-[var(--color-text-muted)]">金额：</span>{money(detail.amount as number)}</div>
+              <div><span className="text-[var(--color-text-muted)]">已核销：</span>{money(detail.settled_amount as number)}</div>
+              <div><span className="text-[var(--color-text-muted)]">发生日：</span>{String(detail.occurred_on ?? "")}</div>
+              <div><span className="text-[var(--color-text-muted)]">入账日：</span>{String(detail.booked_on ?? "")}</div>
+              <div><span className="text-[var(--color-text-muted)]">到期日：</span>{String(detail.due_date ?? "—")}</div>
+              <div className="md:col-span-2"><span className="text-[var(--color-text-muted)]">摘要：</span>{String(detail.title ?? "")}</div>
+            </div>
+            {Array.isArray(detail.lines) && detail.lines.length > 0 ? (
+              <div className="mt-3">
+                <h4 className="mb-2 text-xs font-semibold">分录明细 ({(detail.lines as unknown[]).length} 行)</h4>
+                <div className="overflow-auto rounded border border-[var(--color-border)]">
+                  <table className="min-w-full text-xs">
+                    <thead><tr className={tableHeaderRowClass}>
+                      <th className="px-2 py-1 text-left">产品/项目</th><th className="px-2 py-1 text-left">规格</th><th className="px-2 py-1 text-left">单位</th><th className="px-2 py-1 text-right">数量</th><th className="px-2 py-1 text-right">单价</th><th className="px-2 py-1 text-right">行金额</th>
+                    </tr></thead>
+                    <tbody>
+                      {(detail.lines as Array<Record<string, unknown>>).map((line, i) => (
+                        <tr key={i} className={tableBodyRowClass}>
+                          <td className="px-2 py-1">{String(line.item_name ?? "—")}</td>
+                          <td className="px-2 py-1 text-[var(--color-text-muted)]">{String(line.spec ?? "—")}</td>
+                          <td className="px-2 py-1">{String(line.unit ?? "—")}</td>
+                          <td className="px-2 py-1 text-right">{String(line.qty ?? "—")}</td>
+                          <td className="px-2 py-1 text-right">{money(line.unit_price as number)}</td>
+                          <td className="px-2 py-1 text-right font-medium">{money(line.line_amount as number)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : <p className="mt-2 text-xs text-[var(--color-text-muted)]">该分录无明细行</p>}
+          </IndustrialPanel>
+        ) : detailLoading ? (
+          <p className="py-4 text-center text-xs text-[var(--color-text-muted)]">加载详情中...</p>
+        ) : null}
 
         <div className="mt-3 flex items-center justify-between text-xs text-[var(--color-text-muted)]">
           <span>
