@@ -1,5 +1,6 @@
 "use client";
 
+import { apiClient } from "@zhenhang/http-client";
 import { MasterListPage } from "@/components/master/master-list-page";
 import {
   useBusinessSettingsQuery,
@@ -744,6 +745,17 @@ export default function CostingPage() {
           <div className="flex items-center gap-2">
             <button type="button" className={linkActionClass} onClick={() => openEdit(row.id)}>
               修改
+            </button>
+            <button type="button" className="text-xs text-emerald-400 hover:underline" onClick={() => {
+              const defaultAmount = row.totalCost?.replace(/,/g, "") || "0";
+              const amt = window.prompt("输入推送到账目的金额（完全成本）", defaultAmount);
+              if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
+              apiClient.post(`/api/v1/cost-estimates/${row.id}/post-expense`, {
+                amount: Number(amt),
+                title: `成本核算: ${row.productName}`,
+              }).then(() => listQuery.refetch()).catch(e => window.alert(e?.response?.data?.detail?.detail ?? "推送失败"));
+            }}>
+              推送至账目
             </button>
             <button type="button" className={dangerActionClass} onClick={() => void handleDelete(row.id, row.productName)}>
               删除

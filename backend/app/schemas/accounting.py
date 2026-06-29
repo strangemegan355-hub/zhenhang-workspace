@@ -149,7 +149,15 @@ SOURCE_TYPE_LABELS = {
     "fieldwork_repair": "外出维修",
     "fieldwork_loading": "装车登记",
     "procurement": "采购",
+    "work_order": "车间工单",
+    "cost_estimate": "成本核算",
 }
+
+
+class PostExpensePayload(BaseModel):
+    amount: Decimal = Field(gt=0)
+    title: str = Field(min_length=1, max_length=200)
+    remark: str | None = Field(default=None, max_length=500)
 
 
 class ReceiptAllocationItem(BaseModel):

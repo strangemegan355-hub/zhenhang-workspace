@@ -1,5 +1,6 @@
 "use client";
 
+import { apiClient } from "@zhenhang/http-client";
 import { MasterCreateForm } from "@/components/master/master-create-form";
 import { MasterListPage } from "@/components/master/master-list-page";
 import {
@@ -295,6 +296,22 @@ export default function WorkOrdersPage() {
                 onClick={() => void advanceMutation.mutateAsync(row.id).then(() => query.refetch())}
               >
                 推进
+              </button>
+            ) : null}
+            {row.status === "done" ? (
+              <button
+                type="button"
+                className="text-xs text-emerald-400 hover:underline"
+                onClick={() => {
+                  const amt = window.prompt("输入工单成本金额", "500");
+                  if (!amt || isNaN(Number(amt))) return;
+                  apiClient.post(`/api/v1/work-orders/${row.id}/post-expense`, {
+                    amount: Number(amt),
+                    title: `工单成本: ${row.title || row.workOrderNo}`,
+                  }).then(() => query.refetch()).catch(e => window.alert(e?.response?.data?.detail?.detail ?? "入账失败"));
+                }}
+              >
+                计入支出
               </button>
             ) : null}
             {row.status !== "done" ? (
