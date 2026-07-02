@@ -307,7 +307,7 @@ export default function WorkOrdersPage() {
                   if (!amt || isNaN(Number(amt))) return;
                   apiClient.post(`/api/v1/work-orders/${row.id}/post-expense`, {
                     amount: Number(amt),
-                    title: `工单成本: ${row.title || row.workOrderNo}`,
+                    title: `工单成本: ${row.taskDesc || row.workOrderNo}`,
                   }).then(() => query.refetch()).catch(e => window.alert(e?.response?.data?.detail?.detail ?? "入账失败"));
                 }}
               >

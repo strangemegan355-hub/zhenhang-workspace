@@ -47,15 +47,26 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
     title: "产品管理",
     defaultExpanded: false,
     items: [
-      { key: "product-categories", title: "产品分类", href: "/product-categories", permission: "master:product_category:read", hidden: true },
       { key: "products", title: "产品库", href: "/products", permission: "master:product:read" },
+      { key: "machines", title: "机型管理", href: "/machines", permission: "master:machine:read" },
+      { key: "boms", title: "BOM 管理", href: "/boms", permission: "master:bom:read" },
       { key: "product-cost-templates", title: "成本模板", href: "/product-cost-templates", permission: "master:product_cost_template:read" },
       { key: "product-price-templates", title: "售价模板", href: "/product-price-templates", permission: "master:product_price_template:read" },
-      { key: "customers", title: "客户管理", href: "/customers", permission: "master:customer:read" },
-      { key: "materials", title: "材料库", href: "/materials", permission: "master:material:read" },
-      { key: "suppliers", title: "供应商库", href: "/suppliers", permission: "master:supplier:read" },
-      { key: "equipment-units", title: "设备序列号", href: "/equipment-units", permission: "master:equipment_unit:read" },
       { key: "option-groups", title: "选项组", href: "/option-groups", permission: "master:machine:read" },
+      { key: "equipment-units", title: "设备序列号", href: "/equipment-units", permission: "master:equipment_unit:read" },
+      { key: "acceptance", title: "验收管理", href: "/acceptance", permission: "master:machine:read" },
+      { key: "installation", title: "安装调试", href: "/installation", permission: "master:machine:read" },
+    ],
+  },
+  {
+    key: "master",
+    title: "基础数据",
+    defaultExpanded: false,
+    items: [
+      { key: "customers", title: "客户管理", href: "/customers", permission: "master:customer:read" },
+      { key: "suppliers", title: "供应商库", href: "/suppliers", permission: "master:supplier:read" },
+      { key: "materials", title: "材料库", href: "/materials", permission: "master:material:read" },
+      { key: "standards", title: "基础标准", href: "/standards", permission: "master:standard:read" },
     ],
   },
   {
@@ -104,9 +115,10 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
     items: [
       { key: "approvals", title: "审批中心", href: "/approvals", permission: "business:approval:read" },
       { key: "audits", title: "审计日志", href: "/audits", permission: "platform:audit:read" },
+      { key: "files", title: "文件中心", href: "/files", permission: "platform:file:read" },
       { key: "notifications", title: "通知中心", href: "/notifications", permission: "platform:notification:read" },
       { key: "business-settings", title: "业务设置", href: "/business-settings", permission: "platform:config:read" },
-      { key: "system", title: "系统设置", href: "/settings", permission: "platform:config:read" },
+      { key: "system", title: "系统设置", href: "/settings", permission: "platform:config:read", hidden: true },
     ],
   },
 ];
@@ -116,12 +128,7 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
  * 含：BOM、机型管理、文件中心；AI/MES 无独立 Web 菜单项。
  */
 export const HIDDEN_APP_MENUS: MenuItem[] = [
-  { key: "machines", title: "机型管理", href: "/machines", permission: "master:machine:read", hidden: true },
-  { key: "boms", title: "BOM 管理", href: "/boms", permission: "master:bom:read", hidden: true },
-  { key: "files", title: "文件中心", href: "/files", permission: "platform:file:read", hidden: true },
-  { key: "files", title: "文件中心", href: "/files", permission: "platform:file:read", hidden: true },
-  { key: "acceptance", title: "验收管理", href: "/acceptance", permission: "master:machine:read", hidden: true },
-  { key: "installation", title: "安装调试", href: "/installation", permission: "master:machine:read", hidden: true },
+  { key: "product-categories", title: "产品分类", href: "/product-categories", permission: "master:product_category:read", hidden: true },
 ];
 
 /** 全量菜单（含隐藏项），用于路由高亮与标题解析 */
@@ -139,17 +146,19 @@ export const ROUTE_GROUP_MAP: Record<string, { group: string; groupKey: string; 
   "/projects": { group: "项目管理", groupKey: "projects", routeGroup: "(projects)" },
   "/costing": { group: "项目管理", groupKey: "projects", routeGroup: "(projects)" },
   "/order-profit": { group: "项目管理", groupKey: "projects", routeGroup: "(projects)" },
-  "/customers": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
+  "/customers": { group: "基础数据", groupKey: "master", routeGroup: "(products)" },
   "/product-categories": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
   "/products": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
   "/product-cost-templates": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
   "/product-price-templates": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
-  "/materials": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
-  "/suppliers": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
   "/equipment-units": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
-  "/standards": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
   "/machines": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
   "/boms": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
+  "/acceptance": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
+  "/installation": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
+  "/materials": { group: "基础数据", groupKey: "master", routeGroup: "(products)" },
+  "/suppliers": { group: "基础数据", groupKey: "master", routeGroup: "(products)" },
+  "/standards": { group: "基础数据", groupKey: "master", routeGroup: "(products)" },
   "/procurement": { group: "供应链与生产", groupKey: "supply", routeGroup: "(supply)" },
   "/work-orders": { group: "供应链与生产", groupKey: "supply", routeGroup: "(supply)" },
   "/fieldwork": { group: "供应链与生产", groupKey: "supply", routeGroup: "(supply)" },
@@ -165,6 +174,4 @@ export const ROUTE_GROUP_MAP: Record<string, { group: string; groupKey: string; 
   "/business-settings": { group: "平台中心", groupKey: "platform", routeGroup: "(platform)" },
   "/settings": { group: "平台中心", groupKey: "platform", routeGroup: "(platform)" },
   "/files": { group: "平台中心", groupKey: "platform", routeGroup: "(platform)" },
-  "/acceptance": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
-  "/installation": { group: "产品管理", groupKey: "products", routeGroup: "(products)" },
 };
