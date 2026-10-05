@@ -26,28 +26,30 @@ async def create_actual_cost(
 @router.get("", response_model=PageResponse)
 async def list_actual_costs(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:actual_cost:read"))],
+    current: Annotated[User, Depends(require_permissions("business:actual_cost:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
     project_id: UUID | None = Query(default=None),
 ) -> PageResponse:
-    return await svc.list_actual_costs(db, page, page_size, q, project_id=project_id)
+    return await svc.list_actual_costs(
+        db, page, page_size, q, current_user=current, project_id=project_id
+    )
 
 
 @router.get("/{entry_id}", response_model=ProjectActualCostRead)
 async def get_actual_cost(
     entry_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:actual_cost:read"))],
+    current: Annotated[User, Depends(require_permissions("business:actual_cost:read"))],
 ) -> ProjectActualCostRead:
-    return await svc.get_actual_cost_or_404(db, entry_id)
+    return await svc.get_actual_cost_or_404(db, entry_id, current_user=current)
 
 
 @router.delete("/{entry_id}", response_model=ProjectActualCostRead)
 async def delete_actual_cost(
     entry_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:actual_cost:delete"))],
+    current: Annotated[User, Depends(require_permissions("business:actual_cost:delete"))],
 ) -> ProjectActualCostRead:
-    return await svc.delete_actual_cost(db, entry_id)
+    return await svc.delete_actual_cost(db, entry_id, current_user=current)

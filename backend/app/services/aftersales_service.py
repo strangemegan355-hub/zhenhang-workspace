@@ -4,6 +4,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
+from app.models.aftersales_service_request import AfterSalesServiceRequest
 from app.models.user import User
 from app.repositories import aftersales_repository as repo
 from app.schemas.aftersales import (
@@ -39,6 +41,7 @@ def _to_read(obj) -> AfterSalesServiceRequestRead:
 
 async def list_requests(
     db: AsyncSession,
+    current_user: User,
     *,
     page: int,
     page_size: int,
@@ -48,9 +51,14 @@ async def list_requests(
     assigned_to: UUID | None = None,
 ) -> PageResponse:
     total, items = await repo.list_requests(
-        db, page=page, page_size=page_size,
-        customer_id=customer_id, status=status,
-        priority=priority, assigned_to=assigned_to,
+        db,
+        page=page,
+        page_size=page_size,
+        customer_id=customer_id,
+        status=status,
+        priority=priority,
+        assigned_to=assigned_to,
+        predicate=scope_predicate(AfterSalesServiceRequest, current_user),
     )
     return PageResponse(
         total=total, page=page, page_size=page_size,
@@ -58,8 +66,12 @@ async def list_requests(
     )
 
 
-async def get_request(db: AsyncSession, request_id: UUID) -> AfterSalesServiceRequestRead:
-    obj = await repo.get_request(db, request_id)
+async def get_request(
+    db: AsyncSession, request_id: UUID, current_user: User
+) -> AfterSalesServiceRequestRead:
+    obj = await repo.get_request(
+        db, request_id, predicate=scope_predicate(AfterSalesServiceRequest, current_user)
+    )
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
     return _to_read(obj)
@@ -89,8 +101,11 @@ async def update_request(
     db: AsyncSession,
     request_id: UUID,
     payload: AfterSalesServiceRequestUpdate,
+    current_user: User,
 ) -> AfterSalesServiceRequestRead:
-    obj = await repo.get_request(db, request_id)
+    obj = await repo.get_request(
+        db, request_id, predicate=scope_predicate(AfterSalesServiceRequest, current_user)
+    )
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
 
@@ -105,8 +120,10 @@ async def update_request(
     return _to_read(obj)
 
 
-async def delete_request(db: AsyncSession, request_id: UUID) -> None:
-    obj = await repo.get_request(db, request_id)
+async def delete_request(db: AsyncSession, request_id: UUID, current_user: User) -> None:
+    obj = await repo.get_request(
+        db, request_id, predicate=scope_predicate(AfterSalesServiceRequest, current_user)
+    )
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
     if obj.status not in ("draft", "cancelled"):

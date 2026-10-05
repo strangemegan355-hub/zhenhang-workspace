@@ -23,8 +23,11 @@ async def list_actual_costs(
     q: str | None,
     *,
     project_id: UUID | None = None,
+    predicate=None,
 ):
     extra_filters = []
+    if predicate is not None:
+        extra_filters.append(predicate)
     if project_id is not None:
         extra_filters.append(ProjectActualCost.project_id == project_id)
     return await paginate_query(
@@ -38,8 +41,10 @@ async def list_actual_costs(
     )
 
 
-async def get_actual_cost(db: AsyncSession, object_id: UUID) -> ProjectActualCost | None:
-    return await get_by_id(db, ProjectActualCost, object_id)
+async def get_actual_cost(
+    db: AsyncSession, object_id: UUID, predicate=None
+) -> ProjectActualCost | None:
+    return await get_by_id(db, ProjectActualCost, object_id, predicate)
 
 
 async def find_by_procurement_ref(db: AsyncSession, procurement_ref: str) -> ProjectActualCost | None:

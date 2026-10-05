@@ -21,7 +21,7 @@ router = APIRouter()
 @router.get("", response_model=PageResponse)
 async def list_aftersales_requests(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:aftersales:read"))],
+    current: Annotated[User, Depends(require_permissions("business:aftersales:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     customer_id: UUID | None = Query(default=None),
@@ -30,9 +30,14 @@ async def list_aftersales_requests(
     assigned_to: UUID | None = Query(default=None),
 ) -> PageResponse:
     return await svc.list_requests(
-        db, page=page, page_size=page_size,
-        customer_id=customer_id, status=status,
-        priority=priority, assigned_to=assigned_to,
+        db,
+        page=page,
+        page_size=page_size,
+        customer_id=customer_id,
+        status=status,
+        priority=priority,
+        assigned_to=assigned_to,
+        current_user=current,
     )
 
 
@@ -40,9 +45,9 @@ async def list_aftersales_requests(
 async def get_aftersales_request(
     request_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:aftersales:read"))],
+    current: Annotated[User, Depends(require_permissions("business:aftersales:read"))],
 ) -> AfterSalesServiceRequestRead:
-    return await svc.get_request(db, request_id)
+    return await svc.get_request(db, request_id, current_user=current)
 
 
 @router.post("", response_model=AfterSalesServiceRequestRead, status_code=status.HTTP_201_CREATED)
@@ -59,15 +64,15 @@ async def update_aftersales_request(
     request_id: UUID,
     payload: AfterSalesServiceRequestUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:aftersales:update"))],
+    current: Annotated[User, Depends(require_permissions("business:aftersales:update"))],
 ) -> AfterSalesServiceRequestRead:
-    return await svc.update_request(db, request_id, payload)
+    return await svc.update_request(db, request_id, payload, current_user=current)
 
 
 @router.delete("/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_aftersales_request(
     request_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:aftersales:delete"))],
+    current: Annotated[User, Depends(require_permissions("business:aftersales:delete"))],
 ) -> None:
-    await svc.delete_request(db, request_id)
+    await svc.delete_request(db, request_id, current_user=current)

@@ -68,6 +68,16 @@ def apply_data_scope(stmt: Select, model, user) -> Select:
     return stmt.where(scope_predicate(model, user))
 
 
+def scope_predicate_via_parent(child_model, parent_model, foreign_key, user):
+    """Scope rows whose visibility follows the parent row's owner.
+
+    A project actual cost belongs to a project. Scoping it by its own creator would hide part of a
+    project the caller is allowed to see — a narrower answer than the one the caller is entitled
+    to — so the predicate delegates: the child is visible exactly when its parent is.
+    """
+    return foreign_key.in_(select(parent_model.id).where(scope_predicate(parent_model, user)))
+
+
 def build_created_by_filter(model, user) -> object:
     """Backward-compatible wrapper: the soft-delete filter plus the scope predicate.
 

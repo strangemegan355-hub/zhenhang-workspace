@@ -142,3 +142,37 @@ def test_quote_detail_fetches_through_the_scope(monkeypatch):
     assert excinfo.value.status_code == 404
     assert captured["predicate"] is not None
     assert "sys_users.department_id" in compiled(captured["predicate"])
+
+
+def _parent_sql(predicate, child) -> str:
+    stmt = select(child.id).where(predicate)
+    return str(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+
+
+def test_parent_scope_follows_the_project():
+    """An actual cost is visible exactly when its project is, not when its author is."""
+    from app.core.data_scope import scope_predicate_via_parent
+    from app.models.project import Project
+    from app.models.project_actual_cost import ProjectActualCost
+
+    user = make_user(DataScope.SELF)
+    predicate = scope_predicate_via_parent(
+        ProjectActualCost, Project, ProjectActualCost.project_id, user
+    )
+    sql = _parent_sql(predicate, ProjectActualCost)
+    assert "project_actual_costs.project_id IN" in sql
+    assert "projects.created_by" in sql
+    assert str(user.id) in sql
+
+
+def test_parent_scope_is_unrestricted_for_an_all_scope_role():
+    from app.core.data_scope import scope_predicate_via_parent
+    from app.models.project import Project
+    from app.models.project_actual_cost import ProjectActualCost
+
+    predicate = scope_predicate_via_parent(
+        ProjectActualCost, Project, ProjectActualCost.project_id, make_user(DataScope.ALL)
+    )
+    sql = _parent_sql(predicate, ProjectActualCost)
+    assert "projects" in sql
+    assert "created_by" not in sql

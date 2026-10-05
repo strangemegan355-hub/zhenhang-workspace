@@ -1,14 +1,23 @@
-"""Which entities are scoped, which are shared, and what is still pending.
+"""Which entities are scoped, which are shared, and why.
 
-Object-level authorization is only correct when it matches the meaning of the data. Rows that
-belong to someone (quotes, projects, work orders) must be scoped; shared reference data
-(customers, materials, machines) must NOT be, or two salespeople in different departments would
-each see a different customer list and the master data would fragment.
+Object-level authorization is only correct when it matches the meaning of the data. This module
+records that decision as a ledger and fails when a module exposing object-id routes is in no set,
+so the question is always answered explicitly instead of by omission. It also fails when a module
+is scoped that should not be, which is how a security fix silently becomes a functional
+regression.
 
-This module records that decision as a ledger. It fails when a module appears that nobody has
-classified, so the question is always answered explicitly instead of by omission, and it fails
-when someone scopes shared reference data, which would be a functional regression dressed up as
-a security fix.
+Four categories, in order of how much reasoning they need:
+
+* SCOPED_DOCUMENTS — rows that belong to somebody: quotes, projects, accounting entries, work
+  orders, procurement entries, fieldwork records, cost estimates, service requests and project
+  actual costs. A scope predicate must be applied.
+* SHARED_REFERENCE_DATA — master data every department works from. Scoping it would give each
+  department its own customer and material list.
+* SHARED_OPERATIONAL_RECORDS — company assets and the records written against them (equipment
+  units, installation plans, acceptance records). Installation, acceptance and after-sales staff
+  routinely work on an asset another department registered, so scoping by creator would block the
+  work rather than protect anything. These stay visible to any holder of the module's permission.
+* SUPERUSER_ONLY — reachable only with a system:* code no trial role may hold.
 """
 
 from __future__ import annotations
@@ -20,12 +29,13 @@ BACKEND = Path(__file__).resolve().parents[1]
 APP = BACKEND / "app"
 ENDPOINTS = APP / "api" / "v1" / "endpoints"
 
-# Owned transactional documents: an object-level scope predicate must be applied.
 SCOPED_DOCUMENTS = {
     "accounting": "AccountingEntry",
+    "aftersales": "AfterSalesServiceRequest",
     "cost_estimates": "CostEstimate",
     "fieldwork_records": "FieldworkRecord",
     "procurement_entries": "ProcurementEntry",
+    "project_actual_costs": "ProjectActualCost",
     "projects": "Project",
     "quotes": "Quote",
     "work_orders": "WorkOrder",
@@ -34,25 +44,23 @@ SCOPED_DOCUMENTS = {
 # Scoped through the older per-domain helper (owner_scope_user_id / resolve_data_scope).
 LEGACY_SCOPED = {"files", "configs", "notifications"}
 
-# Reachable only with a system:* code that no trial role may hold, so object-level scoping adds
-# nothing today; users already narrows by department inside the admin service.
+# Reachable only with a system:* code that no trial role may hold; `users` additionally narrows by
+# department inside the admin service.
 SUPERUSER_ONLY = {"roles", "permissions", "departments", "tenants", "users"}
 
-# Shared reference data: deliberately global. Scoping these would split the master data.
 SHARED_REFERENCE_DATA = {
     "machines", "materials", "material_categories", "suppliers", "customers", "products",
     "product_categories", "product_cost_templates", "product_price_templates", "units", "boms",
     "option_groups",
 }
 
-# Owned documents that still fetch by primary key alone. Each needs the project/quote treatment.
-PENDING_MIGRATION = {
-    "aftersales", "project_actual_costs", "installation_plans", "acceptance", "equipment_units",
+SHARED_OPERATIONAL_RECORDS = {
+    "acceptance", "equipment_units", "installation_plans",
 }
 
+# A module is scoped when its service builds the predicate and its repository applies it, so the
+# two layers are asserted against different markers.
 SCOPED_SOURCES = {
-    # The service builds the predicate from the caller's scope; the repository receives it and
-    # applies it to the statement, so the two layers are asserted against different markers.
     "quotes": {
         "app/domains/quote/application/quote_application_service.py": "scope_predicate",
         "app/domains/quote/repositories/quote_repository.py": "predicate",
@@ -81,6 +89,14 @@ SCOPED_SOURCES = {
         "app/services/costing_service.py": "scope_predicate",
         "app/repositories/cost_estimate_repository.py": "predicate",
     },
+    "aftersales": {
+        "app/services/aftersales_service.py": "scope_predicate",
+        "app/repositories/aftersales_repository.py": "predicate",
+    },
+    "project_actual_costs": {
+        "app/services/actual_cost_service.py": "scope_predicate_via_parent",
+        "app/repositories/project_actual_cost_repository.py": "predicate",
+    },
 }
 
 ID_ROUTE = re.compile(r'@router\.(get|put|patch|delete)\(\s*"[^"]*\{[a-z_]*_id\}')
@@ -102,7 +118,7 @@ def classified() -> set[str]:
         | LEGACY_SCOPED
         | SUPERUSER_ONLY
         | SHARED_REFERENCE_DATA
-        | PENDING_MIGRATION
+        | SHARED_OPERATIONAL_RECORDS
     )
 
 
@@ -125,28 +141,31 @@ def test_scoped_documents_apply_the_predicate():
     for module, sources in SCOPED_SOURCES.items():
         for relative, marker in sources.items():
             text = (BACKEND / relative).read_text(encoding="utf-8")
-            assert marker in text, (
-                f"{module} is declared scoped but {relative} has no {marker!r}"
-            )
+            assert marker in text, f"{module} is declared scoped but {relative} has no {marker!r}"
 
 
-def test_shared_reference_data_is_not_scoped():
-    """Guards against the opposite mistake: scoping master data fragments it."""
-    for module in sorted(SHARED_REFERENCE_DATA):
-        stems = {module, module[:-1] if module.endswith("s") else module}
-        paths = set()
-        for stem in stems:
-            for folder in ("services", "repositories"):
-                paths.update((APP / folder).glob(f"*{stem}*.py"))
-        for path in sorted(paths):
+def _module_sources(module: str) -> list[Path]:
+    stems = {module, module[:-1] if module.endswith("s") else module}
+    paths: set[Path] = set()
+    for stem in stems:
+        for folder in ("services", "repositories"):
+            paths.update((APP / folder).glob(f"*{stem}*.py"))
+    return sorted(paths)
+
+
+def test_shared_data_is_not_scoped_by_creator():
+    """Scoping shared data fragments it; scoping company assets blocks cross-department work."""
+    for module in sorted(SHARED_REFERENCE_DATA | SHARED_OPERATIONAL_RECORDS):
+        for path in _module_sources(module):
             text = path.read_text(encoding="utf-8")
             assert "scope_predicate" not in text, (
-                f"{path.relative_to(BACKEND)} scopes shared reference data ({module}); master data "
-                "must stay visible across departments"
+                f"{path.relative_to(BACKEND)} scopes {module}, which is declared shared; "
+                "master data and company assets must stay visible across departments"
             )
 
 
-def test_pending_migration_is_tracked():
-    """A canary: when the pending set empties, move those modules into SCOPED_DOCUMENTS."""
-    assert PENDING_MIGRATION, "the pending set is empty; move the modules into SCOPED_DOCUMENTS"
-    assert not (PENDING_MIGRATION & set(SCOPED_DOCUMENTS)), "a module cannot be scoped and pending"
+def test_project_actual_costs_follow_their_project():
+    """Cost lines are scoped through the parent project, never by their own author."""
+    text = (BACKEND / "app/services/actual_cost_service.py").read_text(encoding="utf-8")
+    assert "scope_predicate_via_parent" in text
+    assert "ProjectActualCost.project_id" in text
