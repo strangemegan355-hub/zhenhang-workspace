@@ -32,42 +32,44 @@ async def create_project(
 @router.get("", response_model=PageResponse)
 async def list_projects(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:project:read"))],
+    current: Annotated[User, Depends(require_permissions("business:project:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
 ) -> PageResponse:
-    return await svc.list_projects(db, page, page_size, q)
+    return await svc.list_projects(db, page, page_size, q, current)
 
 
 @router.get("/profit-ledger", response_model=ProjectProfitLedgerResponse)
 async def list_profit_ledger(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:project:read"))],
+    current: Annotated[User, Depends(require_permissions("business:project:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
     over_budget_only: bool = Query(default=False),
 ) -> ProjectProfitLedgerResponse:
-    return await svc.list_profit_ledger(db, page, page_size, q, over_budget_only=over_budget_only)
+    return await svc.list_profit_ledger(
+        db, page, page_size, q, current, over_budget_only=over_budget_only
+    )
 
 
 @router.get("/{project_id}", response_model=ProjectRead)
 async def get_project(
     project_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:project:read"))],
+    current: Annotated[User, Depends(require_permissions("business:project:read"))],
 ) -> ProjectRead:
-    return await svc.get_project_or_404(db, project_id)
+    return await svc.get_project_or_404(db, project_id, current)
 
 
 @router.get("/{project_id}/summary", response_model=ProjectSummaryRead)
 async def get_project_summary(
     project_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:project:read"))],
+    current: Annotated[User, Depends(require_permissions("business:project:read"))],
 ) -> ProjectSummaryRead:
-    return await svc.get_project_summary(db, project_id)
+    return await svc.get_project_summary(db, project_id, current)
 
 
 @router.put("/{project_id}", response_model=ProjectRead)
@@ -75,15 +77,15 @@ async def update_project(
     project_id: UUID,
     payload: ProjectUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:project:update"))],
+    current: Annotated[User, Depends(require_permissions("business:project:update"))],
 ) -> ProjectRead:
-    return await svc.update_project(db, project_id, payload.model_dump(exclude_unset=True))
+    return await svc.update_project(db, project_id, payload.model_dump(exclude_unset=True), current)
 
 
 @router.delete("/{project_id}", response_model=ProjectRead)
 async def delete_project(
     project_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:project:delete"))],
+    current: Annotated[User, Depends(require_permissions("business:project:delete"))],
 ) -> ProjectRead:
-    return await svc.delete_project(db, project_id)
+    return await svc.delete_project(db, project_id, current)

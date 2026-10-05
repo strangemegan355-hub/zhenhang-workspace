@@ -33,7 +33,15 @@ async def create_project(db: AsyncSession, data: dict) -> Project:
     return obj
 
 
-async def list_projects(db: AsyncSession, page: int, page_size: int, q: str | None):
+async def list_projects(
+    db: AsyncSession, page: int, page_size: int, q: str | None, predicate=None
+):
+    """List projects, optionally restricted by a data-scope predicate.
+
+    `paginate_query` accepts extra filters, so the scope lands in the same statement that counts
+    and pages the rows instead of being applied to the page after the fact.
+    """
+    extra_filters = (predicate,) if predicate is not None else ()
     return await paginate_query(
         db,
         Project,
@@ -41,11 +49,20 @@ async def list_projects(db: AsyncSession, page: int, page_size: int, q: str | No
         page_size,
         q,
         [Project.project_no, Project.name, Project.category, Project.owner_name],
+        extra_filters=extra_filters,
     )
 
 
-async def get_project(db: AsyncSession, object_id: UUID) -> Project | None:
-    return await get_by_id(db, Project, object_id)
+async def get_project(db: AsyncSession, object_id: UUID, predicate=None) -> Project | None:
+    """Fetch one project, optionally restricted by a data-scope predicate.
+
+    With a predicate an out-of-scope project is simply absent, which lets the caller answer 404
+    rather than confirming that the row exists.
+    """
+    if predicate is None:
+        return await get_by_id(db, Project, object_id)
+    stmt = select(Project).where(Project.id == object_id, Project.is_deleted.is_(False), predicate)
+    return (await db.execute(stmt)).scalar_one_or_none()
 
 
 async def update_project(db: AsyncSession, obj: Project, data: dict) -> Project:

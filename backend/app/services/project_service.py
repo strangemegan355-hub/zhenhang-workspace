@@ -6,6 +6,8 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
+from app.models.project import Project
 from app.models.user import User
 from app.repositories import project_actual_cost_repository as actual_cost_repo
 from app.repositories import project_repository as repo
@@ -71,20 +73,28 @@ async def create_project(db: AsyncSession, payload: dict, current_user: User) ->
     return ProjectRead.model_validate(obj)
 
 
-async def list_projects(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
-    total, items = await repo.list_projects(db, page, page_size, q)
+async def list_projects(
+    db: AsyncSession, page: int, page_size: int, q: str | None, current_user: User
+) -> PageResponse:
+    total, items = await repo.list_projects(
+        db, page, page_size, q, predicate=scope_predicate(Project, current_user)
+    )
     return _page(total, page, page_size, items, ProjectRead)
 
 
-async def get_project_or_404(db: AsyncSession, object_id: UUID) -> ProjectRead:
-    obj = await repo.get_project(db, object_id)
+async def get_project_or_404(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> ProjectRead:
+    obj = await repo.get_project(db, object_id, predicate=scope_predicate(Project, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     return ProjectRead.model_validate(obj)
 
 
-async def get_project_summary(db: AsyncSession, object_id: UUID) -> ProjectSummaryRead:
-    obj = await repo.get_project(db, object_id)
+async def get_project_summary(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> ProjectSummaryRead:
+    obj = await repo.get_project(db, object_id, predicate=scope_predicate(Project, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
@@ -163,11 +173,13 @@ async def list_profit_ledger(
     page: int,
     page_size: int,
     q: str | None,
+    current_user: User,
     *,
     over_budget_only: bool = False,
 ) -> ProjectProfitLedgerResponse:
+    predicate = scope_predicate(Project, current_user)
     if over_budget_only:
-        _, projects = await repo.list_projects(db, 1, 500, q)
+        _, projects = await repo.list_projects(db, 1, 500, q, predicate=predicate)
         ledger_items: list[ProjectProfitLedgerItem] = []
         for project in projects:
             ctx = await _build_project_profit_context(db, project)
@@ -187,7 +199,7 @@ async def list_profit_ledger(
         start = (page - 1) * page_size
         page_items = ledger_items[start : start + page_size]
     else:
-        total, projects = await repo.list_projects(db, page, page_size, q)
+        total, projects = await repo.list_projects(db, page, page_size, q, predicate=predicate)
         page_items = []
         for project in projects:
             ctx = await _build_project_profit_context(db, project)
@@ -211,16 +223,18 @@ async def list_profit_ledger(
     )
 
 
-async def update_project(db: AsyncSession, object_id: UUID, payload: dict) -> ProjectRead:
-    obj = await repo.get_project(db, object_id)
+async def update_project(
+    db: AsyncSession, object_id: UUID, payload: dict, current_user: User
+) -> ProjectRead:
+    obj = await repo.get_project(db, object_id, predicate=scope_predicate(Project, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     updated = await repo.update_project(db, obj, payload)
     return ProjectRead.model_validate(updated)
 
 
-async def delete_project(db: AsyncSession, object_id: UUID) -> ProjectRead:
-    obj = await repo.get_project(db, object_id)
+async def delete_project(db: AsyncSession, object_id: UUID, current_user: User) -> ProjectRead:
+    obj = await repo.get_project(db, object_id, predicate=scope_predicate(Project, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     deleted = await repo.soft_delete_project(db, obj)
