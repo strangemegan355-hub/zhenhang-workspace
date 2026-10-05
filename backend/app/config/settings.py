@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
     refresh_token_expire_minutes: int = 60 * 24 * 7
+    # Realtime transports carry this credential in a URL, so it stays short-lived.
+    realtime_ticket_expire_seconds: int = Field(default=300, ge=30, le=3600)
 
     database_url: PostgresDsn = Field(
         default="postgresql+psycopg://erp:erp@127.0.0.1:5432/erp_db",

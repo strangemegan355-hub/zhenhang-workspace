@@ -2,12 +2,12 @@ from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rbac import collect_permission_codes
-from app.core.security import decode_access_token
+from app.core.security import decode_access_token, decode_realtime_ticket
 from app.db.session import get_db
 from app.models.user import User
 from app.repositories.user_repository import get_user_by_id
@@ -91,3 +91,26 @@ def require_any_permission(*permission_codes: str) -> Callable[..., User]:
         )
 
     return dependency
+
+
+async def require_realtime_ticket(
+    ticket: Annotated[str, Query(..., min_length=10, description="Short-lived realtime ticket")],
+) -> UUID:
+    """Authenticate a transport that cannot send an Authorization header.
+
+    Only a ticket is accepted, never an access token: this credential travels in a URL, so it
+    has to expire quickly and to be useless against the header-authenticated API.
+    """
+    payload = decode_realtime_ticket(ticket)
+    if payload is None or payload.get("sub") is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired realtime ticket",
+        )
+    try:
+        return UUID(str(payload["sub"]))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid ticket subject",
+        ) from exc

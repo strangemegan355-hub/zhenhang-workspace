@@ -7,8 +7,13 @@ from fastapi import APIRouter, Depends, Query, Request, WebSocket, WebSocketDisc
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_active_user
-from app.core.security import decode_access_token
+from app.config.settings import settings
+from app.core.deps import get_current_active_user, require_realtime_ticket
+from app.core.security import (
+    create_realtime_ticket,
+    decode_access_token,
+    decode_realtime_ticket,
+)
 from app.db.session import get_db
 from app.models.user import User
 from app.realtime.acl import RealtimeACLContext, build_acl_context, can_deliver_envelope, filter_subscribed_channels
@@ -31,11 +36,23 @@ async def _load_acl_context(db: AsyncSession, user_id: UUID) -> RealtimeACLConte
     return build_acl_context(user)
 
 
-def _user_id_from_token(token: str) -> UUID:
-    payload = decode_access_token(token)
+def _user_id_from_payload(payload: dict | None) -> UUID:
     if payload is None or payload.get("sub") is None:
         raise ValueError("invalid token")
     return UUID(str(payload["sub"]))
+
+
+def _user_id_from_ticket(ticket: str) -> UUID:
+    """The only credential accepted from a URL on the realtime transports."""
+    return _user_id_from_payload(decode_realtime_ticket(ticket))
+
+
+def _user_id_from_frame(value: str) -> UUID:
+    """A first WebSocket frame may carry an access token or a ticket; neither is in a URL."""
+    try:
+        return _user_id_from_payload(decode_access_token(value))
+    except ValueError:
+        return _user_id_from_ticket(value)
 
 
 def _parse_channels(raw: str | None) -> list[str]:
@@ -120,24 +137,33 @@ async def realtime_replay(
     }
 
 
+@router.post("/ticket", summary="Issue a short-lived realtime ticket")
+async def realtime_ticket(
+    current: Annotated[User, Depends(get_current_active_user)],
+) -> dict:
+    """Mint the URL-safe credential used by the SSE and WebSocket transports.
+
+    Only an already authenticated caller receives one, it is scoped to realtime by its token
+    type, and it expires in minutes, so a ticket exposed through a URL cannot be replayed
+    against the REST API.
+    """
+    ticket = create_realtime_ticket(str(current.id))
+    return {
+        "ticket": ticket,
+        "token_type": "realtime",
+        "expires_in": settings.realtime_ticket_expire_seconds,
+    }
+
+
 @router.get("/stream")
 async def realtime_sse(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-    token: str = Query(..., min_length=10),
+    user_id: Annotated[UUID, Depends(require_realtime_ticket)],
     channels: str | None = Query(default=None),
     last_event_id: str | None = Query(default=None),
     after_sequence: int | None = Query(default=None, ge=0),
 ) -> StreamingResponse:
-    try:
-        user_id = _user_id_from_token(token)
-    except (ValueError, TypeError):
-        return StreamingResponse(
-            iter([f"event: error\ndata: {json.dumps({'message': 'Unauthorized'})}\n\n"]),
-            media_type="text/event-stream",
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        )
-
     ctx = await _load_acl_context(db, user_id)
     if ctx is None:
         return StreamingResponse(
@@ -196,7 +222,7 @@ async def realtime_sse(
 @router.websocket("/ws")
 async def realtime_ws(
     websocket: WebSocket,
-    token: str | None = Query(default=None),
+    ticket: str | None = Query(default=None),
 ) -> None:
     from app.db.session import AsyncSessionLocal
 
@@ -207,17 +233,26 @@ async def realtime_ws(
     subscribed: list[str] = list(DEFAULT_CHANNELS)
 
     try:
-        if not token:
-            first = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
-            try:
-                msg = json.loads(first)
-                token = msg.get("token") or (msg.get("payload") or {}).get("token")
-            except json.JSONDecodeError:
-                token = first
-        if not token:
+        try:
+            if ticket:
+                # A URL carries only the short-lived, realtime-scoped credential.
+                user_id = _user_id_from_ticket(ticket)
+            else:
+                # A header-less client may present a full access token in the first frame
+                # instead, which keeps that token out of the URL entirely.
+                first = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
+                try:
+                    msg = json.loads(first)
+                    frame_value = msg.get("token") or (msg.get("payload") or {}).get("token")
+                except json.JSONDecodeError:
+                    frame_value = first
+                if not frame_value:
+                    await websocket.close(code=4401)
+                    return
+                user_id = _user_id_from_frame(frame_value)
+        except (ValueError, TypeError):
             await websocket.close(code=4401)
             return
-        user_id = _user_id_from_token(token)
         async with AsyncSessionLocal() as db:
             ctx = await _load_acl_context(db, user_id)
         if ctx is None:
