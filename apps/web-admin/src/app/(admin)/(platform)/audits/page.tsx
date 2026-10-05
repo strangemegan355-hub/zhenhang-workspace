@@ -2,7 +2,8 @@
 
 import { apiClient } from "@zhenhang/http-client";
 import { IndustrialPage, IndustrialPanel, PageHeader } from "@zhenhang/ui";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { fieldInputClass, fieldLabelClass, tableBodyRowClass, tableHeaderRowClass } from "@/lib/form-styles";
 
 type AuditRow = {
@@ -20,27 +21,23 @@ export default function AuditsPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [moduleFilter, setModuleFilter] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<AuditRow[]>([]);
-  const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    let ignore = false;
-    setLoading(true);
-    apiClient
-      .get<{ data: { items?: AuditRow[]; total?: number } }>("/api/v1/audits", {
-        params: { page, page_size: 20, q: q || undefined, module: moduleFilter || undefined },
-      })
-      .then(({ data }) => {
-        if (!ignore) {
-          setRows(data.data?.items ?? []);
-          setTotal(data.data?.total ?? 0);
-        }
-      })
-      .catch(() => {})
-      .finally(() => { if (!ignore) setLoading(false); });
-    return () => { ignore = true; };
-  }, [page, q, moduleFilter]);
+  // react-query owns the request, the loading state and the cancellation, so the effect that set
+  // state synchronously (and the ignore flag it needed) are gone.
+  const auditsQuery = useQuery({
+    queryKey: ["audits", page, q, moduleFilter],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: { items?: AuditRow[]; total?: number } }>(
+        "/api/v1/audits",
+        { params: { page, page_size: 20, q: q || undefined, module: moduleFilter || undefined } },
+      );
+      return { items: data.data?.items ?? [], total: data.data?.total ?? 0 };
+    },
+  });
+
+  const rows = auditsQuery.data?.items ?? [];
+  const total = auditsQuery.data?.total ?? 0;
+  const loading = auditsQuery.isPending;
 
   const moduleOptions = ["auth", "master", "business", "platform", "quote", "procurement", "accounting"];
 

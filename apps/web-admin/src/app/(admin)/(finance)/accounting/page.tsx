@@ -30,6 +30,21 @@ import {
 import { hasPermission } from "@/lib/access";
 import { useAuthStore } from "@/store/auth-store";
 
+function toLedgerRow(row: Record<string, unknown>) {
+  return {
+    id: String(row.id ?? ""),
+    entryNo: String(row.entry_no ?? ""),
+    entryKind: String(row.entry_kind ?? ""),
+    status: String(row.status ?? ""),
+    customerId: String(row.customer_id ?? ""),
+    amount: money(row.amount as number | string),
+    occurredOn: String(row.occurred_on ?? ""),
+    bookedOn: String(row.booked_on ?? ""),
+    isBackfill: Boolean(row.is_backfill),
+    title: String(row.title ?? ""),
+  };
+}
+
 const ENTRY_KIND_OPTIONS = [
   { value: "receivable", label: "应收", hint: "客户欠款 / 发票已开待收款" },
   { value: "payable", label: "应付", hint: "欠供应商款 / 收到发票待付款" },
@@ -185,22 +200,11 @@ export default function AccountingPage() {
     [customerOptions],
   );
 
-  const rows = useMemo(
-    () =>
-      ((entriesQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? []).map((row) => ({
-        id: String(row.id ?? ""),
-        entryNo: String(row.entry_no ?? ""),
-        entryKind: String(row.entry_kind ?? ""),
-        status: String(row.status ?? ""),
-        customerId: String(row.customer_id ?? ""),
-        amount: money(row.amount as number | string),
-        occurredOn: String(row.occurred_on ?? ""),
-        bookedOn: String(row.booked_on ?? ""),
-        isBackfill: Boolean(row.is_backfill),
-        title: String(row.title ?? ""),
-      })),
-    [entriesQuery.data],
-  );
+  // A page of ledger rows is cheap to map, and the compiler reported this memo as a conflict it
+  // could not preserve while skipping the component. The indirection bought nothing, so it is gone.
+  const entryItems =
+    (entriesQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? [];
+  const rows = entryItems.map(toLedgerRow);
 
   const total = (entriesQuery.data as { total?: number } | undefined)?.total ?? rows.length;
   const needsCustomer = ["receivable", "receipt", "revenue"].includes(form.entry_kind);
