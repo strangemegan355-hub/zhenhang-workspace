@@ -26,6 +26,7 @@ export * from "./domains/equipment-units";
 export * from "./domains/option-groups";
 export * from "./domains/aftersales";
 export * from "./domains/admin";
+export * from "./domains/files";
 
 export {
   getQueryPolicy,

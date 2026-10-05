@@ -1,6 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useDownloadFileMutation,
+  useFilesQuery,
+  useUploadFileMutation,
+  type FileItem,
+} from "@zhenhang/query-hooks";
 import { EmptyState, ErrorBanner, IndustrialPanel, IndustrialPage, typography } from "@zhenhang/ui";
 import {
   Download,
@@ -13,19 +18,6 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { fieldInputClass, inlineBtnClass } from "@/lib/form-styles";
-import { useAuthStore } from "@/store/auth-store";
-
-type FileItem = {
-  id: string;
-  file_name: string;
-  file_ext: string | null;
-  mime_type: string | null;
-  size_bytes: number;
-  category: string;
-  created_at: string;
-};
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 const CATEGORIES = ["全部", "技术文档", "产品资料", "报价文件", "BOM", "合同文件", "图纸", "质检", "现场资料"];
 
@@ -78,59 +70,32 @@ function formatDate(value: string): string {
 }
 
 export default function FilesPage() {
-  const queryClient = useQueryClient();
-  const token = useAuthStore((state) => state.token?.accessToken);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("全部");
   const [actionError, setActionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // The list is small (page_size 100) and filtering in the browser keeps typing responsive
-  // without firing a request per keystroke.
-  const filesQuery = useQuery({
-    queryKey: ["files"],
-    enabled: Boolean(token),
-    queryFn: async (): Promise<FileItem[]> => {
-      const resp = await fetch(`${API_BASE}/api/v1/files?page=1&page_size=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const body = await resp.json();
-      // UnifiedResponseMiddleware wraps every JSON body as {code, message, data}.
-      const page = body?.data ?? body;
-      return (page?.items ?? []) as FileItem[];
-    },
-  });
+  // without firing a request per keystroke. The hooks own the token, the URLs and invalidation.
+  const filesQuery = useFilesQuery();
+  const uploadMutation = useUploadFileMutation();
+  const downloadMutation = useDownloadFileMutation();
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const form = new FormData();
-      form.append("category", activeCategory === "全部" ? "general" : activeCategory);
-      form.append("upload", file);
-      const resp = await fetch(`${API_BASE}/api/v1/files/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      return resp.json();
-    },
-    onSuccess: () => {
+  async function uploadFile(file: File) {
+    try {
       setActionError(null);
-      void queryClient.invalidateQueries({ queryKey: ["files"] });
-    },
-    onError: (error: unknown) =>
-      setActionError(`上传失败：${error instanceof Error ? error.message : "未知错误"}`),
-  });
+      await uploadMutation.mutateAsync({
+        file,
+        category: activeCategory === "全部" ? "general" : activeCategory,
+      });
+    } catch (error: unknown) {
+      setActionError(`上传失败：${error instanceof Error ? error.message : "未知错误"}`);
+    }
+  }
 
   async function downloadFile(file: FileItem) {
-    if (!token) return;
     try {
-      const resp = await fetch(`${API_BASE}/api/v1/files/${file.id}/download`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const blob = await resp.blob();
+      const blob = await downloadMutation.mutateAsync(file.id);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -162,7 +127,7 @@ export default function FilesPage() {
         <button
           type="button"
           className="btn-primary h-8 gap-2 px-3 text-xs"
-          disabled={uploadMutation.isPending || !token}
+          disabled={uploadMutation.isPending}
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload size={14} />
@@ -174,7 +139,7 @@ export default function FilesPage() {
           className="hidden"
           onChange={(event) => {
             const picked = event.target.files?.[0];
-            if (picked) uploadMutation.mutate(picked);
+            if (picked) void uploadFile(picked);
             event.target.value = "";
           }}
         />
