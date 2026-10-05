@@ -38,7 +38,10 @@ async def create_cost_estimate(db: AsyncSession, data: dict, *, autocommit: bool
     return await get_cost_estimate(db, obj.id)
 
 
-async def list_cost_estimates(db: AsyncSession, page: int, page_size: int, q: str | None):
+async def list_cost_estimates(
+    db: AsyncSession, page: int, page_size: int, q: str | None, predicate=None
+):
+    extra_filters = (predicate,) if predicate is not None else ()
     return await paginate_query(
         db,
         CostEstimate,
@@ -46,10 +49,13 @@ async def list_cost_estimates(db: AsyncSession, page: int, page_size: int, q: st
         page_size,
         q,
         [CostEstimate.estimate_no, CostEstimate.product_name, CostEstimate.drawing_no],
+        extra_filters=extra_filters,
     )
 
 
-async def get_cost_estimate(db: AsyncSession, object_id: UUID) -> CostEstimate | None:
+async def get_cost_estimate(
+    db: AsyncSession, object_id: UUID, predicate=None
+) -> CostEstimate | None:
     stmt = (
         select(CostEstimate)
         .where(CostEstimate.id == object_id, CostEstimate.is_deleted.is_(False))
@@ -60,6 +66,8 @@ async def get_cost_estimate(db: AsyncSession, object_id: UUID) -> CostEstimate |
             selectinload(CostEstimate.customer),
         )
     )
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     return (await db.execute(stmt)).scalar_one_or_none()
 
 

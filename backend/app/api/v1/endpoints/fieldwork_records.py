@@ -42,7 +42,7 @@ async def get_fieldwork_summary(
 @router.get("", response_model=PageResponse)
 async def list_fieldwork_records(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:fieldwork:read"))],
+    current: Annotated[User, Depends(require_permissions("business:fieldwork:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
@@ -51,7 +51,14 @@ async def list_fieldwork_records(
     project_id: UUID | None = Query(default=None),
 ) -> PageResponse:
     return await svc.list_records(
-        db, page, page_size, q, record_type=record_type, status=status, project_id=project_id
+        db,
+        page,
+        page_size,
+        q,
+        current_user=current,
+        record_type=record_type,
+        status=status,
+        project_id=project_id,
     )
 
 
@@ -59,9 +66,9 @@ async def list_fieldwork_records(
 async def get_fieldwork_record(
     record_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:fieldwork:read"))],
+    current: Annotated[User, Depends(require_permissions("business:fieldwork:read"))],
 ) -> FieldworkRecordRead:
-    return await svc.get_record_or_404(db, record_id)
+    return await svc.get_record_or_404(db, record_id, current_user=current)
 
 
 @router.put("/{record_id}", response_model=FieldworkRecordRead)
@@ -69,18 +76,18 @@ async def update_fieldwork_record(
     record_id: UUID,
     payload: FieldworkRecordUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:fieldwork:update"))],
+    current: Annotated[User, Depends(require_permissions("business:fieldwork:update"))],
 ) -> FieldworkRecordRead:
-    return await svc.update_record(db, record_id, payload)
+    return await svc.update_record(db, record_id, payload, current_user=current)
 
 
 @router.delete("/{record_id}", response_model=FieldworkRecordRead)
 async def delete_fieldwork_record(
     record_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:fieldwork:delete"))],
+    current: Annotated[User, Depends(require_permissions("business:fieldwork:delete"))],
 ) -> FieldworkRecordRead:
-    return await svc.delete_record(db, record_id)
+    return await svc.delete_record(db, record_id, current_user=current)
 
 
 @router.post("/{record_id}/advance-status", response_model=FieldworkRecordRead)

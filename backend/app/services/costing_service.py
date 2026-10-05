@@ -6,6 +6,8 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
+from app.models.cost_estimate import CostEstimate
 from app.models.user import User
 from app.repositories import cost_estimate_repository as repo
 from app.schemas.common import PageResponse
@@ -192,20 +194,32 @@ async def create_cost_estimate(db: AsyncSession, payload: CostEstimateCreate, cu
     return _to_read(obj)
 
 
-async def list_cost_estimates(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
-    total, items = await repo.list_cost_estimates(db, page, page_size, q)
+async def list_cost_estimates(
+    db: AsyncSession, page: int, page_size: int, q: str | None, current_user: User
+) -> PageResponse:
+    total, items = await repo.list_cost_estimates(
+        db, page, page_size, q, predicate=scope_predicate(CostEstimate, current_user)
+    )
     return _page(total, page, page_size, items, CostEstimateListItem)
 
 
-async def get_cost_estimate_or_404(db: AsyncSession, object_id: UUID) -> CostEstimateRead:
-    obj = await repo.get_cost_estimate(db, object_id)
+async def get_cost_estimate_or_404(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> CostEstimateRead:
+    obj = await repo.get_cost_estimate(
+        db, object_id, predicate=scope_predicate(CostEstimate, current_user)
+    )
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cost estimate not found")
     return _to_read(obj)
 
 
-async def update_cost_estimate(db: AsyncSession, object_id: UUID, payload: CostEstimateUpdate) -> CostEstimateRead:
-    obj = await repo.get_cost_estimate(db, object_id)
+async def update_cost_estimate(
+    db: AsyncSession, object_id: UUID, payload: CostEstimateUpdate, current_user: User
+) -> CostEstimateRead:
+    obj = await repo.get_cost_estimate(
+        db, object_id, predicate=scope_predicate(CostEstimate, current_user)
+    )
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cost estimate not found")
 
@@ -296,8 +310,12 @@ async def update_cost_estimate(db: AsyncSession, object_id: UUID, payload: CostE
     return _to_read(updated)
 
 
-async def delete_cost_estimate(db: AsyncSession, object_id: UUID) -> CostEstimateRead:
-    obj = await repo.get_cost_estimate(db, object_id)
+async def delete_cost_estimate(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> CostEstimateRead:
+    obj = await repo.get_cost_estimate(
+        db, object_id, predicate=scope_predicate(CostEstimate, current_user)
+    )
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cost estimate not found")
     deleted = await repo.soft_delete_cost_estimate(db, obj)

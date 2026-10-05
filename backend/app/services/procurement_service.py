@@ -5,6 +5,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
+from app.models.procurement_entry import ProcurementEntry
 from app.models.user import User
 from app.repositories import procurement_repository as repo
 from app.repositories import project_actual_cost_repository as actual_cost_repo
@@ -57,11 +59,20 @@ async def list_entries(
     page: int,
     page_size: int,
     q: str | None,
+    current_user: User,
     *,
     project_id: UUID | None = None,
     status: str | None = None,
 ) -> PageResponse:
-    total, items = await repo.list_entries(db, page, page_size, q, project_id=project_id, status=status)
+    total, items = await repo.list_entries(
+        db,
+        page,
+        page_size,
+        q,
+        project_id=project_id,
+        status=status,
+        predicate=scope_predicate(ProcurementEntry, current_user),
+    )
     return PageResponse(
         total=total,
         page=page,
@@ -70,15 +81,19 @@ async def list_entries(
     )
 
 
-async def get_entry_or_404(db: AsyncSession, object_id: UUID) -> ProcurementEntryRead:
-    obj = await repo.get_entry(db, object_id)
+async def get_entry_or_404(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> ProcurementEntryRead:
+    obj = await repo.get_entry(db, object_id, predicate=scope_predicate(ProcurementEntry, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Procurement entry not found")
     return _to_read(obj)
 
 
-async def update_entry(db: AsyncSession, object_id: UUID, payload: ProcurementEntryUpdate) -> ProcurementEntryRead:
-    obj = await repo.get_entry(db, object_id)
+async def update_entry(
+    db: AsyncSession, object_id: UUID, payload: ProcurementEntryUpdate, current_user: User
+) -> ProcurementEntryRead:
+    obj = await repo.get_entry(db, object_id, predicate=scope_predicate(ProcurementEntry, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Procurement entry not found")
     if obj.transferred_to_actual:
@@ -87,8 +102,10 @@ async def update_entry(db: AsyncSession, object_id: UUID, payload: ProcurementEn
     return _to_read(updated)
 
 
-async def delete_entry(db: AsyncSession, object_id: UUID) -> ProcurementEntryRead:
-    obj = await repo.get_entry(db, object_id)
+async def delete_entry(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> ProcurementEntryRead:
+    obj = await repo.get_entry(db, object_id, predicate=scope_predicate(ProcurementEntry, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Procurement entry not found")
     deleted = await repo.soft_delete_entry(db, obj)

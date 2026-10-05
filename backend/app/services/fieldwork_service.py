@@ -4,6 +4,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
+from app.models.fieldwork_record import FieldworkRecord
 from app.models.user import User
 from app.repositories import fieldwork_repository as repo
 from app.schemas.common import PageResponse
@@ -122,13 +124,21 @@ async def list_records(
     page: int,
     page_size: int,
     q: str | None,
+    current_user: User,
     *,
     record_type: str | None = None,
     status: str | None = None,
     project_id: UUID | None = None,
 ) -> PageResponse:
     total, items = await repo.list_records(
-        db, page, page_size, q, record_type=record_type, status=status, project_id=project_id
+        db,
+        page,
+        page_size,
+        q,
+        record_type=record_type,
+        status=status,
+        project_id=project_id,
+        predicate=scope_predicate(FieldworkRecord, current_user),
     )
     return PageResponse(
         total=total,
@@ -138,15 +148,19 @@ async def list_records(
     )
 
 
-async def get_record_or_404(db: AsyncSession, object_id: UUID) -> FieldworkRecordRead:
-    obj = await repo.get_record(db, object_id)
+async def get_record_or_404(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> FieldworkRecordRead:
+    obj = await repo.get_record(db, object_id, predicate=scope_predicate(FieldworkRecord, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fieldwork record not found")
     return _to_read(obj)
 
 
-async def update_record(db: AsyncSession, object_id: UUID, payload: FieldworkRecordUpdate) -> FieldworkRecordRead:
-    obj = await repo.get_record(db, object_id)
+async def update_record(
+    db: AsyncSession, object_id: UUID, payload: FieldworkRecordUpdate, current_user: User
+) -> FieldworkRecordRead:
+    obj = await repo.get_record(db, object_id, predicate=scope_predicate(FieldworkRecord, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fieldwork record not found")
     data = payload.model_dump(exclude_unset=True)
@@ -158,8 +172,10 @@ async def update_record(db: AsyncSession, object_id: UUID, payload: FieldworkRec
     return _to_read(updated)
 
 
-async def delete_record(db: AsyncSession, object_id: UUID) -> FieldworkRecordRead:
-    obj = await repo.get_record(db, object_id)
+async def delete_record(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> FieldworkRecordRead:
+    obj = await repo.get_record(db, object_id, predicate=scope_predicate(FieldworkRecord, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fieldwork record not found")
     deleted = await repo.soft_delete_record(db, obj)

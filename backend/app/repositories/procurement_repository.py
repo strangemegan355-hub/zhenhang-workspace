@@ -39,8 +39,11 @@ async def list_entries(
     *,
     project_id: UUID | None = None,
     status: str | None = None,
+    predicate=None,
 ):
     extra_filters = []
+    if predicate is not None:
+        extra_filters.append(predicate)
     if project_id is not None:
         extra_filters.append(ProcurementEntry.project_id == project_id)
     if status:
@@ -56,8 +59,8 @@ async def list_entries(
     )
 
 
-async def get_entry(db: AsyncSession, object_id: UUID) -> ProcurementEntry | None:
-    return await get_by_id(db, ProcurementEntry, object_id)
+async def get_entry(db: AsyncSession, object_id: UUID, predicate=None) -> ProcurementEntry | None:
+    return await get_by_id(db, ProcurementEntry, object_id, predicate)
 
 
 async def update_entry(db: AsyncSession, obj: ProcurementEntry, data: dict) -> ProcurementEntry:

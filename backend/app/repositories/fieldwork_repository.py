@@ -47,8 +47,11 @@ async def list_records(
     record_type: str | None = None,
     status: str | None = None,
     project_id: UUID | None = None,
+    predicate=None,
 ):
     extra_filters = []
+    if predicate is not None:
+        extra_filters.append(predicate)
     if record_type:
         extra_filters.append(FieldworkRecord.record_type == record_type)
     if status:
@@ -66,8 +69,8 @@ async def list_records(
     )
 
 
-async def get_record(db: AsyncSession, object_id: UUID) -> FieldworkRecord | None:
-    return await get_by_id(db, FieldworkRecord, object_id)
+async def get_record(db: AsyncSession, object_id: UUID, predicate=None) -> FieldworkRecord | None:
+    return await get_by_id(db, FieldworkRecord, object_id, predicate)
 
 
 async def update_record(db: AsyncSession, obj: FieldworkRecord, data: dict) -> FieldworkRecord:

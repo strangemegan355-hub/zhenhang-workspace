@@ -44,21 +44,21 @@ async def create_cost_estimate(
 @router.get("", response_model=PageResponse)
 async def list_cost_estimates(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:cost_estimate:read"))],
+    current: Annotated[User, Depends(require_permissions("business:cost_estimate:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
 ) -> PageResponse:
-    return await svc.list_cost_estimates(db, page, page_size, q)
+    return await svc.list_cost_estimates(db, page, page_size, q, current_user=current)
 
 
 @router.get("/{estimate_id}", response_model=CostEstimateRead)
 async def get_cost_estimate(
     estimate_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:cost_estimate:read"))],
+    current: Annotated[User, Depends(require_permissions("business:cost_estimate:read"))],
 ) -> CostEstimateRead:
-    return await svc.get_cost_estimate_or_404(db, estimate_id)
+    return await svc.get_cost_estimate_or_404(db, estimate_id, current_user=current)
 
 
 @router.put("/{estimate_id}", response_model=CostEstimateRead)
@@ -66,18 +66,18 @@ async def update_cost_estimate(
     estimate_id: UUID,
     payload: CostEstimateUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:cost_estimate:update"))],
+    current: Annotated[User, Depends(require_permissions("business:cost_estimate:update"))],
 ) -> CostEstimateRead:
-    return await svc.update_cost_estimate(db, estimate_id, payload)
+    return await svc.update_cost_estimate(db, estimate_id, payload, current_user=current)
 
 
 @router.delete("/{estimate_id}", response_model=CostEstimateRead)
 async def delete_cost_estimate(
     estimate_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:cost_estimate:delete"))],
+    current: Annotated[User, Depends(require_permissions("business:cost_estimate:delete"))],
 ) -> CostEstimateRead:
-    return await svc.delete_cost_estimate(db, estimate_id)
+    return await svc.delete_cost_estimate(db, estimate_id, current_user=current)
 
 
 @router.post("/{estimate_id}/post-expense")

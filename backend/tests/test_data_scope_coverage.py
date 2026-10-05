@@ -23,6 +23,9 @@ ENDPOINTS = APP / "api" / "v1" / "endpoints"
 # Owned transactional documents: an object-level scope predicate must be applied.
 SCOPED_DOCUMENTS = {
     "accounting": "AccountingEntry",
+    "cost_estimates": "CostEstimate",
+    "fieldwork_records": "FieldworkRecord",
+    "procurement_entries": "ProcurementEntry",
     "projects": "Project",
     "quotes": "Quote",
     "work_orders": "WorkOrder",
@@ -44,8 +47,7 @@ SHARED_REFERENCE_DATA = {
 
 # Owned documents that still fetch by primary key alone. Each needs the project/quote treatment.
 PENDING_MIGRATION = {
-    "procurement_entries", "fieldwork_records", "cost_estimates", "aftersales",
-    "project_actual_costs", "installation_plans", "acceptance", "equipment_units",
+    "aftersales", "project_actual_costs", "installation_plans", "acceptance", "equipment_units",
 }
 
 SCOPED_SOURCES = {
@@ -66,6 +68,18 @@ SCOPED_SOURCES = {
     "work_orders": {
         "app/services/work_order_service.py": "scope_predicate",
         "app/repositories/work_order_repository.py": "predicate",
+    },
+    "procurement_entries": {
+        "app/services/procurement_service.py": "scope_predicate",
+        "app/repositories/procurement_repository.py": "predicate",
+    },
+    "fieldwork_records": {
+        "app/services/fieldwork_service.py": "scope_predicate",
+        "app/repositories/fieldwork_repository.py": "predicate",
+    },
+    "cost_estimates": {
+        "app/services/costing_service.py": "scope_predicate",
+        "app/repositories/cost_estimate_repository.py": "predicate",
     },
 }
 

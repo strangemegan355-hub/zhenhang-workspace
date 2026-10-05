@@ -31,14 +31,16 @@ async def create_procurement_entry(
 @router.get("", response_model=PageResponse)
 async def list_procurement_entries(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:procurement:read"))],
+    current: Annotated[User, Depends(require_permissions("business:procurement:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
     project_id: UUID | None = Query(default=None),
     status: str | None = Query(default=None, max_length=32),
 ) -> PageResponse:
-    return await svc.list_entries(db, page, page_size, q, project_id=project_id, status=status)
+    return await svc.list_entries(
+        db, page, page_size, q, current_user=current, project_id=project_id, status=status
+    )
 
 
 @router.post("/transfer-arrived", response_model=ProcurementTransferResult)
@@ -53,9 +55,9 @@ async def transfer_arrived_procurement(
 async def get_procurement_entry(
     entry_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:procurement:read"))],
+    current: Annotated[User, Depends(require_permissions("business:procurement:read"))],
 ) -> ProcurementEntryRead:
-    return await svc.get_entry_or_404(db, entry_id)
+    return await svc.get_entry_or_404(db, entry_id, current_user=current)
 
 
 @router.put("/{entry_id}", response_model=ProcurementEntryRead)
@@ -63,18 +65,18 @@ async def update_procurement_entry(
     entry_id: UUID,
     payload: ProcurementEntryUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:procurement:update"))],
+    current: Annotated[User, Depends(require_permissions("business:procurement:update"))],
 ) -> ProcurementEntryRead:
-    return await svc.update_entry(db, entry_id, payload)
+    return await svc.update_entry(db, entry_id, payload, current_user=current)
 
 
 @router.delete("/{entry_id}", response_model=ProcurementEntryRead)
 async def delete_procurement_entry(
     entry_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:procurement:delete"))],
+    current: Annotated[User, Depends(require_permissions("business:procurement:delete"))],
 ) -> ProcurementEntryRead:
-    return await svc.delete_entry(db, entry_id)
+    return await svc.delete_entry(db, entry_id, current_user=current)
 
 
 @router.post("/{entry_id}/advance-status", response_model=ProcurementEntryRead)
