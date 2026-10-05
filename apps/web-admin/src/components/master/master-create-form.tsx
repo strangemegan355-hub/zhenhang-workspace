@@ -11,7 +11,7 @@ import {
 type Field = {
   key: string;
   label: string;
-  type?: "text" | "number" | "select" | "checkbox";
+  type?: "text" | "number" | "select" | "checkbox" | "textarea";
   placeholder?: string;
   options?: Array<{ value: string; label: string }>;
   required?: boolean;
@@ -70,6 +70,13 @@ export function MasterCreateForm({
                 className="h-4 w-4"
                 checked={Boolean(values[field.key])}
                 onChange={(e) => onChange(field.key, e.target.checked)}
+              />
+            ) : field.type === "textarea" ? (
+              <textarea
+                className={`${fieldInputClass} min-h-[96px] font-mono`}
+                placeholder={field.placeholder}
+                value={String(values[field.key] ?? "")}
+                onChange={(e) => onChange(field.key, e.target.value)}
               />
             ) : (
               <input

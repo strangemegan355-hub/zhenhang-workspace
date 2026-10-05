@@ -1,5 +1,7 @@
 "use client";
 
+import { apiErrorMessage } from "@/lib/api-error";
+
 import { useState, useMemo, useEffect } from "react";
 import { apiClient } from "@zhenhang/http-client";
 import { MasterCreateForm } from "@/components/master/master-create-form";
@@ -149,8 +151,8 @@ export default function AcceptancePage() {
       }
       closeTplForm();
       await loadTemplates(selectedMachineId);
-    } catch (err: any) {
-      setTplError(err?.response?.data?.detail?.detail ?? err?.message ?? "保存失败");
+    } catch (err) {
+      setTplError(apiErrorMessage(err, "保存失败"));
     } finally {
       setSubmitting(false);
     }
@@ -161,8 +163,8 @@ export default function AcceptancePage() {
     try {
       await apiClient.delete(`/api/v1/acceptance-templates/${id}`);
       await loadTemplates(selectedMachineId);
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "删除失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -229,8 +231,8 @@ export default function AcceptancePage() {
       }
       closeRecForm();
       await loadRecords(selectedUnitId);
-    } catch (err: any) {
-      setRecError(err?.response?.data?.detail?.detail ?? err?.message ?? "保存失败");
+    } catch (err) {
+      setRecError(apiErrorMessage(err, "保存失败"));
     } finally {
       setSubmitting(false);
     }
@@ -241,8 +243,8 @@ export default function AcceptancePage() {
     try {
       await apiClient.delete(`/api/v1/acceptance-records/${id}`);
       await loadRecords(selectedUnitId);
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "删除失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -278,8 +280,8 @@ export default function AcceptancePage() {
       setDetailRecord(data);
       setPunchItems((Array.isArray(data?.punch_items) ? data.punch_items : []) as PunchItem[]);
       await loadRecords(selectedUnitId);
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "添加失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "添加失败"));
     } finally {
       setSubmitting(false);
     }
@@ -295,8 +297,8 @@ export default function AcceptancePage() {
       });
       if (detailRecord) await openDetail(String(detailRecord.id));
       await loadRecords(selectedUnitId);
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "操作失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "操作失败"));
     }
   }
 
@@ -306,8 +308,8 @@ export default function AcceptancePage() {
       await apiClient.delete(`/api/v1/punch-items/${itemId}`);
       if (detailRecord) await openDetail(String(detailRecord.id));
       await loadRecords(selectedUnitId);
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "删除失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -382,7 +384,7 @@ export default function AcceptancePage() {
             {
               key: "items_json",
               label: "检查项 (JSON)",
-              type: "textarea" as any,
+              type: "textarea",
               placeholder: sampleItemsJson,
             },
           ]}
@@ -425,7 +427,7 @@ export default function AcceptancePage() {
             {
               key: "items_json",
               label: "检验结果 (JSON)",
-              type: "textarea" as any,
+              type: "textarea",
               placeholder: sampleResultJson,
             },
           ]}
@@ -584,7 +586,12 @@ export default function AcceptancePage() {
         onPageChange={() => {}}
         search=""
         onSearchChange={() => {}}
-        query={{ isLoading: tplLoading, isError: false, refetch: () => { if (selectedMachineId) loadTemplates(selectedMachineId); } } as any}
+        query={{
+          isLoading: tplLoading,
+          isError: false,
+          isFetching: tplLoading,
+          refetch: () => { if (selectedMachineId) loadTemplates(selectedMachineId); },
+        }}
         rowKey={(row) => row.id}
         rowActions={(row) => (
           <div className="flex items-center gap-2">
@@ -656,7 +663,12 @@ export default function AcceptancePage() {
         onPageChange={() => {}}
         search=""
         onSearchChange={() => {}}
-        query={{ isLoading: recLoading, isError: false, refetch: () => { if (selectedUnitId) loadRecords(selectedUnitId); } } as any}
+        query={{
+          isLoading: recLoading,
+          isError: false,
+          isFetching: recLoading,
+          refetch: () => { if (selectedUnitId) loadRecords(selectedUnitId); },
+        }}
         rowKey={(row) => row.id}
         rowActions={(row) => (
           <div className="flex items-center gap-1.5">

@@ -1,5 +1,7 @@
 "use client";
 
+import { apiErrorMessage } from "@/lib/api-error";
+
 import { useState, useMemo, useEffect } from "react";
 import { apiClient } from "@zhenhang/http-client";
 import { MasterCreateForm } from "@/components/master/master-create-form";
@@ -136,8 +138,8 @@ export default function InstallationPage() {
       }
       closeForm();
       await loadPlans(selectedUnitId);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail?.detail ?? err?.message ?? "保存失败");
+    } catch (err) {
+      setError(apiErrorMessage(err, "保存失败"));
     } finally {
       setSubmitting(false);
     }
@@ -148,8 +150,8 @@ export default function InstallationPage() {
     try {
       await apiClient.delete(`/api/v1/installation-plans/${id}`);
       await loadPlans(selectedUnitId);
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "删除失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -177,8 +179,8 @@ export default function InstallationPage() {
         );
         setDetail(resp.data as Record<string, unknown>);
       }
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "操作失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "操作失败"));
     }
   }
 
@@ -241,8 +243,8 @@ export default function InstallationPage() {
                   { key: "planned_end_date", label: "计划结束", placeholder: "YYYY-MM-DD" },
                   { key: "remarks", label: "备注", placeholder: "备注信息" },
                 ]),
-            { key: "install_json", label: "安装步骤 (JSON)", type: "textarea" as any, placeholder: sampleInstallJson },
-            { key: "comm_json", label: "调试清单 (JSON)", type: "textarea" as any, placeholder: sampleCommJson },
+            { key: "install_json", label: "安装步骤 (JSON)", type: "textarea", placeholder: sampleInstallJson },
+            { key: "comm_json", label: "调试清单 (JSON)", type: "textarea", placeholder: sampleCommJson },
           ]}
           values={form}
           onChange={(key, value) => setForm((s) => ({ ...s, [key]: String(value) }))}
@@ -370,7 +372,12 @@ export default function InstallationPage() {
         onPageChange={() => {}}
         search=""
         onSearchChange={() => {}}
-        query={{ isLoading: loading, isError: false, refetch: () => { if (selectedUnitId) loadPlans(selectedUnitId); } } as any}
+        query={{
+          isLoading: loading,
+          isError: false,
+          isFetching: loading,
+          refetch: () => { if (selectedUnitId) loadPlans(selectedUnitId); },
+        }}
         rowKey={(row) => row.id}
         rowActions={(row) => (
           <div className="flex items-center gap-1.5">

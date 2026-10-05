@@ -1,5 +1,7 @@
 "use client";
 
+import { apiErrorMessage } from "@/lib/api-error";
+
 import { useState, useMemo } from "react";
 import { apiClient } from "@zhenhang/http-client";
 import { MasterCreateForm } from "@/components/master/master-create-form";
@@ -35,6 +37,10 @@ function MachineSelect({
   );
 }
 
+function groupItems(group: Record<string, unknown>): Array<Record<string, unknown>> {
+  return Array.isArray(group.items) ? (group.items as Array<Record<string, unknown>>) : [];
+}
+
 export default function OptionGroupsSection({
   machineOptions,
 }: {
@@ -65,23 +71,23 @@ export default function OptionGroupsSection({
       const { data: resp } = await apiClient.get<{ data: Array<Record<string, unknown>> }>(
         `/api/v1/machines/${machineId}/option-groups`
       );
-      const groupsData: any[] = resp.data ?? [];
-      const rows: GroupRow[] = groupsData.map((g: any) => ({
+      const groupsData = resp.data ?? [];
+      const rows: GroupRow[] = groupsData.map((g) => ({
         id: String(g.id ?? ""),
         name: String(g.name ?? ""),
         sortOrder: Number(g.sort_order ?? 0),
-        itemCount: Array.isArray(g.items) ? g.items.length : 0,
+        itemCount: groupItems(g).length,
       }));
       setGroups(rows);
-      // Load items for all groups
+      // Load the items of every group in one pass: the endpoint nests them inside each group.
       const allItems: ItemRow[] = [];
       for (const g of groupsData) {
-        for (const i of (Array.isArray((g as any).items) ? (g as any).items : [])) {
+        for (const i of groupItems(g)) {
           allItems.push({
-            id: String((i as any).id ?? ""),
-            name: String((i as any).name ?? ""),
-            priceAdjustment: Number((i as any).price_adjustment ?? 0),
-            sortOrder: Number((i as any).sort_order ?? 0),
+            id: String(i.id ?? ""),
+            name: String(i.name ?? ""),
+            priceAdjustment: Number(i.price_adjustment ?? 0),
+            sortOrder: Number(i.sort_order ?? 0),
             groupId: String(g.id ?? ""),
           });
         }
@@ -135,8 +141,8 @@ export default function OptionGroupsSection({
       }
       closeAllForms();
       await loadGroups(selectedMachineId);
-    } catch (err: any) {
-      setGroupError(err?.response?.data?.detail?.detail ?? err?.message ?? "保存失败");
+    } catch (err) {
+      setGroupError(apiErrorMessage(err, "保存失败"));
     } finally {
       setSubmitting(false);
     }
@@ -151,8 +157,8 @@ export default function OptionGroupsSection({
         setSelectedGroupLabel("");
       }
       await loadGroups(selectedMachineId);
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "删除失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -180,8 +186,8 @@ export default function OptionGroupsSection({
       }
       closeAllForms();
       await loadGroups(selectedMachineId);
-    } catch (err: any) {
-      setItemError(err?.response?.data?.detail?.detail ?? err?.message ?? "保存失败");
+    } catch (err) {
+      setItemError(apiErrorMessage(err, "保存失败"));
     } finally {
       setSubmitting(false);
     }
@@ -192,8 +198,8 @@ export default function OptionGroupsSection({
     try {
       await apiClient.delete(`/api/v1/option-items/${id}`);
       await loadGroups(selectedMachineId);
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail?.detail ?? err?.message ?? "删除失败");
+    } catch (err) {
+      window.alert(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -258,7 +264,12 @@ export default function OptionGroupsSection({
         onPageChange={() => {}}
         search=""
         onSearchChange={() => {}}
-        query={{ isLoading: loading, isError: false, refetch: () => { if (selectedMachineId) loadGroups(selectedMachineId); } } as any}
+        query={{
+          isLoading: loading,
+          isError: false,
+          isFetching: loading,
+          refetch: () => { if (selectedMachineId) loadGroups(selectedMachineId); },
+        }}
         rowKey={(row) => row.id}
         rowActions={(row) => (
           <div className="flex items-center gap-2">
@@ -318,7 +329,12 @@ export default function OptionGroupsSection({
         onPageChange={() => {}}
         search=""
         onSearchChange={() => {}}
-        query={{ isLoading: loading, isError: false, refetch: () => { if (selectedMachineId) loadGroups(selectedMachineId); } } as any}
+        query={{
+          isLoading: loading,
+          isError: false,
+          isFetching: loading,
+          refetch: () => { if (selectedMachineId) loadGroups(selectedMachineId); },
+        }}
         rowKey={(row) => row.id}
         rowActions={(row) => (
           <div className="flex items-center gap-2">

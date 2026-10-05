@@ -59,6 +59,7 @@ const repairDefaults = {
   hours: "1",
   repair_amount: "",
   remark: "",
+  service_request_id: "",
 };
 
 const shortageDefaults = {
@@ -210,7 +211,7 @@ export default function FieldworkPage() {
       hours: Number(repairForm.hours || 0),
       repair_amount: repairForm.repair_amount ? Number(repairForm.repair_amount) : undefined,
       remark: repairForm.remark.trim() || undefined,
-      service_request_id: (repairForm as any).service_request_id || undefined,
+      service_request_id: repairForm.service_request_id || undefined,
     }).then(() => setRepairForm(repairDefaults));
   };
 
@@ -281,7 +282,7 @@ export default function FieldworkPage() {
             { key: "remark", label: "备注", placeholder: "其他说明" },
             { key: "service_request_id", label: "关联工单", type: "select", options: aftersalesOptions },
           ]}
-          values={{ ...repairForm, service_request_id: (repairForm as any).service_request_id || "" }}
+          values={{ ...repairForm, service_request_id: repairForm.service_request_id || "" }}
           onChange={(key, value) => setRepairForm((s) => ({ ...s, [key]: value }))}
           onSubmit={() => void handleRepairSubmit()}
           onCancel={() => setRepairForm(repairDefaults)}
