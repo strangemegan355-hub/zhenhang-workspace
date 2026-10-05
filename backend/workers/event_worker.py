@@ -4,6 +4,7 @@ from uuid import UUID
 
 from app.core.enterprise_metrics import enterprise_metrics
 from app.db.session import AsyncSessionLocal
+from app.domains.events.application import register_default_event_handlers
 from app.domains.events.application.event_bus import event_bus
 from app.domains.events.repositories.task_queue_repository import (
     mark_task_done,
@@ -14,6 +15,7 @@ from app.domains.events.repositories.task_queue_repository import (
 
 
 async def run_event_worker(poll_seconds: float = 1.0) -> None:
+    register_default_event_handlers()
     while True:
         async with AsyncSessionLocal() as db:
             tasks = await pick_pending_tasks(db, queue_name="domain_events", limit=20)

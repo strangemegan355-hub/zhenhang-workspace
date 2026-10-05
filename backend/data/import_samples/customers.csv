@@ -1,0 +1,5 @@
+# 主数据导入样例（CSV UTF-8）
+# 用法: python scripts/import_initial_master_data.py --type customers --file data/import_samples/customers.csv
+code,name,short_name,industry,level,status,phone,email,address,remarks
+CUST-001,华东精工有限公司,华东精工,装备制造,A,active,021-88880001,sales@huadong.com,上海市浦东新区工业路100号,试运行导入
+CUST-002,南方机电股份,南方机电,通用机械,B,active,0755-88880002,info@nanfang.com,深圳市南山区科技园,

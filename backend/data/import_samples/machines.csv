@@ -1,0 +1,4 @@
+# 机型样例 — category_code 可选，不存在则自动创建
+code,machine_code,name,model_no,status,category_code,description
+MCH-001,MCH-001,五轴加工中心 X500,X500,active,CAT-CNC,试运行导入机型
+MCH-002,MCH-002,立式加工中心 V800,V800,active,CAT-CNC,

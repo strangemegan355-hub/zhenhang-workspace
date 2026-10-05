@@ -1,0 +1,6 @@
+# BOM 明细 — machine_code + bom_version 定位 BOM
+machine_code,bom_version,item_code,item_name,spec,unit,quantity,unit_cost,sort_order,remark
+MCH-001,V1.0,M01-001,主轴组件,规格-A,EA,1,12000,1,
+MCH-001,V1.0,M01-002,刀库模块,规格-B,EA,1,8500,2,
+MCH-001,V1.0,M02-001,伺服电机,规格-C,EA,4,3200,3,
+MCH-002,V1.0,M01-001,床身铸件,,EA,1,15000,1,

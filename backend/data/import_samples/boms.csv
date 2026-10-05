@@ -1,0 +1,4 @@
+# BOM 头 — machine_code 关联机型
+machine_code,version,is_active,status,remark
+MCH-001,V1.0,true,active,试运行 BOM
+MCH-002,V1.0,true,draft,
