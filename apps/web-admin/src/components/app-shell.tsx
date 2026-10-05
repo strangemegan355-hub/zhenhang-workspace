@@ -32,7 +32,6 @@ import { IndustrialRealtimeProvider } from "@/components/industrial-realtime-pro
 import { NotificationBell } from "@/components/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthStore } from "@/store/auth-store";
-import { RuntimeDevToolsPanel } from "@zhenhang/runtime-devtools";
 
 const iconMap: Record<string, ReactNode> = {
   dashboard: <LayoutDashboard size={16} strokeWidth={1.75} />,
@@ -184,8 +183,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* 内容区 */}
           <main className="min-h-0 flex-1 overflow-auto bg-[var(--color-bg)] p-4">{children}</main>
         </div>
-
-        <RuntimeDevToolsPanel />
       </div>
     </IndustrialRealtimeProvider>
   );
