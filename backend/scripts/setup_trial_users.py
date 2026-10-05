@@ -285,6 +285,8 @@ TRIAL_ROLE_DEFS: list[tuple[str, str, str, list[tuple[str, str, str, str]]]] = [
             ("master:workflow_transition:read", "工作流流转读取", "master:workflow_transition", "read"),
             ("master:workflow_transition:create", "工作流流转创建", "master:workflow_transition", "create"),
             ("platform:file:bind", "文件关联", "platform:file", "bind"),
+            ("system:department:read", "部门读取", "system:department", "read"),
+            ("system:tenant:read", "租户读取", "system:tenant", "read"),
         ],
     ),
 ]

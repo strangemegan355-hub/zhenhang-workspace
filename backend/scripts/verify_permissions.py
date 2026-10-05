@@ -20,7 +20,23 @@ from app.models.user import User
 
 FORBIDDEN_FOR_TRIAL = frozenset(
     {
+        # The admin plane administers accounts, roles and permissions. A trial account holding
+        # any of these could widen its own authority in one step, so only the bootstrap
+        # superuser has them. Department and tenant READS are delegated to trial_admin and are
+        # deliberately absent from this set.
         "system:user:read",
+        "system:user:create",
+        "system:user:update",
+        "system:user:assign",
+        "system:role:read",
+        "system:role:create",
+        "system:role:update",
+        "system:role:assign",
+        "system:permission:read",
+        "system:tenant:create",
+        "system:tenant:update",
+        "system:department:create",
+        "system:department:update",
         "platform:config:read",
         "platform:config:create",
         "platform:config:update",

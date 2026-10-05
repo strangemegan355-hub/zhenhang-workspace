@@ -14,6 +14,7 @@ from app.api.v1.endpoints import (
     cost_estimates,
     customers,
     dashboard,
+    departments,
     equipment_units,
     fieldwork_records,
     files,
@@ -25,6 +26,7 @@ from app.api.v1.endpoints import (
     mes,
     notifications,
     option_groups,
+    permissions,
     procurement_entries,
     product_categories,
     product_cost_templates,
@@ -34,7 +36,9 @@ from app.api.v1.endpoints import (
     projects,
     quotes,
     realtime,
+    roles,
     suppliers,
+    tenants,
     units,
     users,
     work_orders,
@@ -47,6 +51,12 @@ api_router.include_router(health.router, prefix="/health", tags=["system.health"
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["business.dashboard"])
 api_router.include_router(auth.router, prefix="/auth", tags=["system.auth"])
 api_router.include_router(users.router, prefix="/users", tags=["system.user"])
+api_router.include_router(roles.router, prefix="/roles", tags=["system.role"])
+api_router.include_router(permissions.router, prefix="/permissions", tags=["system.permission"])
+api_router.include_router(
+    departments.router, prefix="/departments", tags=["system.department"]
+)
+api_router.include_router(tenants.router, prefix="/tenants", tags=["system.tenant"])
 api_router.include_router(customers.router, prefix="/customers", tags=["master.customer"])
 api_router.include_router(machines.router, prefix="/machines", tags=["master.machine"])
 api_router.include_router(equipment_units.router, prefix="/equipment-units", tags=["master.equipment_unit"])
