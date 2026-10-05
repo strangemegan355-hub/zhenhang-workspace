@@ -368,8 +368,9 @@ def setup(*, dry_run: bool, reset_passwords: bool) -> None:
     with SessionLocal() as db:
         dept = db.execute(select(Department).where(Department.code == "ROOT")).scalar_one_or_none()
         if dept is None:
-            print("ERROR: department ROOT missing — run bootstrap_admin.py first")
-            return
+            # A missing ROOT department is a hard error, not a warning: printing it and returning
+            # exited 0, so any automation would seed a half-configured system and carry on.
+            raise SystemExit("ERROR: department ROOT missing - run bootstrap_admin.py first")
 
         roles_by_code: dict[str, Role] = {}
         for role_code, role_name, data_scope, perm_defs in TRIAL_ROLE_DEFS:

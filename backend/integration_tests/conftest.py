@@ -1,15 +1,32 @@
+import asyncio
 import os
+import sys
 
 import pytest
 from redis.asyncio import Redis
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+# psycopg's async mode cannot run on Windows' default ProactorEventLoop ("Psycopg cannot use the
+# 'ProactorEventLoop' to run in async mode"), and pytest-asyncio builds its loop before the
+# application's own policy hook in app/db/session.py is imported. Setting the policy here, plus the
+# event_loop_policy fixture below, is what lets these tests connect on Windows at all.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 INTEGRATION_DATABASE_URL = os.getenv(
     "INTEGRATION_DATABASE_URL",
     "postgresql+psycopg://erp:erp@localhost:55432/erp_db",
 )
 INTEGRATION_REDIS_URL = os.getenv("INTEGRATION_REDIS_URL", "redis://localhost:56379/0")
+
+
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    """Give pytest-asyncio the loop psycopg's async mode requires."""
+    if sys.platform == "win32":
+        return asyncio.WindowsSelectorEventLoopPolicy()
+    return asyncio.get_event_loop_policy()
 
 
 @pytest.fixture
