@@ -58,7 +58,7 @@ async def get_accounting_status(
 @router.get("/entries", response_model=PageResponse)
 async def list_accounting_entries(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
+    current: Annotated[User, Depends(require_permissions("business:accounting:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     customer_id: UUID | None = Query(default=None),
@@ -70,6 +70,7 @@ async def list_accounting_entries(
 ) -> PageResponse:
     return await svc.list_entries(
         db,
+        current_user=current,
         page=page,
         page_size=page_size,
         customer_id=customer_id,
@@ -84,7 +85,7 @@ async def list_accounting_entries(
 @router.get("/entries/export")
 async def export_accounting_entries(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
+    current: Annotated[User, Depends(require_permissions("business:accounting:read"))],
     customer_id: UUID | None = Query(default=None),
     supplier_id: UUID | None = Query(default=None),
     entry_kind: str | None = Query(default=None, max_length=32),
@@ -93,7 +94,7 @@ async def export_accounting_entries(
 ) -> StreamingResponse:
     await svc.require_accounting_enabled(db)
     result = await svc.list_entries(
-        db, page=1, page_size=10000,
+        db, current_user=current, page=1, page_size=10000,
         customer_id=customer_id, supplier_id=supplier_id,
         entry_kind=entry_kind, include_void=False,
         date_from=date_from, date_to=date_to,
@@ -120,9 +121,9 @@ async def export_accounting_entries(
 async def get_accounting_entry(
     entry_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
+    current: Annotated[User, Depends(require_permissions("business:accounting:read"))],
 ) -> AccountingEntryRead:
-    return await svc.get_entry(db, entry_id)
+    return await svc.get_entry(db, entry_id, current_user=current)
 
 
 @router.post("/entries", response_model=AccountingEntryRead, status_code=status.HTTP_201_CREATED)
@@ -149,9 +150,9 @@ async def update_accounting_entry(
     entry_id: UUID,
     payload: AccountingEntryUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:accounting:create"))],
+    current: Annotated[User, Depends(require_permissions("business:accounting:create"))],
 ) -> AccountingEntryRead:
-    return await svc.update_entry(db, entry_id, payload)
+    return await svc.update_entry(db, entry_id, payload, current_user=current)
 
 
 @router.post("/entries/{entry_id}/confirm", response_model=AccountingEntryRead)

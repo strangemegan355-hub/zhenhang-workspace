@@ -5,6 +5,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
+from app.models.accounting_entry import AccountingEntry
 from app.models.user import User
 from app.repositories import accounting_repository as repo
 from app.schemas.accounting import (
@@ -71,6 +73,7 @@ async def get_module_status(db: AsyncSession) -> AccountingModuleStatus:
 
 async def list_entries(
     db: AsyncSession,
+    current_user: User,
     *,
     page: int,
     page_size: int,
@@ -85,6 +88,7 @@ async def list_entries(
     total, items = await repo.list_entries(
         db,
         page=page,
+        predicate=scope_predicate(AccountingEntry, current_user),
         page_size=page_size,
         customer_id=customer_id,
         supplier_id=supplier_id,
@@ -101,9 +105,9 @@ async def list_entries(
     )
 
 
-async def get_entry(db: AsyncSession, entry_id: UUID) -> AccountingEntryRead:
+async def get_entry(db: AsyncSession, entry_id: UUID, current_user: User) -> AccountingEntryRead:
     await require_accounting_enabled(db)
-    obj = await repo.get_entry(db, entry_id)
+    obj = await repo.get_entry(db, entry_id, predicate=scope_predicate(AccountingEntry, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Accounting entry not found")
     return AccountingEntryRead.model_validate(obj)
@@ -155,9 +159,10 @@ async def update_entry(
     db: AsyncSession,
     entry_id: UUID,
     payload,
+    current_user: User,
 ) -> AccountingEntryRead:
     await require_accounting_enabled(db)
-    obj = await repo.get_entry(db, entry_id)
+    obj = await repo.get_entry(db, entry_id, predicate=scope_predicate(AccountingEntry, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Accounting entry not found")
     if obj.status != "draft":

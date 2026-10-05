@@ -43,13 +43,16 @@ async def generate_entry_no(db: AsyncSession, entry_kind: str) -> str:
     return f"{prefix}{count + 1:03d}"
 
 
-async def get_entry(db: AsyncSession, entry_id: UUID) -> AccountingEntry | None:
-    result = await db.execute(
+async def get_entry(db: AsyncSession, entry_id: UUID, predicate=None) -> AccountingEntry | None:
+    """Fetch one entry, optionally restricted by a data-scope predicate."""
+    stmt = (
         select(AccountingEntry)
         .where(AccountingEntry.id == entry_id, AccountingEntry.is_deleted.is_(False))
         .options(selectinload(AccountingEntry.lines))
     )
-    return result.scalar_one_or_none()
+    if predicate is not None:
+        stmt = stmt.where(predicate)
+    return (await db.execute(stmt)).scalar_one_or_none()
 
 
 async def create_entry(db: AsyncSession, data: dict) -> AccountingEntry:
@@ -136,8 +139,11 @@ async def list_entries(
     include_void: bool = False,
     date_from: date | None = None,
     date_to: date | None = None,
+    predicate=None,
 ) -> tuple[int, list[AccountingEntry]]:
     filters = [AccountingEntry.is_deleted.is_(False)]
+    if predicate is not None:
+        filters.append(predicate)
     if not include_void:
         filters.append(AccountingEntry.status != "void")
     if customer_id is not None:

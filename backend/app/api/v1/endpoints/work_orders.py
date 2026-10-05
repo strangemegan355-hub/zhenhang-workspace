@@ -54,23 +54,25 @@ async def generate_standard_work_order_chain(
 @router.get("", response_model=PageResponse)
 async def list_work_orders(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:work_order:read"))],
+    current: Annotated[User, Depends(require_permissions("business:work_order:read"))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
     project_id: UUID | None = Query(default=None),
     status: str | None = Query(default=None, max_length=32),
 ) -> PageResponse:
-    return await svc.list_work_orders(db, page, page_size, q, project_id=project_id, status=status)
+    return await svc.list_work_orders(
+        db, page, page_size, q, current_user=current, project_id=project_id, status=status
+    )
 
 
 @router.get("/{work_order_id}", response_model=WorkOrderRead)
 async def get_work_order(
     work_order_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:work_order:read"))],
+    current: Annotated[User, Depends(require_permissions("business:work_order:read"))],
 ) -> WorkOrderRead:
-    return await svc.get_work_order_or_404(db, work_order_id)
+    return await svc.get_work_order_or_404(db, work_order_id, current_user=current)
 
 
 @router.put("/{work_order_id}", response_model=WorkOrderRead)
@@ -78,18 +80,18 @@ async def update_work_order(
     work_order_id: UUID,
     payload: WorkOrderUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:work_order:update"))],
+    current: Annotated[User, Depends(require_permissions("business:work_order:update"))],
 ) -> WorkOrderRead:
-    return await svc.update_work_order(db, work_order_id, payload)
+    return await svc.update_work_order(db, work_order_id, payload, current_user=current)
 
 
 @router.delete("/{work_order_id}", response_model=WorkOrderRead)
 async def delete_work_order(
     work_order_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:work_order:delete"))],
+    current: Annotated[User, Depends(require_permissions("business:work_order:delete"))],
 ) -> WorkOrderRead:
-    return await svc.delete_work_order(db, work_order_id)
+    return await svc.delete_work_order(db, work_order_id, current_user=current)
 
 
 @router.post("/{work_order_id}/advance-status", response_model=WorkOrderRead)

@@ -4,7 +4,9 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
 from app.models.user import User
+from app.models.work_order import WorkOrder
 from app.repositories import project_repository as project_repo
 from app.repositories import work_order_repository as repo
 from app.schemas.common import PageResponse
@@ -112,11 +114,20 @@ async def list_work_orders(
     page: int,
     page_size: int,
     q: str | None,
+    current_user: User,
     *,
     project_id: UUID | None = None,
     status: str | None = None,
 ) -> PageResponse:
-    total, items = await repo.list_work_orders(db, page, page_size, q, project_id=project_id, status=status)
+    total, items = await repo.list_work_orders(
+        db,
+        page,
+        page_size,
+        q,
+        project_id=project_id,
+        status=status,
+        predicate=scope_predicate(WorkOrder, current_user),
+    )
     return PageResponse(
         total=total,
         page=page,
@@ -125,15 +136,19 @@ async def list_work_orders(
     )
 
 
-async def get_work_order_or_404(db: AsyncSession, object_id: UUID) -> WorkOrderRead:
-    obj = await repo.get_work_order(db, object_id)
+async def get_work_order_or_404(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> WorkOrderRead:
+    obj = await repo.get_work_order(db, object_id, predicate=scope_predicate(WorkOrder, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
     return _to_read(obj)
 
 
-async def update_work_order(db: AsyncSession, object_id: UUID, payload: WorkOrderUpdate) -> WorkOrderRead:
-    obj = await repo.get_work_order(db, object_id)
+async def update_work_order(
+    db: AsyncSession, object_id: UUID, payload: WorkOrderUpdate, current_user: User
+) -> WorkOrderRead:
+    obj = await repo.get_work_order(db, object_id, predicate=scope_predicate(WorkOrder, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
     if obj.status == "done":
@@ -142,8 +157,10 @@ async def update_work_order(db: AsyncSession, object_id: UUID, payload: WorkOrde
     return _to_read(updated)
 
 
-async def delete_work_order(db: AsyncSession, object_id: UUID) -> WorkOrderRead:
-    obj = await repo.get_work_order(db, object_id)
+async def delete_work_order(
+    db: AsyncSession, object_id: UUID, current_user: User
+) -> WorkOrderRead:
+    obj = await repo.get_work_order(db, object_id, predicate=scope_predicate(WorkOrder, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
     deleted = await repo.soft_delete_work_order(db, obj)

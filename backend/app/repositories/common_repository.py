@@ -36,8 +36,15 @@ async def paginate_query(
     return total, items
 
 
-async def get_by_id(db: AsyncSession, model: Any, object_id: UUID) -> Any | None:
+async def get_by_id(db: AsyncSession, model: Any, object_id: UUID, predicate=None) -> Any | None:
+    """Fetch one row by primary key, optionally restricted by a data-scope predicate.
+
+    One implementation for every repository: a predicate makes an out-of-scope row simply absent,
+    so the caller answers 404 without confirming that the row exists.
+    """
     stmt = select(model).where(model.id == object_id, model.is_deleted.is_(False))
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     return (await db.execute(stmt)).scalar_one_or_none()
 
 

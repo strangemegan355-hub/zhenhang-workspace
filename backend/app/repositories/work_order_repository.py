@@ -39,8 +39,11 @@ async def list_work_orders(
     *,
     project_id: UUID | None = None,
     status: str | None = None,
+    predicate=None,
 ):
     extra_filters = []
+    if predicate is not None:
+        extra_filters.append(predicate)
     if project_id is not None:
         extra_filters.append(WorkOrder.project_id == project_id)
     if status:
@@ -56,8 +59,8 @@ async def list_work_orders(
     )
 
 
-async def get_work_order(db: AsyncSession, object_id: UUID) -> WorkOrder | None:
-    return await get_by_id(db, WorkOrder, object_id)
+async def get_work_order(db: AsyncSession, object_id: UUID, predicate=None) -> WorkOrder | None:
+    return await get_by_id(db, WorkOrder, object_id, predicate)
 
 
 async def update_work_order(db: AsyncSession, obj: WorkOrder, data: dict) -> WorkOrder:
