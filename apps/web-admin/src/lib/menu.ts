@@ -119,6 +119,15 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
       { key: "notifications", title: "通知中心", href: "/notifications", permission: "platform:notification:read" },
       { key: "business-settings", title: "业务设置", href: "/business-settings", permission: "platform:config:read" },
       { key: "system", title: "系统设置", href: "/settings", permission: "platform:config:read", hidden: true },
+      { key: "users", title: "用户管理", href: "/users", permission: "system:user:read" },
+      { key: "roles", title: "角色管理", href: "/roles", permission: "system:role:read" },
+      {
+        key: "departments",
+        title: "部门管理",
+        href: "/departments",
+        permission: "system:department:read",
+      },
+      { key: "tenants", title: "租户管理", href: "/tenants", permission: "system:tenant:read" },
     ],
   },
 ];
@@ -139,6 +148,10 @@ export const APP_MENUS: MenuItem[] = [
 
 /** V2.0 路由 → 信息架构分组映射（URL 不变，仅文档/调试用途） */
 export const ROUTE_GROUP_MAP: Record<string, { group: string; groupKey: string; routeGroup: string }> = {
+  "/users": { group: "平台中心", groupKey: "platform", routeGroup: "(platform)" },
+  "/roles": { group: "平台中心", groupKey: "platform", routeGroup: "(platform)" },
+  "/departments": { group: "平台中心", groupKey: "platform", routeGroup: "(platform)" },
+  "/tenants": { group: "平台中心", groupKey: "platform", routeGroup: "(platform)" },
   "/dashboard": { group: "运营驾驶舱", groupKey: "cockpit", routeGroup: "(cockpit)" },
   "/quotes": { group: "报价中心", groupKey: "quotes", routeGroup: "(quotes)" },
   "/quotes/customer": { group: "报价中心", groupKey: "quotes", routeGroup: "(quotes)" },
