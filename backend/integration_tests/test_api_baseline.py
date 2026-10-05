@@ -18,12 +18,18 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# The throwaway password the baseline script exports for the trial accounts.
-TRIAL_PASSWORD = os.getenv("TRIAL_SALES_PASSWORD", "integration-baseline-pw")
 NEEDS_SEED = (
-    "run the baseline first, which migrates, bootstraps the admin and seeds the trial accounts: "
+    "run the baseline first, which migrates, bootstraps the admin, seeds the trial accounts and "
+    "exports a throwaway password for them: "
     "powershell -NoProfile -ExecutionPolicy Bypass -File <workspace>\\phase2\\phase2_baseline.ps1"
 )
+
+
+def _trial_password() -> str:
+    """Read the seeded account's password. No default: a literal here is a credential in the repo."""
+    password = os.environ.get("TRIAL_SALES_PASSWORD", "")
+    assert password, "TRIAL_SALES_PASSWORD is not set. " + NEEDS_SEED
+    return password
 
 
 async def test_a_row_round_trips_through_the_application_session():
@@ -54,7 +60,7 @@ async def test_a_row_round_trips_through_the_application_session():
 
 async def _login(client: httpx.AsyncClient) -> dict:
     response = await client.post(
-        "/api/v1/auth/login", json={"username": "sales01", "password": TRIAL_PASSWORD}
+        "/api/v1/auth/login", json={"username": "sales01", "password": _trial_password()}
     )
     assert response.status_code == 200, f"{response.text[:400]}\n{NEEDS_SEED}"
     body = response.json()
