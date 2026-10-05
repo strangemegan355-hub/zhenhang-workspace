@@ -7,8 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
 from app.domains.events.application.event_bus import event_bus
-from app.domains.quote.policies.data_scope_policy import owner_scope_user_id
+from app.core.data_scope import scope_predicate
 from app.domains.quote.repositories import quote_repository as repo
+from app.models.quote import Quote
 from app.notifications.notification_service import create_notification
 from app.schemas.common import PageResponse
 from app.schemas.quote import ApprovalTemplateRead, QuoteItemRead, QuoteRead, QuoteVersionRead
@@ -204,9 +205,15 @@ async def create_quote_version(db: AsyncSession, quote_id: UUID, items_payload: 
 
 
 async def list_quotes(db: AsyncSession, *, page: int, page_size: int, q: str | None, current_user, quote_kind: str | None = None):
-    owner_id = owner_scope_user_id(current_user)
+    # The scope is pushed into SQL, so a department-scoped role sees its department's quotes
+    # instead of only the rows it created itself.
     total, items = await repo.list_quotes(
-        db, page=page, page_size=page_size, q=q, created_by=owner_id, quote_kind=quote_kind
+        db,
+        page=page,
+        page_size=page_size,
+        q=q,
+        predicate=scope_predicate(Quote, current_user),
+        quote_kind=quote_kind,
     )
     return PageResponse(
         total=total,
@@ -217,12 +224,11 @@ async def list_quotes(db: AsyncSession, *, page: int, page_size: int, q: str | N
 
 
 async def get_quote_detail(db: AsyncSession, quote_id: UUID, current_user):
-    quote = await repo.get_quote(db, quote_id)
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None:
+        # An out-of-scope quote is reported exactly like an absent one: a 403 would confirm to
+        # somebody who may not read it that the quote exists.
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
-    owner_id = owner_scope_user_id(current_user)
-    if owner_id is not None and quote.created_by != owner_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Quote access denied")
     current_version = await repo.get_current_quote_version(db, quote.id)
     items = []
     if current_version:
@@ -831,12 +837,9 @@ async def update_customer_quote(db: AsyncSession, quote_id: UUID, payload: dict,
 
 
 async def delete_customer_quote(db: AsyncSession, quote_id: UUID, current_user):
-    quote = await repo.get_quote(db, quote_id)
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None or quote.quote_kind != "customer":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer quote not found")
-    owner_id = owner_scope_user_id(current_user)
-    if owner_id is not None and quote.created_by != owner_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Quote access denied")
     await repo.soft_delete_quote(db, quote, autocommit=True)
     return QuoteRead.model_validate(quote)
 

@@ -112,8 +112,15 @@ async def create_export_task(db: AsyncSession, data: dict, *, autocommit: bool =
     return obj
 
 
-async def get_quote(db: AsyncSession, quote_id: UUID) -> Quote | None:
+async def get_quote(db: AsyncSession, quote_id: UUID, predicate=None) -> Quote | None:
+    """Fetch one quote, optionally restricted by a data-scope predicate.
+
+    Taking the predicate here means an out-of-scope row is simply absent, so the caller can
+    answer 404 instead of 403 and never confirms that the quote exists.
+    """
     stmt = select(Quote).where(Quote.id == quote_id, Quote.is_deleted.is_(False))
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
@@ -155,11 +162,14 @@ async def list_quotes(
     page_size: int,
     q: str | None,
     created_by: UUID | None = None,
+    predicate=None,
     quote_kind: str | None = None,
 ):
     filters = [Quote.is_deleted.is_(False)]
     if created_by is not None:
         filters.append(Quote.created_by == created_by)
+    if predicate is not None:
+        filters.append(predicate)
     if quote_kind:
         filters.append(Quote.quote_kind == quote_kind)
     if q:
