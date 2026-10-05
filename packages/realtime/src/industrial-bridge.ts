@@ -1,14 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRealtimeGateway } from "@zhenhang/realtime-gateway";
 import { loadLastEventId, loadRealtimeCursor, saveRealtimeCursor } from "./cursor-store";
 import { isOnline, loadOfflineQueue } from "./offline-store";
-import { buildRealtimeUrls } from "./urls";
+import { buildRealtimeUrls, fetchRealtimeTicket, type RealtimeTicket } from "./urls";
 
 export type IndustrialEventHandler = (
   kind: string,
   channel: string,
   payload: Record<string, unknown>,
 ) => void;
+
+const CHANNELS = ["notification", "workflow", "quote", "audit"] as const;
+const TICKET_RETRY_MS = 15_000;
+const TICKET_MIN_REFRESH_MS = 30_000;
 
 function extractCursor(envelope: Record<string, unknown>): { sequence?: number; eventId?: string } {
   const meta = (envelope.meta as Record<string, unknown> | undefined) ?? {};
@@ -30,13 +34,60 @@ export function useIndustrialRealtimeBridge(options: {
   const enabled = options.enabled !== false && Boolean(options.accessToken);
   const cursor = loadRealtimeCursor();
   const lastEventId = cursor?.eventId ?? loadLastEventId();
-  const urls =
-    enabled && options.accessToken
-      ? buildRealtimeUrls(options.apiBase, options.accessToken, {
-          lastEventId,
-          afterSequence: cursor?.sequence,
-        })
-      : { wsUrl: undefined, sseUrl: undefined, replayUrl: undefined };
+  const afterSequence = cursor?.sequence;
+
+  // Callbacks live in refs so the gateway options stay referentially stable: the gateway
+  // restarts its transport whenever its options object changes, and inline props from the
+  // apps would otherwise reconnect the socket on every render.
+  const onEventRef = useRef(options.onEvent);
+  onEventRef.current = options.onEvent;
+  const onReconnectedRef = useRef(options.onReconnected);
+  onReconnectedRef.current = options.onReconnected;
+
+  const [ticket, setTicket] = useState<RealtimeTicket | null>(null);
+
+  // A URL cannot carry the access token safely, so the transport credential is a short-lived
+  // ticket that is re-issued before it expires. Refreshing it changes the URL below, which is
+  // what makes the gateway reconnect with a fresh, valid credential instead of a stale one.
+  useEffect(() => {
+    if (!enabled || !options.accessToken) {
+      setTicket(null);
+      return;
+    }
+    let cancelled = false;
+    let timer: number | null = null;
+    const ctrl = new AbortController();
+
+    const load = async () => {
+      try {
+        const next = await fetchRealtimeTicket(options.apiBase, options.accessToken as string, ctrl.signal);
+        if (cancelled) return;
+        setTicket(next);
+        const refreshIn = Math.max(TICKET_MIN_REFRESH_MS, (next.expiresIn - 30) * 1000);
+        timer = window.setTimeout(() => void load(), refreshIn);
+      } catch {
+        if (cancelled) return;
+        // Keep the current ticket: a failed refresh must not tear down a working transport.
+        timer = window.setTimeout(() => void load(), TICKET_RETRY_MS);
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+      if (timer != null) window.clearTimeout(timer);
+    };
+  }, [enabled, options.accessToken, options.apiBase]);
+
+  const urls = useMemo(() => {
+    if (!enabled || !ticket) {
+      return { wsUrl: undefined, sseUrl: undefined, replayUrl: undefined };
+    }
+    return buildRealtimeUrls(options.apiBase, ticket.ticket, { lastEventId, afterSequence });
+    // afterSequence/lastEventId are read once per ticket so a refresh cannot reorder them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, ticket, options.apiBase]);
 
   const flushedRef = useRef(false);
 
@@ -55,7 +106,7 @@ export function useIndustrialRealtimeBridge(options: {
           saveRealtimeCursor(extractCursor(envelope));
         }
         if (events.length > 0) {
-          options.onReconnected?.();
+          onReconnectedRef.current?.();
         }
       } catch {
         /* replay is best-effort on cold start */
@@ -73,7 +124,7 @@ export function useIndustrialRealtimeBridge(options: {
       if (!pending.length) return;
       await options.flushOffline();
       flushedRef.current = true;
-      options.onReconnected?.();
+      onReconnectedRef.current?.();
     };
     void flush();
     const onOnline = () => {
@@ -84,24 +135,27 @@ export function useIndustrialRealtimeBridge(options: {
     return () => window.removeEventListener("online", onOnline);
   }, [enabled, options.flushOffline]);
 
-  useRealtimeGateway({
-    channels: ["notification", "workflow", "quote", "audit"],
-    wsUrl: urls.wsUrl,
-    sseUrl: urls.sseUrl,
-    lastEventId,
-    onCursor: (c) => saveRealtimeCursor(c),
-    onMessage: (channel, raw) => {
-      const envelope =
-        raw && typeof raw === "object" ? (raw as Record<string, unknown>) : { payload: raw };
-      saveRealtimeCursor(extractCursor(envelope));
-      const inner = (
-        envelope.payload && typeof envelope.payload === "object"
-          ? envelope.payload
-          : envelope
-      ) as Record<string, unknown>;
-      const kind = String(inner.kind ?? envelope.kind ?? "unknown");
-      options.onEvent(kind, channel, inner);
-    },
-    onReconnect: () => options.onReconnected?.(),
-  });
+  const gatewayOptions = useMemo(
+    () => ({
+      channels: [...CHANNELS],
+      wsUrl: urls.wsUrl,
+      sseUrl: urls.sseUrl,
+      lastEventId,
+      onCursor: (c: { eventId?: string; sequence?: number }) => saveRealtimeCursor(c),
+      onMessage: (channel: (typeof CHANNELS)[number], raw: unknown) => {
+        const envelope =
+          raw && typeof raw === "object" ? (raw as Record<string, unknown>) : { payload: raw };
+        saveRealtimeCursor(extractCursor(envelope));
+        const inner = (
+          envelope.payload && typeof envelope.payload === "object" ? envelope.payload : envelope
+        ) as Record<string, unknown>;
+        const kind = String(inner.kind ?? envelope.kind ?? "unknown");
+        onEventRef.current(kind, channel, inner);
+      },
+      onReconnect: () => onReconnectedRef.current?.(),
+    }),
+    [urls.wsUrl, urls.sseUrl, lastEventId],
+  );
+
+  useRealtimeGateway(gatewayOptions);
 }
