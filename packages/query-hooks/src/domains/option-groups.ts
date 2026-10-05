@@ -35,15 +35,66 @@ export function useOptionGroupsQuery(machineId: string | null, enabled = true) {
 export function useCreateOptionGroupMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ machineId, name }: { machineId: string; name: string }) => {
+    mutationFn: async ({
+      machineId,
+      name,
+      sortOrder = 0,
+    }: {
+      machineId: string;
+      name: string;
+      sortOrder?: number;
+    }) => {
       const { data } = await apiClient.post<ApiWrap<OptionGroup>>(
         `/api/v1/machines/${machineId}/option-groups`,
-        { name }
+        { name, sort_order: sortOrder }
       );
       return data.data;
     },
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: ["option-groups", vars.machineId] });
+    },
+  });
+}
+
+export function useUpdateOptionGroupMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ groupId, name, sortOrder = 0 }: { groupId: string; name: string; sortOrder?: number }) => {
+      const { data } = await apiClient.put<ApiWrap<OptionGroup>>(`/api/v1/option-groups/${groupId}`, {
+        name,
+        sort_order: sortOrder,
+      });
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["option-groups"] });
+    },
+  });
+}
+
+export function useUpdateOptionItemMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      name,
+      priceAdjustment,
+      sortOrder = 0,
+    }: {
+      itemId: string;
+      name: string;
+      priceAdjustment: number;
+      sortOrder?: number;
+    }) => {
+      const { data } = await apiClient.put<ApiWrap<OptionItem>>(`/api/v1/option-items/${itemId}`, {
+        name,
+        price_adjustment: priceAdjustment,
+        sort_order: sortOrder,
+      });
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["option-groups"] });
     },
   });
 }
@@ -63,10 +114,20 @@ export function useDeleteOptionGroupMutation() {
 export function useCreateOptionItemMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ groupId, name, priceAdjustment }: { groupId: string; name: string; priceAdjustment: number }) => {
+    mutationFn: async ({
+      groupId,
+      name,
+      priceAdjustment,
+      sortOrder = 0,
+    }: {
+      groupId: string;
+      name: string;
+      priceAdjustment: number;
+      sortOrder?: number;
+    }) => {
       const { data } = await apiClient.post<ApiWrap<OptionItem>>(
         `/api/v1/option-groups/${groupId}/items`,
-        { name, price_adjustment: priceAdjustment }
+        { name, price_adjustment: priceAdjustment, sort_order: sortOrder }
       );
       return data.data;
     },

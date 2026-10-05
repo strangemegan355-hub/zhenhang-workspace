@@ -1,9 +1,17 @@
 "use client";
 
+import {
+  useCreateOptionGroupMutation,
+  useCreateOptionItemMutation,
+  useDeleteOptionGroupMutation,
+  useDeleteOptionItemMutation,
+  useOptionGroupsQuery,
+  useUpdateOptionGroupMutation,
+  useUpdateOptionItemMutation,
+} from "@zhenhang/query-hooks";
 import { apiErrorMessage } from "@/lib/api-error";
 
 import { useState, useMemo } from "react";
-import { apiClient } from "@zhenhang/http-client";
 import { MasterCreateForm } from "@/components/master/master-create-form";
 import { MasterListPage } from "@/components/master/master-list-page";
 import { WorkspaceToolbarButton } from "@zhenhang/ui";
@@ -47,9 +55,6 @@ export default function OptionGroupsSection({
   machineOptions: Array<{ value: string; label: string }>;
 }) {
   const [selectedMachineId, setSelectedMachineId] = useState("");
-  const [groups, setGroups] = useState<GroupRow[]>([]);
-  const [items, setItems] = useState<ItemRow[]>([]);
-  const [loading, setLoading] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedGroupLabel, setSelectedGroupLabel] = useState("");
 
@@ -63,54 +68,63 @@ export default function OptionGroupsSection({
   const [itemForm, setItemForm] = useState({ name: "", price_adjustment: "0", sort_order: "0" });
   const [itemError, setItemError] = useState<string | null>(null);
 
-  const [submitting, setSubmitting] = useState(false);
+  // One query feeds both tables: the machine-options endpoint nests each group's items. The
+  // hooks own caching and invalidation, which the previous hand-written loader did not.
+  const groupsQuery = useOptionGroupsQuery(selectedMachineId || null);
+  const createGroupMutation = useCreateOptionGroupMutation();
+  const updateGroupMutation = useUpdateOptionGroupMutation();
+  const deleteGroupMutation = useDeleteOptionGroupMutation();
+  const createItemMutation = useCreateOptionItemMutation();
+  const updateItemMutation = useUpdateOptionItemMutation();
+  const deleteItemMutation = useDeleteOptionItemMutation();
 
-  async function loadGroups(machineId: string) {
-    setLoading(true);
-    try {
-      const { data: resp } = await apiClient.get<{ data: Array<Record<string, unknown>> }>(
-        `/api/v1/machines/${machineId}/option-groups`
-      );
-      const groupsData = resp.data ?? [];
-      const rows: GroupRow[] = groupsData.map((g) => ({
+  const groupsData = useMemo(() => groupsQuery.data ?? [], [groupsQuery.data]);
+
+  const groups: GroupRow[] = useMemo(
+    () =>
+      groupsData.map((g) => ({
         id: String(g.id ?? ""),
         name: String(g.name ?? ""),
         sortOrder: Number(g.sort_order ?? 0),
-        itemCount: groupItems(g).length,
-      }));
-      setGroups(rows);
-      // Load the items of every group in one pass: the endpoint nests them inside each group.
-      const allItems: ItemRow[] = [];
-      for (const g of groupsData) {
-        for (const i of groupItems(g)) {
-          allItems.push({
-            id: String(i.id ?? ""),
-            name: String(i.name ?? ""),
-            priceAdjustment: Number(i.price_adjustment ?? 0),
-            sortOrder: Number(i.sort_order ?? 0),
-            groupId: String(g.id ?? ""),
-          });
-        }
-      }
-      setItems(allItems);
-    } catch {
-      setGroups([]);
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+        itemCount: groupItems(g as unknown as Record<string, unknown>).length,
+      })),
+    [groupsData]
+  );
 
-  async function handleMachineChange(id: string) {
+  const items: ItemRow[] = useMemo(() => {
+    const allItems: ItemRow[] = [];
+    for (const g of groupsData) {
+      for (const i of groupItems(g as unknown as Record<string, unknown>)) {
+        allItems.push({
+          id: String(i.id ?? ""),
+          name: String(i.name ?? ""),
+          priceAdjustment: Number(i.price_adjustment ?? 0),
+          sortOrder: Number(i.sort_order ?? 0),
+          groupId: String(g.id ?? ""),
+        });
+      }
+    }
+    return allItems;
+  }, [groupsData]);
+
+  const loading = groupsQuery.isFetching;
+  const submitting =
+    createGroupMutation.isPending ||
+    updateGroupMutation.isPending ||
+    deleteGroupMutation.isPending ||
+    createItemMutation.isPending ||
+    updateItemMutation.isPending ||
+    deleteItemMutation.isPending;
+
+  const reload = () => {
+    void groupsQuery.refetch();
+  };
+
+  function handleMachineChange(id: string) {
     setSelectedMachineId(id);
     setSelectedGroupId("");
     setSelectedGroupLabel("");
     closeAllForms();
-    if (id) await loadGroups(id);
-    else {
-      setGroups([]);
-      setItems([]);
-    }
   }
 
   function closeAllForms() {
@@ -128,35 +142,37 @@ export default function OptionGroupsSection({
       setGroupError("请填写组名称");
       return;
     }
-    setSubmitting(true);
-    const body = {
-      name: groupForm.name.trim(),
-      sort_order: Number(groupForm.sort_order) || 0,
-    };
     try {
+      const sortOrder = Number(groupForm.sort_order) || 0;
       if (groupEditId) {
-        await apiClient.put(`/api/v1/option-groups/${groupEditId}`, body);
+        await updateGroupMutation.mutateAsync({
+          groupId: groupEditId,
+          name: groupForm.name.trim(),
+          sortOrder,
+        });
       } else {
-        await apiClient.post(`/api/v1/machines/${selectedMachineId}/option-groups`, body);
+        await createGroupMutation.mutateAsync({
+          machineId: selectedMachineId,
+          name: groupForm.name.trim(),
+          sortOrder,
+        });
       }
       closeAllForms();
-      await loadGroups(selectedMachineId);
+      reload();
     } catch (err) {
       setGroupError(apiErrorMessage(err, "保存失败"));
-    } finally {
-      setSubmitting(false);
     }
   }
 
   async function handleDeleteGroup(id: string, label: string) {
     if (!window.confirm(`确认删除选配组「${label}」及其中所有选项？`)) return;
     try {
-      await apiClient.delete(`/api/v1/option-groups/${id}`);
+      await deleteGroupMutation.mutateAsync(id);
       if (selectedGroupId === id) {
         setSelectedGroupId("");
         setSelectedGroupLabel("");
       }
-      await loadGroups(selectedMachineId);
+      reload();
     } catch (err) {
       window.alert(apiErrorMessage(err, "删除失败"));
     }
@@ -172,32 +188,36 @@ export default function OptionGroupsSection({
       setItemError("请填写选项名称");
       return;
     }
-    setSubmitting(true);
-    const body = {
-      name: itemForm.name.trim(),
-      price_adjustment: Number(itemForm.price_adjustment) || 0,
-      sort_order: Number(itemForm.sort_order) || 0,
-    };
     try {
+      const priceAdjustment = Number(itemForm.price_adjustment) || 0;
+      const sortOrder = Number(itemForm.sort_order) || 0;
       if (itemEditId) {
-        await apiClient.put(`/api/v1/option-items/${itemEditId}`, body);
+        await updateItemMutation.mutateAsync({
+          itemId: itemEditId,
+          name: itemForm.name.trim(),
+          priceAdjustment,
+          sortOrder,
+        });
       } else {
-        await apiClient.post(`/api/v1/option-groups/${selectedGroupId}/items`, body);
+        await createItemMutation.mutateAsync({
+          groupId: selectedGroupId,
+          name: itemForm.name.trim(),
+          priceAdjustment,
+          sortOrder,
+        });
       }
       closeAllForms();
-      await loadGroups(selectedMachineId);
+      reload();
     } catch (err) {
       setItemError(apiErrorMessage(err, "保存失败"));
-    } finally {
-      setSubmitting(false);
     }
   }
 
   async function handleDeleteItem(id: string, label: string) {
     if (!window.confirm(`确认删除选项「${label}」？`)) return;
     try {
-      await apiClient.delete(`/api/v1/option-items/${id}`);
-      await loadGroups(selectedMachineId);
+      await deleteItemMutation.mutateAsync(id);
+      reload();
     } catch (err) {
       window.alert(apiErrorMessage(err, "删除失败"));
     }
@@ -268,7 +288,7 @@ export default function OptionGroupsSection({
           isLoading: loading,
           isError: false,
           isFetching: loading,
-          refetch: () => { if (selectedMachineId) loadGroups(selectedMachineId); },
+          refetch: reload,
         }}
         rowKey={(row) => row.id}
         rowActions={(row) => (
@@ -333,7 +353,7 @@ export default function OptionGroupsSection({
           isLoading: loading,
           isError: false,
           isFetching: loading,
-          refetch: () => { if (selectedMachineId) loadGroups(selectedMachineId); },
+          refetch: reload,
         }}
         rowKey={(row) => row.id}
         rowActions={(row) => (
