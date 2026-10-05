@@ -11,9 +11,32 @@ from app.models.role import Role
 from app.models.user import User
 
 
+MIN_PASSWORD_LENGTH = 12
+
+
+def _required_password() -> str:
+    """Read the bootstrap password from the environment; there is no default.
+
+    This credential is the root of every other permission in the system, so it is never taken
+    from a literal in this file. Generate one with:
+      python -c "import secrets; print(secrets.token_urlsafe(18))"
+    """
+    password = os.getenv("BOOTSTRAP_ADMIN_PASSWORD", "")
+    if not password.strip():
+        raise SystemExit(
+            "BOOTSTRAP_ADMIN_PASSWORD is required and has no default. Generate one with: "
+            'python -c "import secrets; print(secrets.token_urlsafe(18))"'
+        )
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise SystemExit(
+            f"BOOTSTRAP_ADMIN_PASSWORD must be at least {MIN_PASSWORD_LENGTH} characters"
+        )
+    return password
+
+
 async def bootstrap() -> None:
     username = os.getenv("BOOTSTRAP_ADMIN_USERNAME", "admin")
-    password = os.getenv("BOOTSTRAP_ADMIN_PASSWORD", "Admin@123456")
+    password = _required_password()
 
     async with AsyncSessionLocal() as db:
         existing = await db.execute(select(User).where(User.username == username))

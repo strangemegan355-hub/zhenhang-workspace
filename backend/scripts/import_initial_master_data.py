@@ -377,6 +377,31 @@ def _ensure_role(db: Session, role_code: str) -> Role | None:
     return role
 
 
+PLACEHOLDER_PASSWORDS = frozenset(
+    {"set-a-real-password", "change-me", "changeme", "password", "passw0rd", "admin123"}
+)
+MIN_USER_PASSWORD_LENGTH = 12
+
+
+def _validate_password(raw: str, username: str, line_no: int) -> str:
+    """Reject placeholder and short passwords in an imported user row.
+
+    The sample CSV ships ``set-a-real-password`` so the file contains no working credential;
+    this check makes sure importing it unchanged cannot create an account with a known password.
+    """
+    password = raw.strip()
+    if len(password) < MIN_USER_PASSWORD_LENGTH:
+        raise RowError(
+            f"line {line_no}: password for {username} must be at least "
+            f"{MIN_USER_PASSWORD_LENGTH} characters"
+        )
+    if password.lower() in PLACEHOLDER_PASSWORDS:
+        raise RowError(
+            f"line {line_no}: password for {username} is a placeholder; set a real one"
+        )
+    return password
+
+
 def import_users(db: Session, rows: list[dict[str, str]], dry_run: bool, report: ImportReport) -> None:
     dept = db.execute(select(Department).where(Department.code == "ROOT")).scalar_one_or_none()
     if dept is None:
@@ -401,7 +426,7 @@ def import_users(db: Session, rows: list[dict[str, str]], dry_run: bool, report:
             user = User(
                 username=username,
                 email=email,
-                hashed_password=get_password_hash(row["password"].strip()),
+                hashed_password=get_password_hash(_validate_password(row["password"], username, idx)),
                 full_name=row.get("full_name") or username,
                 phone=row.get("phone") or None,
                 is_active=True,

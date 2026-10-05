@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, RedisDsn, field_validator
+from pydantic import Field, PostgresDsn, RedisDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -67,6 +67,25 @@ class Settings(BaseSettings):
                 return []
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
+
+    @model_validator(mode="after")
+    def reject_shipped_credentials_in_production(self) -> "Settings":
+        """Refuse to run production on a credential that shipped in this repository.
+
+        Development keeps the compose defaults so a local stack starts out of the box. In
+        production a container that boots with ``minioadmin`` is far more likely to be an
+        oversight than a decision, so it becomes a startup error instead of a silent weakness.
+        """
+        if self.environment != "production":
+            return self
+        problems: list[str] = []
+        if "minioadmin" in {self.minio_access_key, self.minio_secret_key}:
+            problems.append("MINIO_ACCESS_KEY / MINIO_SECRET_KEY still use the shipped default")
+        if self.secret_key.strip().lower() in {"change-me", "changeme", "secret", "dev", "test"}:
+            problems.append("SECRET_KEY is a well-known placeholder value")
+        if problems:
+            raise ValueError("production configuration refused: " + "; ".join(problems))
+        return self
 
 
 @lru_cache

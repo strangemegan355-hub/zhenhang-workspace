@@ -2,18 +2,21 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 
 BASE = "http://127.0.0.1:8000"
+# username, environment variable holding that account's password. These used to be literals,
+# which made this file a credential list; accounts without the variable are reported as skipped.
 ACCOUNTS = [
-    ("boss", "Trial@Boss2026"),
-    ("sales01", "Trial@Sales2026"),
-    ("tech01", "Trial@Tech2026"),
-    ("workshop01", "Trial@Workshop2026"),
-    ("finance01", "Trial@Finance2026"),
-    ("approver01", "Trial@Approver2026"),
+    ("boss", "TRIAL_BOSS_PASSWORD"),
+    ("sales01", "TRIAL_SALES_PASSWORD"),
+    ("tech01", "TRIAL_TECH_PASSWORD"),
+    ("workshop01", "TRIAL_WORKSHOP_PASSWORD"),
+    ("finance01", "TRIAL_FINANCE_PASSWORD"),
+    ("approver01", "TRIAL_APPROVER_PASSWORD"),
 ]
 
 
@@ -47,12 +50,21 @@ def login(username: str, password: str) -> tuple[bool, str]:
 
 def main() -> int:
     failed = 0
-    for user, pwd in ACCOUNTS:
-        ok, msg = login(user, pwd)
+    checked = 0
+    for user, env_var in ACCOUNTS:
+        password = os.getenv(env_var, "")
+        if not password:
+            print(f"[SKIP] {user}: set {env_var} to include this account")
+            continue
+        checked += 1
+        ok, msg = login(user, password)
         status = "PASS" if ok else "FAIL"
         print(f"[{status}] {user}: {msg}")
         if not ok:
             failed += 1
+    if checked == 0:
+        print("nothing checked: no TRIAL_*_PASSWORD variable is set")
+        return 2
     return 1 if failed else 0
 
 

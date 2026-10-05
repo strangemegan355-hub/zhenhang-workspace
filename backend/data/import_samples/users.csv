@@ -1,4 +1,4 @@
 # 员工/用户 — role_code 对应 setup_trial_users.py 中的角色
 username,email,full_name,phone,password,role_code
-sales01,sales01@example.com,销售小王,13800001001,Trial@Sales2026,trial_sales
-tech01,tech01@example.com,技术李工,13800001002,Trial@Tech2026,trial_tech
+sales01,sales01@example.com,销售小王,13800001001,set-a-real-password,trial_sales
+tech01,tech01@example.com,技术李工,13800001002,set-a-real-password,trial_tech

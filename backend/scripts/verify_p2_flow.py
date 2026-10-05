@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -19,7 +20,14 @@ from typing import Any
 
 DEFAULT_BASE = "http://127.0.0.1:8000"
 DEMO_QUOTE_NO = "DEMO-Q-001"
-LOGIN = {"username": "admin", "password": "Admin@123456"}
+LOGIN = {
+    "username": os.getenv("VERIFY_ADMIN_USERNAME", "admin"),
+    "password": os.getenv("BOOTSTRAP_ADMIN_PASSWORD", ""),
+}
+if not LOGIN["password"]:
+    raise SystemExit(
+        "BOOTSTRAP_ADMIN_PASSWORD is required to run this flow check; no default password ships."
+    )
 
 
 class ApiClient:

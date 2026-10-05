@@ -61,7 +61,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 默认管理员（可被环境变量覆盖）：
 
 - `BOOTSTRAP_ADMIN_USERNAME`（默认 `admin`）
-- `BOOTSTRAP_ADMIN_PASSWORD`（默认 `Admin@123456`）
+- `BOOTSTRAP_ADMIN_PASSWORD`（**必填，无默认值**）
 
 > **⚠️ 安全警告**
 >
@@ -145,7 +145,7 @@ curl http://localhost:8000/api/v1/health/live
 默认管理员（可被环境变量覆盖）：
 
 - 用户名：`admin`（`BOOTSTRAP_ADMIN_USERNAME`）
-- 密码：`Admin@123456`（`BOOTSTRAP_ADMIN_PASSWORD`）
+- 密码：由 `BOOTSTRAP_ADMIN_PASSWORD` 提供（无默认值，需自行设置强口令）
 
 ### 2. 配置 Web 前端
 

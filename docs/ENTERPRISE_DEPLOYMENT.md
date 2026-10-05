@@ -71,7 +71,7 @@ cp backend/.env.prod.example backend/.env.prod
 
 > **⚠️ 安全警告 — 首次部署后必须立即修改**
 >
-> 1. **admin 默认密码**（bootstrap 脚本创建，默认 `Admin@123456`）— 通过管理端或数据库修改  
+> 1. **admin 默认密码**（bootstrap 脚本创建，口令来自 `BOOTSTRAP_ADMIN_PASSWORD`，无默认值）— 通过管理端或数据库修改  
 > 2. **`SECRET_KEY`** — `openssl rand -hex 32`  
 > 3. **`POSTGRES_PASSWORD`** — 强密码，勿使用示例值  
 > 4. **`MINIO_ROOT_PASSWORD`** — 强密码，勿使用 `minioadmin`  
@@ -113,7 +113,7 @@ docker compose -f docker-compose.prod.yml --env-file backend/.env.prod up -d --s
 |--------|------|
 | Web 首页 | http://localhost |
 | API 探活 | http://localhost/api/v1/health/live |
-| 登录 | 默认 `admin` / `Admin@123456`（bootstrap 脚本创建） |
+| 登录 | `admin`（口令由 `BOOTSTRAP_ADMIN_PASSWORD` 提供，bootstrap 脚本创建） |
 | Nginx 路由 | `/` → web:3000，`/api` → api:8000 |
 
 ---

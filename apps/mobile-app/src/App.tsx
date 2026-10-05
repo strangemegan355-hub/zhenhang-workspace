@@ -49,7 +49,7 @@ export function App() {
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("Admin@123456");
+  const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginPending, setLoginPending] = useState(false);
   const [online, setOnline] = useState(isOnline());

@@ -42,7 +42,7 @@ echo ========================================
 echo   启动完成！
 echo   后端: http://localhost:8000/docs
 echo   前端: http://localhost:3000
-echo   默认账号: admin / Admin@123456
+echo   默认账号: admin（口令由 BOOTSTRAP_ADMIN_PASSWORD 提供，无默认值）
 echo ========================================
 echo.
 pause

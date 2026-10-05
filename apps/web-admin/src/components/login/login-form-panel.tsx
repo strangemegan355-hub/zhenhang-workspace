@@ -46,7 +46,7 @@ export function LoginFormPanel() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const form = useForm<LoginInput>({ resolver: zodResolver(loginSchema), defaultValues: { username: "admin", password: "Admin@123456" } });
+  const form = useForm<LoginInput>({ resolver: zodResolver(loginSchema), defaultValues: { username: "", password: "" } });
 
   const onSubmit = async (data: LoginInput) => {
     setErrorMessage(null);

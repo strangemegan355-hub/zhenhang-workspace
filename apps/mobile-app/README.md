@@ -9,7 +9,7 @@ cp .env.example .env.local   # 可选
 npm run dev -w mobile-app    # http://localhost:5174
 ```
 
-账号：`admin` / `Admin@123456`
+账号：由后端 `BOOTSTRAP_ADMIN_PASSWORD` 决定（本仓库不再提供默认口令）
 
 ## 能力
 

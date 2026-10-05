@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import secrets
 import sys
 
 from sqlalchemy import create_engine, select
@@ -292,34 +293,56 @@ TRIAL_ROLE_DEFS: list[tuple[str, str, str, list[tuple[str, str, str, str]]]] = [
 ]
 
 # username, password, full_name, email, role_code
+# username, environment variable holding that account's password, full name, email, role code.
+# The password itself never appears here: an operator supplies TRIAL_*_PASSWORD, or this script
+# generates one and prints it once.
 TRIAL_USERS: list[tuple[str, str, str, str, str]] = [
-    ("boss", os.getenv("TRIAL_BOSS_PASSWORD", "Trial@Boss2026"), "张总（老板）", "boss@example.com", "trial_boss"),
-    ("trialadmin", os.getenv("TRIAL_ADMIN_PASSWORD", "Trial@Admin2026"), "试运行管理员", "trialadmin@example.com", "trial_admin"),
-    ("sales01", os.getenv("TRIAL_SALES_PASSWORD", "Trial@Sales2026"), "销售小王", "sales01@example.com", "trial_sales"),
-    ("tech01", os.getenv("TRIAL_TECH_PASSWORD", "Trial@Tech2026"), "技术李工", "tech01@example.com", "trial_tech"),
-    ("workshop01", os.getenv("TRIAL_WORKSHOP_PASSWORD", "Trial@Workshop2026"), "车间班长", "workshop01@example.com", "workshop"),
-    ("finance01", os.getenv("TRIAL_FINANCE_PASSWORD", "Trial@Finance2026"), "财务陈会计", "finance01@example.com", "trial_finance"),
-    ("approver01", os.getenv("TRIAL_APPROVER_PASSWORD", "Trial@Approver2026"), "审批刘经理", "approver01@example.com", "trial_approver"),
+    ("boss", "TRIAL_BOSS_PASSWORD", "张总（老板）", "boss@example.com", "trial_boss"),
+    ("trialadmin", "TRIAL_ADMIN_PASSWORD", "试运行管理员", "trialadmin@example.com", "trial_admin"),
+    ("sales01", "TRIAL_SALES_PASSWORD", "销售小王", "sales01@example.com", "trial_sales"),
+    ("tech01", "TRIAL_TECH_PASSWORD", "技术李工", "tech01@example.com", "trial_tech"),
+    ("workshop01", "TRIAL_WORKSHOP_PASSWORD", "车间班长", "workshop01@example.com", "workshop"),
+    ("finance01", "TRIAL_FINANCE_PASSWORD", "财务陈会计", "finance01@example.com", "trial_finance"),
+    ("approver01", "TRIAL_APPROVER_PASSWORD", "审批刘经理", "approver01@example.com", "trial_approver"),
 ]
 
-ACCOUNT_GUIDE = """
-================================================================================
-  内部试运行默认账号（首次登录后必须修改密码）
-================================================================================
-  角色          用户名        默认密码              说明
-  老板          boss          Trial@Boss2026        看板、审批、导出
-  试运行管理员  trialadmin    Trial@Admin2026       日常运维（非 superuser）
-  销售          sales01       Trial@Sales2026       报价/客户
-  技术          tech01        Trial@Tech2026        BOM/机型维护
-  车间          workshop01    Trial@Workshop2026    车间看板
-  财务          finance01     Trial@Finance2026     报价金额/导出
-  审批人        approver01    Trial@Approver2026    审批专用
-  系统超管      admin         Admin@123456          bootstrap 创建，生产必改
-================================================================================
-  系统暂不支持“首次登录强制改密”，请在文档与运维流程中强制执行。
-  详见 docs/INTERNAL_TRIAL_GUIDE.md
-================================================================================
-"""
+MIN_PASSWORD_LENGTH = 12
+
+
+def _resolve_password(env_var: str) -> tuple[str, bool]:
+    """Return (password, generated); no default password ships with this script.
+
+    An operator either supplies the password through the environment, or this run generates a
+    strong one and prints it exactly once. A re-run does not reveal a generated password again.
+    """
+    supplied = os.getenv(env_var, "").strip()
+    if supplied:
+        if len(supplied) < MIN_PASSWORD_LENGTH:
+            raise SystemExit(f"{env_var} must be at least {MIN_PASSWORD_LENGTH} characters")
+        return supplied, False
+    return secrets.token_urlsafe(15), True
+
+
+def _account_guide(resolved: dict[str, tuple[str, bool]]) -> str:
+    lines = [
+        "=" * 80,
+        "  内部试运行账号（口令不再有默认值）",
+        "=" * 80,
+        "  用户名        角色            口令来源",
+    ]
+    for username, env_var, _full_name, _email, role_code in TRIAL_USERS:
+        password, generated = resolved[username]
+        source = f"本次生成: {password}" if generated else f"环境变量 {env_var}"
+        lines.append(f"  {username:<14}{role_code:<16}{source}")
+    lines.extend(
+        [
+            "=" * 80,
+            "  未设置 TRIAL_*_PASSWORD 的账号使用本次生成的随机口令，只显示这一次。",
+            "  首次登录后必须修改口令；详见 docs/INTERNAL_TRIAL_GUIDE.md。",
+            "=" * 80,
+        ]
+    )
+    return "\n".join(lines)
 
 
 def _ensure_permission(db: Session, code: str, name: str, resource: str, action: str) -> Permission:
@@ -365,7 +388,12 @@ def setup(*, dry_run: bool, reset_passwords: bool) -> None:
                     existing_ids.add(perm.id)
             roles_by_code[role_code] = role
 
-        for username, password, full_name, email, role_code in TRIAL_USERS:
+        resolved_passwords = {
+            username: _resolve_password(password_env)
+            for username, password_env, *_rest in TRIAL_USERS
+        }
+        for username, password_env, full_name, email, role_code in TRIAL_USERS:
+            password, _generated = resolved_passwords[username]
             user = (
                 db.execute(
                     select(User).where(User.username == username).options(selectinload(User.roles))
@@ -406,7 +434,7 @@ def setup(*, dry_run: bool, reset_passwords: bool) -> None:
             print("\n[DRY-RUN] rolled back")
         else:
             db.commit()
-            print(ACCOUNT_GUIDE)
+            print(_account_guide(resolved_passwords))
 
 
 def main() -> None:

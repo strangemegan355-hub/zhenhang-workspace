@@ -41,7 +41,7 @@ function groupBomModules(items: Record<string, unknown>[]) {
 export function App() {
   const [token, setToken] = useState(localStorage.getItem("access_token") ?? "");
   const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("Admin@123456");
+  const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginPending, setLoginPending] = useState(false);
   const [clock, setClock] = useState(new Date());

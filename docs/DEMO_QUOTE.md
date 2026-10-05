@@ -6,7 +6,7 @@
 - Web: `npm run dev:web`
 - 移动审批: `npm run dev:mobile` (5174)
 - 车间看板: `npm run dev:workshop` (5175)
-- 账号: `admin` / `Admin@123456`
+- 账号: `admin`（口令由 `BOOTSTRAP_ADMIN_PASSWORD` 提供，无默认值）
 
 ## 演示数据
 

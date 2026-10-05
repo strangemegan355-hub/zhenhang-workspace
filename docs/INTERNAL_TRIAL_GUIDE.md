@@ -54,15 +54,18 @@ python scripts/verify_permissions.py
 
 **试运行账号**（执行 `setup_trial_users.py` 后生效）：
 
-| 角色 | 用户名 | 默认密码 |
+口令不再有默认值。为每个账号设置对应的环境变量，或让 `setup_trial_users.py` 生成随机口令
+（生成的随机口令只在脚本本次输出中显示一次）：
+
+| 角色 | 用户名 | 口令来源 |
 |------|--------|----------|
-| 老板 | boss | Trial@Boss2026 |
-| 试运行管理员 | trialadmin | Trial@Admin2026 |
-| 销售 | sales01 | Trial@Sales2026 |
-| 技术 | tech01 | Trial@Tech2026 |
-| 车间 | workshop01 | Trial@Workshop2026 |
-| 财务 | finance01 | Trial@Finance2026 |
-| 审批人 | approver01 | Trial@Approver2026 |
+| 老板 | boss | `TRIAL_BOSS_PASSWORD` |
+| 试运行管理员 | trialadmin | `TRIAL_ADMIN_PASSWORD` |
+| 销售 | sales01 | `TRIAL_SALES_PASSWORD` |
+| 技术 | tech01 | `TRIAL_TECH_PASSWORD` |
+| 车间 | workshop01 | `TRIAL_WORKSHOP_PASSWORD` |
+| 财务 | finance01 | `TRIAL_FINANCE_PASSWORD` |
+| 审批人 | approver01 | `TRIAL_APPROVER_PASSWORD` |
 
 > **⚠️ 首次登录后必须修改密码。** 系统暂未实现强制改密，由部门负责人在试运行启动会上明确要求，并在 [`TRIAL_FEEDBACK_TEMPLATE.md`](TRIAL_FEEDBACK_TEMPLATE.md) 中记录违规账号。
 
