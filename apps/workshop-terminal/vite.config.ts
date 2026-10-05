@@ -16,7 +16,6 @@ export default defineConfig({
       "@zhenhang/realtime-gateway": path.resolve(__dirname, "../../packages/realtime-gateway/src/index.ts"),
       "@zhenhang/realtime-protocol": path.resolve(__dirname, "../../packages/realtime-protocol/src/index.ts"),
       "@zhenhang/event-stream": path.resolve(__dirname, "../../packages/event-stream/src/index.ts"),
-      "@zhenhang/runtime-telemetry": path.resolve(__dirname, "../../packages/runtime-telemetry/src/index.ts"),
     },
   },
   server: { port: 5175 },

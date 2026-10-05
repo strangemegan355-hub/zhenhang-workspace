@@ -4,7 +4,6 @@ import {
   getQueryPolicy,
   invalidateByDomain,
   optimisticWithPolicy,
-  recordQueryExecution,
 } from "@zhenhang/query-policy-registry";
 import { queryKeys } from "../keys";
 
@@ -21,7 +20,6 @@ export function useNotificationsQuery(params: {
   return useQuery({
     queryKey: queryKeys.notifications.list(params),
     queryFn: async () => {
-      const end = recordQueryExecution("notifications", "list");
       const { data } = await apiClient.get<ApiWrap<PageData>>("/api/v1/notifications", {
         params: {
           page: params.page,
@@ -30,7 +28,6 @@ export function useNotificationsQuery(params: {
           status: params.status,
         },
       });
-      end();
       return data.data;
     },
     staleTime: policy.staleTimeMs,

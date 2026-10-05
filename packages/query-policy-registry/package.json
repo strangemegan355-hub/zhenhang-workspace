@@ -6,6 +6,5 @@
   "main": "src/index.ts",
   "dependencies": {
     "@tanstack/react-query": "^5.90.5",
-    "@zhenhang/runtime-telemetry": "0.1.0"
   }
 }

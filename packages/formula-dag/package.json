@@ -7,6 +7,5 @@
   "dependencies": {
     "@zhenhang/formula-engine": "0.1.0",
     "@zhenhang/runtime-bus": "0.1.0",
-    "@zhenhang/runtime-telemetry": "0.1.0"
   }
 }

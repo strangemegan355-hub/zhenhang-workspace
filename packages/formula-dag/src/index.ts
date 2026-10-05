@@ -6,7 +6,6 @@ import {
   type FormulaContext,
 } from "@zhenhang/formula-engine";
 import { runtimeBus } from "@zhenhang/runtime-bus";
-import { runtimeTelemetry } from "@zhenhang/runtime-telemetry";
 
 export type CompiledFormula = {
   field: string;
@@ -73,7 +72,6 @@ export class FormulaDAGEngine {
   /** Incremental recompute — only dirty nodes in topological order. */
   recomputeIncremental(): Record<string, number> {
     if (!this.topology) return { ...this.values };
-    const span = runtimeTelemetry.startSpan("formula-dag.recompute", "formula");
     for (const field of this.topology.order) {
       if (!this.dirty.has(field)) continue;
       const compiled = this.topology.compiled.get(field);
@@ -81,7 +79,6 @@ export class FormulaDAGEngine {
       this.values[field] = evaluateFormula(compiled.expression, this.values as FormulaContext, true);
       this.dirty.delete(field);
     }
-    runtimeTelemetry.endSpan(span);
     runtimeBus.dispatch({ type: "formula-dag.recomputed", domain: "formula", payload: { ...this.values } });
     return { ...this.values };
   }

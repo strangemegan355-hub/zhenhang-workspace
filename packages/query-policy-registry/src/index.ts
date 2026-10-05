@@ -1,5 +1,4 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
-import { runtimeTelemetry } from "@zhenhang/runtime-telemetry";
 
 export type QueryDomain = "auth" | "notifications" | "quotes" | "workflow" | "files";
 
@@ -97,8 +96,9 @@ export async function executeRollback({
   domain: string;
   mutationKey?: string;
 }) {
-  runtimeTelemetry.recordRollback(mutationKey, strategy);
-  runtimeTelemetry.log("warn", `query.rollback:${mutationKey}`, { strategy, domain });
+  // The rollback outcome is worth a human seeing; it used to go to an in-memory buffer that
+  // nothing displayed.
+  console.warn(`[query.rollback] ${mutationKey}`, { strategy, domain });
   if (strategy === "restore-previous") rollback?.();
   if (strategy === "invalidate-domain") {
     await queryClient.invalidateQueries({ queryKey: [domain] });
@@ -121,8 +121,6 @@ export async function optimisticWithPolicy<T>({
   queryClient.setQueryData<T>(key, (old) => updater(old));
   const strategy = getRollbackStrategy(mutationKey);
   const domain = String(key[0] ?? "");
-  const hadCache = previous !== undefined;
-  runtimeTelemetry.recordCacheHit(JSON.stringify(key), hadCache);
 
   return () =>
     executeRollback({
@@ -132,12 +130,6 @@ export async function optimisticWithPolicy<T>({
       queryClient,
       domain,
     });
-}
-
-export function recordQueryExecution(domain: QueryDomain, resource: string) {
-  runtimeTelemetry.increment("query.execute");
-  const span = runtimeTelemetry.startSpan(`${domain}.${resource}`, domain);
-  return () => runtimeTelemetry.endSpan(span);
 }
 
 export function invalidateByDomain(queryClient: QueryClient, domain: QueryDomain) {

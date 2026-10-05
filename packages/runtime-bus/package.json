@@ -5,6 +5,5 @@
   "type": "module",
   "main": "src/index.ts",
   "dependencies": {
-    "@zhenhang/runtime-telemetry": "0.1.0"
   }
 }

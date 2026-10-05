@@ -1,4 +1,3 @@
-import { runtimeTelemetry } from "@zhenhang/runtime-telemetry";
 
 export type RuntimeLifecyclePhase = "boot" | "ready" | "pause" | "resume" | "shutdown";
 
@@ -47,7 +46,6 @@ export class RuntimeBus {
 
   setLifecycle(phase: RuntimeLifecyclePhase) {
     this.phase = phase;
-    runtimeTelemetry.log("info", `runtime.lifecycle:${phase}`);
     this.hooks.forEach((h) => h.onLifecycle?.(phase));
     this.dispatch({ type: `lifecycle.${phase}`, domain: "runtime", payload: { phase } });
   }
@@ -58,7 +56,6 @@ export class RuntimeBus {
 
   async dispatch<T>(event: Omit<RuntimeEvent<T>, "at">) {
     const full: RuntimeEvent<T> = { ...event, at: new Date().toISOString() };
-    runtimeTelemetry.increment(`runtime.event.${event.type}`);
     this.hooks.forEach((h) => h.onEvent?.(full as RuntimeEvent));
 
     const runMiddlewares = async (index: number) => {
@@ -75,7 +72,6 @@ export class RuntimeBus {
 
   /** Coordinate multiple runtime domains in one orchestrated action. */
   async coordinate(action: string, domains: string[], fn: () => Promise<void>) {
-    const span = runtimeTelemetry.startSpan(`coordinate.${action}`, "runtime");
     await this.dispatch({ type: "coordinate.start", domain: "runtime", payload: { action, domains } });
     try {
       await fn();
@@ -87,16 +83,8 @@ export class RuntimeBus {
         payload: { action, error: err instanceof Error ? err.message : "unknown" },
       });
       throw err;
-    } finally {
-      runtimeTelemetry.endSpan(span);
     }
   }
 }
 
 export const runtimeBus = new RuntimeBus();
-
-/** Default telemetry middleware. */
-runtimeBus.use(async (event, next) => {
-  runtimeTelemetry.log("debug", `bus:${event.type}`, { domain: event.domain });
-  await next();
-});

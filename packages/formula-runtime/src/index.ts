@@ -6,7 +6,6 @@ import {
 } from "@zhenhang/formula-engine";
 import { runtimeBus } from "@zhenhang/runtime-bus";
 import { RuntimeStateGraph } from "@zhenhang/runtime-graph";
-import { runtimeTelemetry } from "@zhenhang/runtime-telemetry";
 
 export type FormulaNodeState = {
   field: string;
@@ -60,7 +59,6 @@ export class FormulaRuntimeGraph {
   }
 
   recompute(fields?: string[]): Record<string, number> {
-    const span = runtimeTelemetry.startSpan("formula.recompute", "formula");
     const order = fields ?? topologicalOrder(this.depGraph);
     for (const field of order) {
       const node = this.nodes.get(field);
@@ -73,10 +71,9 @@ export class FormulaRuntimeGraph {
         node.dirty = false;
         node.value = this.values[field];
       } catch (err) {
-        runtimeTelemetry.log("error", `formula.recompute:${field}`, err);
+        console.error("[formula.recompute]", field, err);
       }
     }
-    runtimeTelemetry.endSpan(span);
     runtimeBus.dispatch({ type: "formula.recomputed", domain: "formula", payload: { values: { ...this.values } } });
     return { ...this.values };
   }
