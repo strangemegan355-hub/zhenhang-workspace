@@ -62,6 +62,7 @@ TRIAL_ROLE_DEFS: list[tuple[str, str, str, list[tuple[str, str, str, str]]]] = [
             ("business:approval:read", "审批中心", "business:approval", "read"),
             ("business:accounting:post_payable", "应付过账", "business:accounting", "post_payable"),
             ("business:aftersales:read", "售后服务读取", "business:aftersales", "read"),
+            ("business:workshop:read", "车间看板读取", "business:workshop", "read"),
         ],
     ),
     (
@@ -222,6 +223,9 @@ TRIAL_ROLE_DEFS: list[tuple[str, str, str, list[tuple[str, str, str, str]]]] = [
             ("business:fieldwork:update", "现场作业更新", "business:fieldwork", "update"),
             ("platform:notification:read", "通知读取", "platform:notification", "read"),
             ("master:equipment_unit:read", "设备单元读取", "master:equipment_unit", "read"),
+            ("business:workshop:read", "车间看板读取", "business:workshop", "read"),
+            ("business:mes:read", "MES 信号读取", "business:mes", "read"),
+            ("business:mes:write", "MES 信号写入", "business:mes", "write"),
         ],
     ),
     (
@@ -288,6 +292,9 @@ TRIAL_ROLE_DEFS: list[tuple[str, str, str, list[tuple[str, str, str, str]]]] = [
             ("platform:file:bind", "文件关联", "platform:file", "bind"),
             ("system:department:read", "部门读取", "system:department", "read"),
             ("system:tenant:read", "租户读取", "system:tenant", "read"),
+            ("business:workshop:read", "车间看板读取", "business:workshop", "read"),
+            ("business:mes:read", "MES 信号读取", "business:mes", "read"),
+            ("business:mes:write", "MES 信号写入", "business:mes", "write"),
         ],
     ),
 ]

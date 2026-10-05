@@ -78,7 +78,7 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
       { key: "work-orders", title: "车间工单", href: "/work-orders", permission: "business:work_order:read" },
       { key: "fieldwork", title: "现场作业", href: "/fieldwork", permission: "business:fieldwork:read" },
       { key: "aftersales", title: "售后服务", href: "/aftersales", permission: "business:aftersales:read" },
-      { key: "workshop", title: "车间看板", href: "/workshop", permission: "business:quote:read" },
+      { key: "workshop", title: "车间看板", href: "/workshop", permission: "business:workshop:read" },
     ],
   },
   {

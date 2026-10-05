@@ -77,7 +77,12 @@ ROLE_EXPECTATIONS: dict[str, dict[str, object]] = {
         },
     },
     "workshop01": {
-        "must_have": {"dashboard:view", "business:quote:read"},
+        "must_have": {
+            "dashboard:view",
+            "business:quote:read",
+            "business:workshop:read",
+            "business:mes:read",
+        },
         "must_not_have": {
             "business:quote:create",
             "master:bom:create",

@@ -23,7 +23,7 @@ class MesSignalIngest(BaseModel):
 async def post_equipment_signal(
     payload: MesSignalIngest,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(require_permissions("business:quote:update"))],
+    current: Annotated[User, Depends(require_permissions("business:mes:write"))],
 ) -> dict:
     row = await ingest_equipment_signal(
         db,
@@ -41,7 +41,7 @@ async def post_equipment_signal(
 @router.get("/equipment-signals")
 async def get_equipment_signals(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:quote:read"))],
+    _: Annotated[User, Depends(require_permissions("business:mes:read"))],
     equipment_code: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
 ) -> dict:
@@ -64,7 +64,7 @@ async def get_equipment_signals(
 @router.post("/oee-snapshots", status_code=status.HTTP_201_CREATED)
 async def post_oee_snapshot(
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(require_permissions("business:quote:update"))],
+    current: Annotated[User, Depends(require_permissions("business:mes:write"))],
     line_id: str = Query(..., max_length=32),
     availability: float = Query(..., ge=0, le=100),
     performance: float = Query(..., ge=0, le=100),
