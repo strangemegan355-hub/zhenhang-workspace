@@ -25,7 +25,7 @@ export function SalesOverviewPanel({ recent, kpis }: { recent: RecentQuote[]; kp
           </span>
           <div className="flex rounded border border-[var(--color-border)] p-0.5 text-[11px]">
             {([["all", "全部"], ["quotes", "报价"], ["orders", "订单"]] as const).map(([key, label]) => (
-              <button key={key} type="button" onClick={() => setActiveTab(key)} className={`rounded px-2.5 py-1 \${activeTab === key ? "bg-[var(--color-primary)] text-white" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"}`}>{label}</button>
+              <button key={key} type="button" onClick={() => setActiveTab(key)} className={`rounded px-2.5 py-1 ${activeTab === key ? "bg-[var(--color-primary)] text-white" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"}`}>{label}</button>
             ))}
           </div>
         </div>

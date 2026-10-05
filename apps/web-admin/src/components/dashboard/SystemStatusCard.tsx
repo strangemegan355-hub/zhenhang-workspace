@@ -19,7 +19,7 @@ export function SystemStatusCard({ metrics, token }: { metrics?: MetricsSnap | n
     let cancelled = false;
     const load = async () => {
       try {
-        const resp = await fetch(`\${apiBase}/api/v1/health/ready`);
+        const resp = await fetch(`${apiBase}/api/v1/health/ready`);
         if (!resp.ok) return;
         const json = await resp.json();
         if (!cancelled) setReady((json?.data ?? json) as ReadySnap);
@@ -41,12 +41,12 @@ export function SystemStatusCard({ metrics, token }: { metrics?: MetricsSnap | n
   const minioHealth: ServiceHealth = apiHealth === "error" ? "warning" : "healthy";
 
   const services: ServiceRow[] = [
-    { key: "api", label: "API", health: apiHealth, detail: errorRate < 0.05 ? "响应正常" : `错误率 \${(errorRate * 100).toFixed(1)}%` },
-    { key: "postgres", label: "PostgreSQL", health: pgHealth, detail: ready?.db?.latency_ms != null ? `\${ready.db.latency_ms} ms` : "检测中" },
-    { key: "redis", label: "Redis", health: redisHealth, detail: ready?.redis?.latency_ms != null ? `\${ready.redis.latency_ms} ms` : "检测中" },
+    { key: "api", label: "API", health: apiHealth, detail: errorRate < 0.05 ? "响应正常" : `错误率 ${(errorRate * 100).toFixed(1)}%` },
+    { key: "postgres", label: "PostgreSQL", health: pgHealth, detail: ready?.db?.latency_ms != null ? `${ready.db.latency_ms} ms` : "检测中" },
+    { key: "redis", label: "Redis", health: redisHealth, detail: ready?.redis?.latency_ms != null ? `${ready.redis.latency_ms} ms` : "检测中" },
     { key: "minio", label: "MinIO", health: minioHealth, detail: "对象存储" },
-    { key: "worker", label: "Worker", health: workerHealth, detail: workerBacklog > 0 ? `队列 \${workerBacklog}` : "空闲" },
-    { key: "websocket", label: "WebSocket", health: wsHealth, detail: `\${wsConnections} 连接` },
+    { key: "worker", label: "Worker", health: workerHealth, detail: workerBacklog > 0 ? `队列 ${workerBacklog}` : "空闲" },
+    { key: "websocket", label: "WebSocket", health: wsHealth, detail: `${wsConnections} 连接` },
   ];
 
   return (
@@ -54,9 +54,9 @@ export function SystemStatusCard({ metrics, token }: { metrics?: MetricsSnap | n
       <div className="grid gap-2 sm:grid-cols-2">
         {services.map((svc) => (
           <div key={svc.key} className="flex items-center gap-3 rounded border border-[var(--color-border)] bg-[var(--color-surface-soft)] px-3 py-2.5">
-            <span className={`h-2.5 w-2.5 shrink-0 rounded-full \${HEALTH_DOT[svc.health]}`} />
+            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${HEALTH_DOT[svc.health]}`} />
             <div className="min-w-0 flex-1"><p className="text-xs font-medium text-[var(--color-text)]">{svc.label}</p><p className="text-[11px] text-[var(--color-text-muted)]">{svc.detail}</p></div>
-            <span className={`shrink-0 text-[10px] font-semibold \${svc.health === "healthy" ? "text-[var(--color-success)]" : svc.health === "warning" ? "text-[var(--color-warning)]" : "text-[var(--color-danger)]"}`}>{HEALTH_LABEL[svc.health]}</span>
+            <span className={`shrink-0 text-[10px] font-semibold ${svc.health === "healthy" ? "text-[var(--color-success)]" : svc.health === "warning" ? "text-[var(--color-warning)]" : "text-[var(--color-danger)]"}`}>{HEALTH_LABEL[svc.health]}</span>
           </div>
         ))}
       </div>

@@ -18,7 +18,7 @@ export function RecentQuotesCard({ recent = [] }: { recent?: RecentQuote[] }) {
           const state = item.workflow_state ?? "draft";
           return (
             <li key={item.id ?? item.quote_no}>
-              <Link href={`/quotes/\${item.id ?? ""}`} className="flex items-center justify-between gap-3 rounded px-2 py-2.5 transition-colors hover:bg-[var(--color-surface-soft)]">
+              <Link href={`/quotes/${item.id ?? ""}`} className="flex items-center justify-between gap-3 rounded px-2 py-2.5 transition-colors hover:bg-[var(--color-surface-soft)]">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[var(--color-primary-soft)]"><FileText className="h-4 w-4 text-[var(--color-primary)]" /></div>
                   <div className="min-w-0">

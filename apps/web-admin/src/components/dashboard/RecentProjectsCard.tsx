@@ -24,7 +24,7 @@ export function RecentProjectsCard() {
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[var(--color-primary-soft)]"><FolderKanban className="h-4 w-4 text-[var(--color-primary)]" /></div>
                   <div className="min-w-0"><p className="truncate text-xs font-medium text-[var(--color-text)]">{String(item.name ?? item.project_no ?? "项目")}</p><p className="text-[11px] text-[var(--color-text-muted)]">{formatRelativeTime(String(item.updated_at ?? item.created_at ?? ""))}</p></div>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium \${STAGE_STYLES[stage] ?? STAGE_STYLES.lead}`}>{STAGE_LABELS[stage] ?? stage}</span>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STAGE_STYLES[stage] ?? STAGE_STYLES.lead}`}>{STAGE_LABELS[stage] ?? stage}</span>
               </Link>
             </li>
           );

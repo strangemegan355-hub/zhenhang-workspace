@@ -14,7 +14,7 @@ function buildWorkflowNodes(pipeline: PipelineItem[]): WorkflowNode[] {
     { key: "dept", label: "部门审批", approver: "部门经理", time: reviewing > 0 ? "处理中" : approved > 0 ? "已通过" : undefined, state: approved > 0 ? "done" : reviewing > 0 ? "active" : "pending" },
     { key: "gm", label: "总经理审批", approver: "总经理", time: reviewing > 0 ? "排队中" : approved > 0 ? "已通过" : undefined, state: approved > 0 ? "done" : reviewing > 0 ? "active" : "pending" },
     { key: "finance", label: "财务审批", approver: "财务", time: approved > 0 ? "已通过" : undefined, state: approved > 0 ? "done" : reviewing > 0 ? "pending" : "pending" },
-    { key: "done", label: "完成", approver: "系统", time: approved > 0 ? `\${approved} 单` : undefined, state: approved > 0 ? "done" : "pending" },
+    { key: "done", label: "完成", approver: "系统", time: approved > 0 ? `${approved} 单` : undefined, state: approved > 0 ? "done" : "pending" },
   ];
 }
 
@@ -33,8 +33,8 @@ export function WorkflowProgressCard({ pipeline }: { pipeline: PipelineItem[] })
           {nodes.map((node, idx) => (
             <div key={node.key} className="flex flex-1 flex-col items-center">
               <div className="relative flex w-full items-center justify-center">
-                {idx > 0 ? <div className={`absolute right-1/2 top-1/2 h-0.5 w-full -translate-y-1/2 \${node.state === "pending" && nodes[idx - 1]?.state === "pending" ? "bg-[var(--color-border)]" : "bg-[var(--color-primary)]/40"}`} style={{ width: "100%", left: "-50%" }} /> : null}
-                <div className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 bg-[var(--color-surface)] \${node.state === "done" ? "border-[var(--color-success)]" : node.state === "active" ? "border-[var(--color-primary)]" : "border-[var(--color-border)]"}`}><NodeIcon state={node.state} /></div>
+                {idx > 0 ? <div className={`absolute right-1/2 top-1/2 h-0.5 w-full -translate-y-1/2 ${node.state === "pending" && nodes[idx - 1]?.state === "pending" ? "bg-[var(--color-border)]" : "bg-[var(--color-primary)]/40"}`} style={{ width: "100%", left: "-50%" }} /> : null}
+                <div className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 bg-[var(--color-surface)] ${node.state === "done" ? "border-[var(--color-success)]" : node.state === "active" ? "border-[var(--color-primary)]" : "border-[var(--color-border)]"}`}><NodeIcon state={node.state} /></div>
               </div>
               <p className="mt-2 text-center text-xs font-semibold text-[var(--color-text)]">{node.label}</p>
               <p className="mt-0.5 text-center text-[10px] text-[var(--color-text-muted)]">{node.approver}</p>

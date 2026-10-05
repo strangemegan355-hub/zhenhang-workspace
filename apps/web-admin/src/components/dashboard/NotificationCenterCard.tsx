@@ -12,7 +12,7 @@ export function NotificationCenterCard() {
   const unreadCount = unreadQuery.data ?? 0;
   const items = ((listQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? []).slice(0, 5);
   return (
-    <DashboardCard title="通知中心" toolbar={<Link href="/notifications" className="flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline">消息中心{unreadCount > 0 ? ` (\${unreadCount})` : ""}<ArrowUpRight className="h-3 w-3" /></Link>}>
+    <DashboardCard title="通知中心" toolbar={<Link href="/notifications" className="flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline">消息中心{unreadCount > 0 ? ` (${unreadCount})` : ""}<ArrowUpRight className="h-3 w-3" /></Link>}>
       {listQuery.isLoading && !items.length ? <p className="py-6 text-center text-xs text-[var(--color-text-muted)]">加载中…</p> : items.length === 0 ? (
         <div className="flex flex-col items-center py-8 text-center"><Bell className="mb-2 h-8 w-8 text-[var(--color-border)]" /><p className="text-xs text-[var(--color-text-muted)]">暂无通知</p></div>
       ) : (
@@ -21,9 +21,9 @@ export function NotificationCenterCard() {
           const isUnread = !row.read_at && String(row.status ?? "") !== "read";
           return (
             <li key={id}>
-              <Link href="/notifications" className={`flex items-start justify-between gap-3 rounded px-2 py-2.5 transition-colors hover:bg-[var(--color-surface-soft)] \${isUnread ? "bg-[var(--color-surface-soft)]" : ""}`}>
+              <Link href="/notifications" className={`flex items-start justify-between gap-3 rounded px-2 py-2.5 transition-colors hover:bg-[var(--color-surface-soft)] ${isUnread ? "bg-[var(--color-surface-soft)]" : ""}`}>
                 <div className="min-w-0 flex-1">
-                  <p className={`truncate text-xs text-[var(--color-text)] \${isUnread ? "font-semibold" : "font-medium"}`}>{String(row.title ?? "通知")}</p>
+                  <p className={`truncate text-xs text-[var(--color-text)] ${isUnread ? "font-semibold" : "font-medium"}`}>{String(row.title ?? "通知")}</p>
                   <p className="text-[11px] text-[var(--color-text-muted)]">{String(row.channel ?? row.biz_type ?? "system")}</p>
                 </div>
                 <span className="shrink-0 text-[11px] text-[var(--color-text-muted)]">{formatRelativeTime(String(row.created_at ?? ""))}</span>

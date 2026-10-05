@@ -11,9 +11,9 @@ function buildRisks(kpis: DashboardKpis, profitKpis?: DashboardProfitKpis): Risk
   const pending = Number(kpis.pending_approval ?? 0);
   const exportPending = Number(kpis.export_pending ?? 0);
   const overBudget = Number(profitKpis?.over_budget_count ?? 0);
-  if (overBudget > 0) items.push({ id: "material-missing", label: "材料缺失", level: overBudget >= 3 ? "high" : "medium", count: overBudget, detail: `\${overBudget} 个项目 BOM/成本未齐套`, href: "/order-profit" });
-  if (pending > 0) items.push({ id: "approval-timeout", label: "审批超时", level: pending >= 5 ? "high" : "medium", count: pending, detail: `\${pending} 单超时 SLA 待处理`, href: "/quotes" });
-  if (exportPending > 0) items.push({ id: "procurement-delay", label: "采购延期", level: exportPending >= 3 ? "high" : "medium", count: exportPending, detail: `\${exportPending} 项采购/导出排队`, href: "/procurement" });
+  if (overBudget > 0) items.push({ id: "material-missing", label: "材料缺失", level: overBudget >= 3 ? "high" : "medium", count: overBudget, detail: `${overBudget} 个项目 BOM/成本未齐套`, href: "/order-profit" });
+  if (pending > 0) items.push({ id: "approval-timeout", label: "审批超时", level: pending >= 5 ? "high" : "medium", count: pending, detail: `${pending} 单超时 SLA 待处理`, href: "/quotes" });
+  if (exportPending > 0) items.push({ id: "procurement-delay", label: "采购延期", level: exportPending >= 3 ? "high" : "medium", count: exportPending, detail: `${exportPending} 项采购/导出排队`, href: "/procurement" });
   items.push({ id: "customer-debt", label: "客户欠款", level: Number(kpis.draft_quotes ?? 0) > 3 ? "medium" : "low", count: Number(kpis.draft_quotes ?? 0), detail: "草稿报价未转单", href: "/customers" });
   return items.slice(0, 5);
 }

@@ -37,11 +37,11 @@ export function RecentFilesCard() {
           const Icon = kind.icon;
           return (
             <li key={file.id} className="flex items-center gap-3 rounded border border-[var(--color-border)] px-3 py-2.5">
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded \${kind.color}`}><Icon className="h-4 w-4" /></div>
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${kind.color}`}><Icon className="h-4 w-4" /></div>
               <div className="min-w-0 flex-1"><p className="truncate text-xs font-medium text-[var(--color-text)]">{file.file_name}</p><p className="text-[11px] text-[var(--color-text-muted)]">{kind.label} · {formatRelativeTime(file.created_at)}</p></div>
               <div className="flex shrink-0 gap-1">
-                <Link href={`/files?preview=\${file.id}`} className="rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary)]" title="查看"><Eye className="h-4 w-4" /></Link>
-                <a href={`\${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"}/api/v1/files/\${file.id}/download`} className="rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary)]" title="下载"><Download className="h-4 w-4" /></a>
+                <Link href={`/files?preview=${file.id}`} className="rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary)]" title="查看"><Eye className="h-4 w-4" /></Link>
+                <a href={`${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"}/api/v1/files/${file.id}/download`} className="rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary)]" title="下载"><Download className="h-4 w-4" /></a>
               </div>
             </li>
           );
