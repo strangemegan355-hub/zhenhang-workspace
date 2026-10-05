@@ -77,7 +77,7 @@ def test_quote_approval_template_and_diff(monkeypatch):
 def test_quote_export_async_endpoints(monkeypatch):
     from app.domains.quote.application import quote_application_service
 
-    async def _fake_create_export_task(db, quote_id, export_format, current_user):
+    async def _fake_create_export_task(db, quote_id, export_format, current_user, template_id=None):
         return {
             "id": str(uuid4()),
             "quote_id": str(quote_id),
