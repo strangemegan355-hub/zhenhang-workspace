@@ -181,6 +181,15 @@ class MachineBomRead(MachineBomBase):
     model_config = {"from_attributes": True}
 
 
+SUBSYSTEM_OPTIONS = [
+    "mechanical",
+    "electrical",
+    "hydraulic",
+    "pneumatic",
+    "control",
+]
+
+
 class MachineBomItemBase(BaseModel):
     bom_id: UUID
     item_code: str = Field(min_length=1, max_length=64)
@@ -193,6 +202,7 @@ class MachineBomItemBase(BaseModel):
     loss_rate: Decimal = Decimal("0")
     sort_order: int = 0
     remark: str | None = None
+    subsystem: str | None = Field(default=None, max_length=32)
 
 
 class MachineBomItemCreate(MachineBomItemBase):
@@ -209,6 +219,7 @@ class MachineBomItemCreate(MachineBomItemBase):
                 "loss_rate": 0.01,
                 "sort_order": 1,
                 "remark": "核心零件",
+                "subsystem": "mechanical",
             }
         }
     }
@@ -225,6 +236,7 @@ class MachineBomItemUpdate(BaseModel):
     loss_rate: Decimal | None = None
     sort_order: int | None = None
     remark: str | None = None
+    subsystem: str | None = Field(default=None, max_length=32)
 
 
 class MachineBomItemRead(MachineBomItemBase):

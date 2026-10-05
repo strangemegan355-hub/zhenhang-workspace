@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Zhenhang ERP API"
     app_env: Literal["local", "dev", "staging", "prod"] = "local"
+    environment: Literal["development", "production"] = "development"
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
 
@@ -24,7 +25,7 @@ class Settings(BaseSettings):
     refresh_token_expire_minutes: int = 60 * 24 * 7
 
     database_url: PostgresDsn = Field(
-        default="postgresql+psycopg://erp:erp@localhost:5432/erp_db",
+        default="postgresql+psycopg://erp:erp@127.0.0.1:5432/erp_db",
     )
 
     redis_url: RedisDsn = Field(default="redis://localhost:6379/0")
@@ -44,6 +45,14 @@ class Settings(BaseSettings):
     realtime_retention_batch_size: int = Field(default=2000, ge=100, le=20000)
 
     maintenance_interval_seconds: int = Field(default=300, ge=60, le=86400)
+
+    metrics_api_key: str | None = None
+
+    company_name: str = Field(default="振航智能制造", max_length=120)
+    company_export_footer: str = Field(
+        default="本报价单由振航 ERP 工业报价模块生成，具有版本追溯能力。",
+        max_length=500,
+    )
 
     mes_enabled: bool = Field(default=True)
     mes_signal_stale_seconds: int = Field(default=120, ge=30, le=3600)

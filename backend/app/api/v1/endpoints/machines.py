@@ -86,6 +86,17 @@ async def list_machines(
     return await svc.list_machines(db, page, page_size, q)
 
 
+@router.get("/{machine_id}/pricing-profile")
+async def get_machine_pricing_profile(
+    machine_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("master:machine:read"))],
+) -> dict:
+    from app.services.machine_pricing_service import get_machine_pricing_profile as get_profile
+
+    return await get_profile(db, machine_id)
+
+
 @router.put("/{machine_id}", response_model=MachineRead)
 async def update_machine(
     machine_id: UUID,
@@ -121,8 +132,9 @@ async def list_machine_parameters(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
+    machine_id: UUID | None = Query(default=None),
 ) -> PageResponse:
-    return await svc.list_machine_parameters(db, page, page_size, q)
+    return await svc.list_machine_parameters(db, page, page_size, q, machine_id=machine_id)
 
 
 @router.put("/parameters/{parameter_id}", response_model=MachineParameterRead)
@@ -160,8 +172,9 @@ async def list_machine_images(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
+    machine_id: UUID | None = Query(default=None),
 ) -> PageResponse:
-    return await svc.list_machine_images(db, page, page_size, q)
+    return await svc.list_machine_images(db, page, page_size, q, machine_id=machine_id)
 
 
 @router.put("/images/{image_id}", response_model=MachineImageRead)

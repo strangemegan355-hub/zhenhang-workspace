@@ -1,3 +1,5 @@
+from datetime import date, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +8,20 @@ from app.core.data_scope import build_created_by_filter
 from app.models.audit import AuditLog
 from app.repositories.audit_repository import create_audit_log, query_audit_logs
 from app.schemas.common import PageResponse
+
+
+def _json_safe(value: object) -> object:
+    if isinstance(value, UUID):
+        return str(value)
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    return value
 
 
 async def write_audit_log(
@@ -20,6 +36,7 @@ async def write_audit_log(
     payload: dict | None = None,
     autocommit: bool = False,
 ) -> None:
+    safe_payload = _json_safe(payload) if payload is not None else None
     await create_audit_log(
         db,
         {
@@ -28,7 +45,7 @@ async def write_audit_log(
             "resource_type": resource_type,
             "resource_id": resource_id,
             "detail": detail,
-            "payload": payload,
+            "payload": safe_payload if isinstance(safe_payload, dict) or safe_payload is None else None,
             "created_by": created_by,
         },
         autocommit=autocommit,

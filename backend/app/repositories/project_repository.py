@@ -1,0 +1,112 @@
+from datetime import date
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.cost_estimate import CostEstimate
+from app.models.project import Project
+from app.models.quote import Quote, QuoteVersion
+from app.repositories.common_repository import get_by_id, paginate_query
+
+
+async def count_project_no_prefix(db: AsyncSession, prefix: str) -> int:
+    stmt = select(func.count()).select_from(Project).where(
+        Project.project_no.like(f"{prefix}%"),
+        Project.is_deleted.is_(False),
+    )
+    return int((await db.execute(stmt)).scalar_one())
+
+
+async def generate_project_no(db: AsyncSession) -> str:
+    prefix = f"PRJ-{date.today().strftime('%Y%m%d')}-"
+    count = await count_project_no_prefix(db, prefix)
+    return f"{prefix}{count + 1:03d}"
+
+
+async def create_project(db: AsyncSession, data: dict) -> Project:
+    obj = Project(**data)
+    db.add(obj)
+    await db.flush()
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+async def list_projects(db: AsyncSession, page: int, page_size: int, q: str | None):
+    return await paginate_query(
+        db,
+        Project,
+        page,
+        page_size,
+        q,
+        [Project.project_no, Project.name, Project.category, Project.owner_name],
+    )
+
+
+async def get_project(db: AsyncSession, object_id: UUID) -> Project | None:
+    return await get_by_id(db, Project, object_id)
+
+
+async def update_project(db: AsyncSession, obj: Project, data: dict) -> Project:
+    for key, value in data.items():
+        setattr(obj, key, value)
+    await db.flush()
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+async def soft_delete_project(db: AsyncSession, obj: Project) -> Project:
+    obj.is_deleted = True
+    await db.flush()
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+async def find_linked_quote(db: AsyncSession, project: Project) -> Quote | None:
+    if project.primary_quote_id:
+        stmt = select(Quote).where(Quote.id == project.primary_quote_id, Quote.is_deleted.is_(False))
+        found = (await db.execute(stmt)).scalar_one_or_none()
+        if found:
+            return found
+    stmt = (
+        select(Quote)
+        .where(Quote.project_id == project.id, Quote.is_deleted.is_(False))
+        .order_by(Quote.updated_at.desc())
+        .limit(1)
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def find_current_quote_version(db: AsyncSession, quote_id: UUID) -> QuoteVersion | None:
+    stmt = select(QuoteVersion).where(
+        QuoteVersion.quote_id == quote_id,
+        QuoteVersion.is_current.is_(True),
+        QuoteVersion.is_deleted.is_(False),
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def find_linked_cost_estimate(db: AsyncSession, project_id: UUID) -> CostEstimate | None:
+    stmt = (
+        select(CostEstimate)
+        .where(CostEstimate.project_id == project_id, CostEstimate.is_deleted.is_(False))
+        .order_by(CostEstimate.updated_at.desc())
+        .limit(1)
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def count_quotes_for_project(db: AsyncSession, project_id: UUID) -> int:
+    stmt = select(func.count()).select_from(Quote).where(Quote.project_id == project_id, Quote.is_deleted.is_(False))
+    return int((await db.execute(stmt)).scalar_one())
+
+
+async def count_cost_estimates_for_project(db: AsyncSession, project_id: UUID) -> int:
+    stmt = select(func.count()).select_from(CostEstimate).where(
+        CostEstimate.project_id == project_id,
+        CostEstimate.is_deleted.is_(False),
+    )
+    return int((await db.execute(stmt)).scalar_one())

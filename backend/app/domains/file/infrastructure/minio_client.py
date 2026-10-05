@@ -42,6 +42,21 @@ def presigned_get_url(*, bucket: str, object_name: str, expiry_seconds: int = 36
     return client.presigned_get_object(bucket, object_name, expires=timedelta(seconds=expiry_seconds))
 
 
+def get_object_bytes(*, bucket: str, object_name: str) -> bytes:
+    client = _client()
+    from minio.error import S3Error
+
+    try:
+        response = client.get_object(bucket, object_name)
+        try:
+            return response.read()
+        finally:
+            response.close()
+            response.release_conn()
+    except S3Error as exc:
+        raise RuntimeError(f"MinIO download failed: {exc.code}") from exc
+
+
 def generate_thumbnail_object_name(object_name: str) -> str:
     return f"thumbs/{object_name}"
 

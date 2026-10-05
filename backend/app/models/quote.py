@@ -13,6 +13,8 @@ from app.models.base import AuditSoftDeleteMixin, Base, TimestampMixin, UUIDPrim
 if TYPE_CHECKING:
     from app.models.customer import Customer
     from app.models.machine import Machine, MachineBom
+    from app.models.product import Product, ProductCostTemplate, ProductPriceTemplate
+    from app.models.project import Project
     from app.models.user import User
 
 
@@ -22,23 +24,52 @@ class Quote(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
     quote_no: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     customer_id: Mapped[UUID] = mapped_column(ForeignKey("customers.id", ondelete="RESTRICT"), nullable=False, index=True)
-    machine_id: Mapped[UUID] = mapped_column(ForeignKey("machines.id", ondelete="RESTRICT"), nullable=False, index=True)
+    project_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("projects.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    machine_id: Mapped[UUID | None] = mapped_column(ForeignKey("machines.id", ondelete="SET NULL"), nullable=True, index=True)
+    product_id: Mapped[UUID | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"), nullable=True, index=True)
     bom_id: Mapped[UUID | None] = mapped_column(ForeignKey("machine_boms.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_template_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("product_cost_templates.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    price_template_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("product_price_templates.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     approval_template_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("approval_templates.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
+    quote_kind: Mapped[str] = mapped_column(String(32), nullable=False, default="industrial", server_default="industrial", index=True)
+    tax_rate: Mapped[float | None] = mapped_column(Numeric(7, 4), nullable=True)
     current_approval_order: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
     workflow_state: Mapped[str] = mapped_column(String(32), nullable=False, default="draft", server_default="draft", index=True)
     currency: Mapped[str] = mapped_column(String(8), nullable=False, default="CNY", server_default="CNY")
     total_amount: Mapped[float] = mapped_column(Numeric(18, 4), nullable=False, default=0, server_default="0")
     valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
+    receivable_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="none",
+        server_default="none",
+        index=True,
+    )
 
     customer: Mapped["Customer"] = relationship()
-    machine: Mapped["Machine"] = relationship()
+    project: Mapped["Project | None"] = relationship(foreign_keys=[project_id], lazy="joined")
+    machine: Mapped["Machine | None"] = relationship()
+    product: Mapped["Product | None"] = relationship()
     bom: Mapped["MachineBom | None"] = relationship()
+    cost_template: Mapped["ProductCostTemplate | None"] = relationship()
+    price_template: Mapped["ProductPriceTemplate | None"] = relationship()
     approval_template: Mapped["ApprovalTemplate | None"] = relationship()
     versions: Mapped[list[QuoteVersion]] = relationship(back_populates="quote")
     approvals: Mapped[list[QuoteApproval]] = relationship(back_populates="quote")
@@ -88,7 +119,11 @@ class QuoteItem(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base)
     unit_price: Mapped[float] = mapped_column(Numeric(18, 4), nullable=False)
     line_total: Mapped[float] = mapped_column(Numeric(18, 4), nullable=False)
     source_type: Mapped[str] = mapped_column(String(32), nullable=False, default="manual", server_default="manual")
+    machine_id: Mapped[UUID | None] = mapped_column(ForeignKey("machines.id", ondelete="SET NULL"), nullable=True, index=True)
+    product_id: Mapped[UUID | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"), nullable=True, index=True)
+    power_kw: Mapped[str | None] = mapped_column(String(64), nullable=True)
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
+    selected_options: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     quote_version: Mapped[QuoteVersion] = relationship(back_populates="items")
     creator: Mapped["User | None"] = relationship(foreign_keys="QuoteItem.created_by", lazy="joined")

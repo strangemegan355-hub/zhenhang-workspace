@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.settings import settings
 from app.models.machine import Machine
 from app.models.quote import Quote, QuoteExportTask
+from app.repositories import work_order_repository as work_order_repo
+from app.services import work_order_service as work_order_svc
 from app.services.mes_integration_service import latest_oee_by_line, list_recent_signals
 
 
@@ -63,6 +65,13 @@ async def get_workshop_board(db: AsyncSession) -> dict:
                 }
             )
 
+    wo_summary = await work_order_svc.get_summary(db)
+    wo_kanban_raw = await work_order_repo.list_kanban(db, limit_per_column=12)
+    wo_kanban = {
+        key: [work_order_svc.serialize_for_board(item) for item in items]
+        for key, items in wo_kanban_raw.items()
+    }
+
     equipment = []
     for m in machines[:12]:
         status = m.status
@@ -79,6 +88,15 @@ async def get_workshop_board(db: AsyncSession) -> dict:
         )
 
     alarms: list[dict] = []
+    if wo_summary.exception_count > 0:
+        alarms.append(
+            {
+                "level": "warning",
+                "code": "WORK_ORDER_EXCEPTION",
+                "message": f"{wo_summary.exception_count} 张工单存在异常",
+                "at": now.isoformat(),
+            }
+        )
     if reviewing > 0:
         alarms.append(
             {
@@ -144,6 +162,10 @@ async def get_workshop_board(db: AsyncSession) -> dict:
             "foundation_note": "ERP 推算 + MES 快照；可经 /api/v1/mes 接入实采",
         },
         "mes_signals": mes_signals,
+        "work_orders": {
+            "summary": wo_summary.model_dump(),
+            "kanban": wo_kanban,
+        },
         "live_quotes": [
             {
                 "id": str(q.id),

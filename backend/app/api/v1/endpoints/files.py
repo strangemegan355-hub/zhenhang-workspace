@@ -1,7 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import require_permissions
@@ -67,3 +70,21 @@ async def preview_file(
         "mime_type": file_obj.mime_type,
         "file_name": file_obj.file_name,
     }
+
+
+@router.get("/{file_id}/download")
+async def download_file(
+    file_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("platform:file:read"))],
+) -> Response:
+    data, file_name, mime_type = await app_svc.download_file_content(db, file_id)
+    safe_name = file_name.replace('"', "")
+    encoded = quote(file_name)
+    return Response(
+        content=data,
+        media_type=mime_type,
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{safe_name}\"; filename*=UTF-8''{encoded}",
+        },
+    )

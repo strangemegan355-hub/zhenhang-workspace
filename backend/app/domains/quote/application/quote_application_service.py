@@ -5,13 +5,15 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config.settings import settings
 from app.domains.events.application.event_bus import event_bus
 from app.domains.quote.policies.data_scope_policy import owner_scope_user_id
 from app.domains.quote.repositories import quote_repository as repo
 from app.notifications.notification_service import create_notification
 from app.schemas.common import PageResponse
-from app.schemas.quote import QuoteItemRead, QuoteRead, QuoteVersionRead
+from app.schemas.quote import ApprovalTemplateRead, QuoteItemRead, QuoteRead, QuoteVersionRead
 from app.realtime.publish import push_quote_export_status, push_quote_updated, push_workflow_transition
+from app.services.business_settings_service import get_business_settings_dict
 from app.services.audit_service import write_audit_log
 from app.services.industrial_copilot import build_industrial_copilot_analysis
 from app.services.quote_template_engine import list_template_catalog
@@ -144,6 +146,8 @@ async def create_quote_version(db: AsyncSession, quote_id: UUID, items_payload: 
                 "unit_price": price,
                 "line_total": line_total,
                 "source_type": item.get("source_type", "manual"),
+                "machine_id": item.get("machine_id"),
+                "power_kw": item.get("power_kw"),
                 "remark": item.get("remark"),
                 "created_by": current_user.id,
             },
@@ -199,10 +203,17 @@ async def create_quote_version(db: AsyncSession, quote_id: UUID, items_payload: 
     return version
 
 
-async def list_quotes(db: AsyncSession, *, page: int, page_size: int, q: str | None, current_user):
+async def list_quotes(db: AsyncSession, *, page: int, page_size: int, q: str | None, current_user, quote_kind: str | None = None):
     owner_id = owner_scope_user_id(current_user)
-    total, items = await repo.list_quotes(db, page=page, page_size=page_size, q=q, created_by=owner_id)
-    return PageResponse(total=total, page=page, page_size=page_size, items=items)
+    total, items = await repo.list_quotes(
+        db, page=page, page_size=page_size, q=q, created_by=owner_id, quote_kind=quote_kind
+    )
+    return PageResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        items=[QuoteRead.model_validate(i) for i in items],
+    )
 
 
 async def get_quote_detail(db: AsyncSession, quote_id: UUID, current_user):
@@ -252,11 +263,32 @@ async def list_export_templates() -> list[dict]:
 
 async def create_quote_wizard(db: AsyncSession, payload: dict, current_user):
     initial_items = payload.pop("initial_items", [])
+    seed_from_product = payload.pop("seed_from_product", True)
     quote_payload = {k: v for k, v in payload.items() if k != "initial_items"}
+    product_id = quote_payload.get("product_id")
+    if product_id and not quote_payload.get("machine_id"):
+        from app.repositories.product_repository import get_product
+
+        product = await get_product(db, product_id)
+        if product:
+            if product.machine_id and not quote_payload.get("machine_id"):
+                quote_payload["machine_id"] = product.machine_id
+            if product.default_bom_id and not quote_payload.get("bom_id"):
+                quote_payload["bom_id"] = product.default_bom_id
+
     quote = await create_quote(db, quote_payload, current_user)
 
     items_payload = list(initial_items)
     bom_id = quote.bom_id
+    if not items_payload and product_id and seed_from_product:
+        from app.services.product_pricing_service import build_product_quote_items
+
+        items_payload = await build_product_quote_items(
+            db,
+            product_id,
+            cost_template_id=quote.cost_template_id,
+            price_template_id=quote.price_template_id,
+        )
     if not items_payload and bom_id:
         bom_items = await repo.list_bom_items(db, bom_id)
         for bi in bom_items:
@@ -397,7 +429,7 @@ async def transition_quote_state(db: AsyncSession, quote_id: UUID, action_code: 
         owner_id=quote.created_by,
         department_id=getattr(current_user, "department_id", None),
     )
-    return quote
+    return QuoteRead.model_validate(quote)
 
 
 async def create_approval_template(db: AsyncSession, payload: dict, current_user):
@@ -438,7 +470,12 @@ async def create_approval_template(db: AsyncSession, payload: dict, current_user
 
 async def list_approval_templates(db: AsyncSession, *, page: int, page_size: int, q: str | None):
     total, items = await repo.list_approval_templates(db, page=page, page_size=page_size, q=q)
-    return PageResponse(total=total, page=page, page_size=page_size, items=items)
+    return PageResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        items=[ApprovalTemplateRead.model_validate(i) for i in items],
+    )
 
 
 async def compare_quote_versions(db: AsyncSession, quote_id: UUID, from_version_no: int, to_version_no: int) -> dict:
@@ -513,7 +550,7 @@ async def create_export_task(
             "created_by": current_user.id,
         },
         created_by=current_user.id,
-        dispatch_immediately=False,
+        dispatch_immediately=settings.app_env == "local",
     )
     await create_notification(
         db,
@@ -528,12 +565,16 @@ async def create_export_task(
     )
     await db.commit()
     await db.refresh(task)
+    if task.status == "pending":
+        await event_bus.process_pending(db, event_type="quote.export.requested", limit=20)
+        await db.refresh(task)
     await push_quote_export_status(
         user_id=current_user.id,
         task_id=task.id,
         quote_id=quote.id,
         quote_no=quote.quote_no,
-        status="pending",
+        status=task.status,
+        file_id=task.file_id,
         owner_id=quote.created_by,
     )
     return task
@@ -551,7 +592,9 @@ async def replay_dead_letter_events(db: AsyncSession, event_type: str | None):
 
 
 async def process_pending_events(db: AsyncSession, event_type: str | None):
-    return await event_bus.process_pending(db, event_type=event_type, limit=200)
+    result = await event_bus.process_pending(db, event_type=event_type, limit=200)
+    await db.commit()
+    return result
 
 
 async def resolve_next_approval_node(db: AsyncSession, quote) -> object | None:
@@ -571,6 +614,231 @@ async def resolve_next_approval_node(db: AsyncSession, quote) -> object | None:
         if node.node_order > quote.current_approval_order:
             return node
     return None
+
+
+def _quote_prefix() -> str:
+    return f"Q{date.today().strftime('%Y%m%d')}-"
+
+
+def _customer_quote_prefix() -> str:
+    return f"BJ-{date.today().strftime('%Y%m%d')}-"
+
+
+def _machine_lines_to_items(machine_lines: list[dict]) -> list[dict]:
+    items: list[dict] = []
+    for idx, line in enumerate(machine_lines):
+        items.append(
+            {
+                "item_code": f"MACH-{idx + 1:03d}",
+                "item_name": line["name"],
+                "spec": line.get("spec"),
+                "unit": line.get("unit") or "台",
+                "quantity": Decimal(str(line.get("quantity", 1))),
+                "unit_price": Decimal(str(line.get("unit_price", 0))),
+                "source_type": "product" if line.get("product_id") else "machine",
+                "machine_id": line.get("machine_id"),
+                "product_id": line.get("product_id"),
+                "power_kw": line.get("power_kw"),
+            }
+        )
+        motor_product_id = line.get("motor_product_id")
+        motor_unit_price = Decimal(str(line.get("motor_unit_price") or 0))
+        if motor_product_id and motor_unit_price > 0:
+            items.append(
+                {
+                    "item_code": f"MOTOR-{idx + 1:03d}",
+                    "item_name": f"配套电机-{line.get('power_kw') or line.get('name') or '电机'}",
+                    "spec": line.get("power_kw"),
+                    "unit": "台",
+                    "quantity": Decimal(str(line.get("quantity", 1))),
+                    "unit_price": motor_unit_price,
+                    "source_type": "product",
+                    "machine_id": None,
+                    "product_id": motor_product_id,
+                    "power_kw": line.get("power_kw"),
+                }
+            )
+    return items
+
+
+async def _resolve_tax_rate(db: AsyncSession, tax_rate: float | None) -> Decimal:
+    if tax_rate is not None:
+        return Decimal(str(tax_rate))
+    defaults = await get_business_settings_dict(db)
+    return Decimal(str(defaults.get("default_tax_rate", 13)))
+
+
+async def _apply_customer_quote_totals(db: AsyncSession, quote, version, *, tax_rate: Decimal, subtotal: Decimal) -> None:
+    tax_amount = (subtotal * tax_rate / Decimal("100")).quantize(Decimal("0.01"))
+    final_total = (subtotal + tax_amount).quantize(Decimal("0.01"))
+    version.total_amount = subtotal
+    version.total_cost = Decimal("0")
+    version.profit_amount = final_total - subtotal
+    version.profit_rate = Decimal("0") if final_total == 0 else (version.profit_amount / final_total)
+    version.analysis_snapshot = {
+        "quote_kind": "customer",
+        "tax_rate": str(tax_rate),
+        "before_tax": str(subtotal),
+        "tax_amount": str(tax_amount),
+        "final_total": str(final_total),
+    }
+    quote.total_amount = final_total
+    quote.tax_rate = tax_rate
+    await db.flush()
+
+
+async def create_customer_quote(db: AsyncSession, payload: dict, current_user):
+    machine_lines = payload.get("machine_lines") or []
+    if not machine_lines:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one machine line is required")
+
+    tax_rate = await _resolve_tax_rate(db, payload.get("tax_rate"))
+    prefix = _customer_quote_prefix()
+    seq = await repo.next_customer_quote_sequence(db, prefix)
+    quote_no = f"{prefix}{seq:03d}"
+
+    first_machine_id = machine_lines[0].get("machine_id")
+    header_machine_id = first_machine_id or await repo.get_generic_machine_id(db)
+
+    quote = await repo.create_quote(
+        db,
+        {
+            "quote_no": quote_no,
+            "title": payload["title"],
+            "customer_id": payload["customer_id"],
+            "project_id": payload.get("project_id"),
+            "machine_id": header_machine_id,
+            "quote_kind": "customer",
+            "tax_rate": tax_rate,
+            "currency": payload.get("currency", "CNY"),
+            "valid_until": payload.get("valid_until"),
+            "remark": payload.get("remark"),
+            "total_amount": Decimal("0"),
+            "current_approval_order": 0,
+            "workflow_state": "draft",
+            "created_by": current_user.id,
+        },
+        autocommit=False,
+    )
+
+    items_payload = _machine_lines_to_items(machine_lines)
+    subtotal = Decimal("0")
+    for item in items_payload:
+        subtotal += item["quantity"] * item["unit_price"]
+
+    next_version = 1
+    await repo.mark_other_versions_not_current(db, quote.id)
+    version = await repo.create_quote_version(
+        db,
+        {
+            "quote_id": quote.id,
+            "version_no": next_version,
+            "bom_snapshot": None,
+            "cost_snapshot": None,
+            "analysis_snapshot": {},
+            "total_amount": Decimal("0"),
+            "total_cost": Decimal("0"),
+            "profit_amount": Decimal("0"),
+            "profit_rate": Decimal("0"),
+            "is_current": True,
+            "changed_at": datetime.now(UTC),
+            "created_by": current_user.id,
+        },
+        autocommit=False,
+    )
+
+    for item in items_payload:
+        qty = item["quantity"]
+        price = item["unit_price"]
+        line_total = qty * price
+        await repo.create_quote_item(
+            db,
+            {
+                "quote_version_id": version.id,
+                **item,
+                "line_total": line_total,
+                "created_by": current_user.id,
+            },
+            autocommit=False,
+        )
+
+    await _apply_customer_quote_totals(db, quote, version, tax_rate=tax_rate, subtotal=subtotal)
+    await db.commit()
+    return await get_quote_detail(db, quote.id, current_user)
+
+
+async def update_customer_quote(db: AsyncSession, quote_id: UUID, payload: dict, current_user):
+    quote = await repo.get_quote(db, quote_id)
+    if quote is None or quote.quote_kind != "customer":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer quote not found")
+    if quote.receivable_status == "posted":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="已生成应收的报价不可修改，请先作废对应应收账目")
+
+    header_updates = {k: v for k, v in payload.items() if k in {"title", "customer_id", "project_id", "currency", "valid_until", "remark"} and v is not None}
+    if header_updates:
+        await repo.update_quote(db, quote, header_updates, autocommit=False)
+
+    if payload.get("machine_lines") is not None:
+        tax_rate = await _resolve_tax_rate(db, payload.get("tax_rate") if payload.get("tax_rate") is not None else float(quote.tax_rate or 0))
+        items_payload = _machine_lines_to_items(payload["machine_lines"])
+        subtotal = sum((i["quantity"] * i["unit_price"] for i in items_payload), Decimal("0"))
+        next_version = await repo.max_quote_version_no(db, quote.id) + 1
+        await repo.mark_other_versions_not_current(db, quote.id)
+        version = await repo.create_quote_version(
+            db,
+            {
+                "quote_id": quote.id,
+                "version_no": next_version,
+                "bom_snapshot": None,
+                "cost_snapshot": None,
+                "analysis_snapshot": {},
+                "total_amount": Decimal("0"),
+                "total_cost": Decimal("0"),
+                "profit_amount": Decimal("0"),
+                "profit_rate": Decimal("0"),
+                "is_current": True,
+                "changed_at": datetime.now(UTC),
+                "created_by": current_user.id,
+            },
+            autocommit=False,
+        )
+        for item in items_payload:
+            qty = item["quantity"]
+            price = item["unit_price"]
+            await repo.create_quote_item(
+                db,
+                {
+                    "quote_version_id": version.id,
+                    **item,
+                    "line_total": qty * price,
+                    "created_by": current_user.id,
+                },
+                autocommit=False,
+            )
+        first_machine_id = payload["machine_lines"][0].get("machine_id") if payload["machine_lines"] else None
+        if first_machine_id:
+            quote.machine_id = first_machine_id
+        await _apply_customer_quote_totals(db, quote, version, tax_rate=tax_rate, subtotal=subtotal)
+    elif payload.get("tax_rate") is not None:
+        current_version = await repo.get_current_quote_version(db, quote.id)
+        if current_version:
+            subtotal = Decimal(str(current_version.total_amount or 0))
+            tax_rate = await _resolve_tax_rate(db, payload.get("tax_rate"))
+            await _apply_customer_quote_totals(db, quote, current_version, tax_rate=tax_rate, subtotal=subtotal)
+
+    await db.commit()
+    return await get_quote_detail(db, quote.id, current_user)
+
+
+async def delete_customer_quote(db: AsyncSession, quote_id: UUID, current_user):
+    quote = await repo.get_quote(db, quote_id)
+    if quote is None or quote.quote_kind != "customer":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer quote not found")
+    owner_id = owner_scope_user_id(current_user)
+    if owner_id is not None and quote.created_by != owner_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Quote access denied")
+    await repo.soft_delete_quote(db, quote, autocommit=True)
+    return QuoteRead.model_validate(quote)
 
 
 async def current_approval_node(db: AsyncSession, quote) -> object | None:

@@ -13,6 +13,7 @@ from app.domains.file.infrastructure.minio_client import (
     apply_lifecycle_policies,
     ensure_bucket,
     generate_thumbnail_object_name,
+    get_object_bytes,
     presigned_get_url,
     upload_object,
 )
@@ -171,6 +172,12 @@ async def cache_preview_url(db: AsyncSession, file_id: UUID, current_user_id: UU
         )
         await db.commit()
     return {"preview_url": preview_url, "thumb_url": thumb_url, "cache_hit": False}
+
+
+async def download_file_content(db: AsyncSession, file_id: UUID) -> tuple[bytes, str, str]:
+    file_obj = await get_file_or_404(db, file_id)
+    data = get_object_bytes(bucket=file_obj.bucket, object_name=file_obj.object_name)
+    return data, file_obj.file_name, file_obj.mime_type or "application/octet-stream"
 
 
 async def ensure_lifecycle_policy(db: AsyncSession, category: str, current_user_id: UUID | None) -> None:

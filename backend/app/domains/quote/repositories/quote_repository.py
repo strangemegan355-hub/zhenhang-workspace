@@ -117,10 +117,51 @@ async def get_quote(db: AsyncSession, quote_id: UUID) -> Quote | None:
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
-async def list_quotes(db: AsyncSession, *, page: int, page_size: int, q: str | None, created_by: UUID | None = None):
+async def soft_delete_quote(db: AsyncSession, quote: Quote, *, autocommit: bool = True) -> Quote:
+    quote.is_deleted = True
+    await db.flush()
+    if autocommit:
+        await db.commit()
+    await db.refresh(quote)
+    return quote
+
+
+async def update_quote(db: AsyncSession, quote: Quote, data: dict, *, autocommit: bool = True) -> Quote:
+    for key, value in data.items():
+        setattr(quote, key, value)
+    await db.flush()
+    if autocommit:
+        await db.commit()
+    await db.refresh(quote)
+    return quote
+
+
+async def get_generic_machine_id(db: AsyncSession) -> UUID | None:
+    from app.models.machine import Machine
+
+    stmt = select(Machine.id).where(Machine.code == "GENERIC", Machine.is_deleted.is_(False)).limit(1)
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def next_customer_quote_sequence(db: AsyncSession, prefix: str) -> int:
+    stmt = select(func.count()).select_from(Quote).where(Quote.quote_no.like(f"{prefix}%"))
+    return int((await db.execute(stmt)).scalar_one()) + 1
+
+
+async def list_quotes(
+    db: AsyncSession,
+    *,
+    page: int,
+    page_size: int,
+    q: str | None,
+    created_by: UUID | None = None,
+    quote_kind: str | None = None,
+):
     filters = [Quote.is_deleted.is_(False)]
     if created_by is not None:
         filters.append(Quote.created_by == created_by)
+    if quote_kind:
+        filters.append(Quote.quote_kind == quote_kind)
     if q:
         key = f"%{q.strip()}%"
         filters.append(or_(cast(Quote.quote_no, String).ilike(key), cast(Quote.title, String).ilike(key)))
@@ -217,6 +258,11 @@ async def list_quote_items_by_version(db: AsyncSession, quote_version_id: UUID) 
         QuoteItem.is_deleted.is_(False),
     )
     return list((await db.execute(stmt)).scalars().all())
+
+
+async def get_quote_item(db: AsyncSession, item_id: UUID) -> QuoteItem | None:
+    stmt = select(QuoteItem).where(QuoteItem.id == item_id, QuoteItem.is_deleted.is_(False))
+    return (await db.execute(stmt)).scalar_one_or_none()
 
 
 async def update_export_task(

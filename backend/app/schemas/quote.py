@@ -2,18 +2,28 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class QuoteCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     customer_id: UUID
-    machine_id: UUID
+    project_id: UUID | None = None
+    machine_id: UUID | None = None
+    product_id: UUID | None = None
     bom_id: UUID | None = None
+    cost_template_id: UUID | None = None
+    price_template_id: UUID | None = None
     approval_template_id: UUID | None = None
     currency: str = Field(default="CNY", max_length=8)
     valid_until: date | None = None
     remark: str | None = None
+
+    @model_validator(mode="after")
+    def require_product_or_machine(self) -> QuoteCreate:
+        if not self.machine_id and not self.product_id:
+            raise ValueError("machine_id or product_id is required")
+        return self
 
 
 class QuoteItemCreate(BaseModel):
@@ -24,6 +34,8 @@ class QuoteItemCreate(BaseModel):
     quantity: Decimal
     unit_price: Decimal
     source_type: str = Field(default="manual", max_length=32)
+    machine_id: UUID | None = None
+    power_kw: str | None = Field(default=None, max_length=64)
     remark: str | None = None
 
 
@@ -43,7 +55,11 @@ class QuoteItemRead(BaseModel):
     unit_price: Decimal
     line_total: Decimal
     source_type: str
+    machine_id: UUID | None = None
+    product_id: UUID | None = None
+    power_kw: str | None = None
     remark: str | None = None
+    selected_options: list | None = None
 
     model_config = {"from_attributes": True}
 
@@ -79,15 +95,22 @@ class QuoteRead(BaseModel):
     quote_no: str
     title: str
     customer_id: UUID
-    machine_id: UUID
+    project_id: UUID | None = None
+    machine_id: UUID | None = None
+    product_id: UUID | None = None
     bom_id: UUID | None = None
+    cost_template_id: UUID | None = None
+    price_template_id: UUID | None = None
     approval_template_id: UUID | None = None
+    quote_kind: str = "industrial"
+    tax_rate: Decimal | None = None
     current_approval_order: int
     workflow_state: str
     currency: str
     total_amount: Decimal
     valid_until: date | None = None
     remark: str | None = None
+    receivable_status: str = "none"
     created_at: datetime
     updated_at: datetime
     created_by: UUID | None = None
@@ -178,16 +201,61 @@ class QuoteExportRequest(BaseModel):
     template_id: str | None = Field(default=None, max_length=64)
 
 
+class CustomerQuoteLineInput(BaseModel):
+    machine_id: UUID | None = None
+    product_id: UUID | None = None
+    name: str = Field(min_length=1, max_length=200)
+    spec: str | None = Field(default=None, max_length=160)
+    unit: str | None = Field(default=None, max_length=32)
+    power_kw: str | None = Field(default=None, max_length=64)
+    motor_product_id: UUID | None = None
+    motor_unit_price: Decimal | None = Field(default=None, ge=0)
+    quantity: Decimal = Field(default=Decimal("1"), gt=0)
+    unit_price: Decimal = Field(default=Decimal("0"), ge=0)
+
+
+class CustomerQuoteCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    customer_id: UUID
+    project_id: UUID | None = None
+    currency: str = Field(default="CNY", max_length=8)
+    tax_rate: float | None = Field(default=None, ge=0, le=100)
+    valid_until: date | None = None
+    remark: str | None = None
+    machine_lines: list[CustomerQuoteLineInput] = Field(min_length=1)
+
+
+class CustomerQuoteUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    customer_id: UUID | None = None
+    project_id: UUID | None = None
+    currency: str | None = Field(default=None, max_length=8)
+    tax_rate: float | None = Field(default=None, ge=0, le=100)
+    valid_until: date | None = None
+    remark: str | None = None
+    machine_lines: list[CustomerQuoteLineInput] | None = None
+
+
 class QuoteWizardCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     customer_id: UUID
-    machine_id: UUID
+    machine_id: UUID | None = None
+    product_id: UUID | None = None
     bom_id: UUID | None = None
+    cost_template_id: UUID | None = None
+    price_template_id: UUID | None = None
     approval_template_id: UUID | None = None
     currency: str = Field(default="CNY", max_length=8)
     valid_until: date | None = None
     remark: str | None = None
+    seed_from_product: bool = True
     initial_items: list[QuoteItemCreate] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_product_or_machine(self) -> QuoteWizardCreate:
+        if not self.machine_id and not self.product_id:
+            raise ValueError("machine_id or product_id is required")
+        return self
 
 
 class QuoteExportTaskRead(BaseModel):

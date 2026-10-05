@@ -94,7 +94,10 @@ async def create_machine_parameter(db: AsyncSession, data: dict) -> MachineParam
     return await _create(db, MachineParameter, data)
 
 
-async def list_machine_parameters(db: AsyncSession, page: int, page_size: int, q: str | None):
+async def list_machine_parameters(db: AsyncSession, page: int, page_size: int, q: str | None, *, machine_id=None):
+    extra = []
+    if machine_id is not None:
+        extra.append(MachineParameter.machine_id == machine_id)
     return await paginate_query(
         db,
         MachineParameter,
@@ -102,6 +105,7 @@ async def list_machine_parameters(db: AsyncSession, page: int, page_size: int, q
         page_size,
         q,
         [MachineParameter.param_key, MachineParameter.param_name, MachineParameter.value],
+        extra,
     )
 
 
@@ -121,8 +125,11 @@ async def create_machine_image(db: AsyncSession, data: dict) -> MachineImage:
     return await _create(db, MachineImage, data)
 
 
-async def list_machine_images(db: AsyncSession, page: int, page_size: int, q: str | None):
-    return await paginate_query(db, MachineImage, page, page_size, q, [MachineImage.file_name, MachineImage.file_url])
+async def list_machine_images(db: AsyncSession, page: int, page_size: int, q: str | None, *, machine_id=None):
+    extra = []
+    if machine_id is not None:
+        extra.append(MachineImage.machine_id == machine_id)
+    return await paginate_query(db, MachineImage, page, page_size, q, [MachineImage.file_name, MachineImage.file_url], extra)
 
 
 async def get_machine_image(db: AsyncSession, object_id: UUID):

@@ -1,14 +1,16 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.domains.quote.application import quote_application_service as app_svc
+from app.services import quote_option_service as opt_svc
 from app.models.user import User
 from app.schemas.common import PageResponse
+from app.schemas.option_group import QuoteItemOptionsUpdate
 from app.schemas.quote import (
     ApprovalNodeRead,
     ApprovalTemplateDetailRead,
@@ -20,10 +22,13 @@ from app.schemas.quote import (
     QuoteDetailRead,
     QuoteExportRequest,
     QuoteExportTaskRead,
+    QuoteItemRead,
     QuoteRead,
     QuoteVersionCreate,
     QuoteVersionRead,
     QuoteWizardCreate,
+    CustomerQuoteCreate,
+    CustomerQuoteUpdate,
 )
 
 router = APIRouter()
@@ -45,8 +50,9 @@ async def list_quotes(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     q: str | None = Query(default=None, max_length=120),
+    quote_kind: str | None = Query(default=None, max_length=32),
 ) -> PageResponse:
-    return await app_svc.list_quotes(db, page=page, page_size=page_size, q=q, current_user=current)
+    return await app_svc.list_quotes(db, page=page, page_size=page_size, q=q, current_user=current, quote_kind=quote_kind)
 
 
 @router.post("/wizard", response_model=QuoteDetailRead, status_code=status.HTTP_201_CREATED)
@@ -64,6 +70,36 @@ async def create_quote_wizard(
         current,
     )
     return QuoteDetailRead.model_validate(data)
+
+
+@router.post("/customer", response_model=QuoteDetailRead, status_code=status.HTTP_201_CREATED)
+async def create_customer_quote(
+    payload: CustomerQuoteCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_permissions("business:quote:create"))],
+) -> QuoteDetailRead:
+    data = await app_svc.create_customer_quote(db, payload.model_dump(), current)
+    return QuoteDetailRead.model_validate(data)
+
+
+@router.put("/{quote_id}/customer", response_model=QuoteDetailRead)
+async def update_customer_quote(
+    quote_id: UUID,
+    payload: CustomerQuoteUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_permissions("business:quote:update"))],
+) -> QuoteDetailRead:
+    data = await app_svc.update_customer_quote(db, quote_id, payload.model_dump(exclude_unset=True), current)
+    return QuoteDetailRead.model_validate(data)
+
+
+@router.delete("/{quote_id}/customer", response_model=QuoteRead)
+async def delete_customer_quote(
+    quote_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_permissions("business:quote:update"))],
+) -> QuoteRead:
+    return await app_svc.delete_customer_quote(db, quote_id, current)
 
 
 @router.post("/versions", response_model=QuoteVersionRead, status_code=status.HTTP_201_CREATED)
@@ -214,3 +250,17 @@ async def process_pending_events(
     event_type: str | None = Query(default=None, max_length=128),
 ) -> dict:
     return await app_svc.process_pending_events(db, event_type)
+
+
+@router.put("/{quote_id}/items/{item_id}/options", response_model=QuoteItemRead)
+async def update_quote_item_options(
+    quote_id: UUID,
+    item_id: UUID,
+    payload: QuoteItemOptionsUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("business:quote:update"))],
+) -> dict:
+    try:
+        return await opt_svc.update_quote_item_options(db, quote_id, item_id, payload.option_item_ids)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

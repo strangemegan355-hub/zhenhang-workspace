@@ -74,3 +74,20 @@ def require_permissions(*permission_codes: str) -> Callable[..., User]:
         return user
 
     return dependency
+
+
+def require_any_permission(*permission_codes: str) -> Callable[..., User]:
+    async def dependency(user: Annotated[User, Depends(get_current_active_user)]) -> User:
+        if user.is_superuser:
+            return user
+        effective = collect_permission_codes(user)
+        if "*:*:*" in effective:
+            return user
+        if any(code in effective for code in permission_codes):
+            return user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"message": "Forbidden", "required_any": list(permission_codes)},
+        )
+
+    return dependency

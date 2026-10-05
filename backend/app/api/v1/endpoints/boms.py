@@ -33,15 +33,6 @@ async def create_machine_bom(
     return await svc.create_machine_bom(db, payload.model_dump(), current)
 
 
-@router.get("/{bom_id}", response_model=MachineBomRead)
-async def get_machine_bom(
-    bom_id: UUID,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("master:bom:read"))],
-) -> MachineBomRead:
-    return await svc.get_machine_bom(db, bom_id)
-
-
 @router.get("", response_model=PageResponse)
 async def list_machine_boms(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -53,32 +44,14 @@ async def list_machine_boms(
     return await svc.list_machine_boms(db, page, page_size, q)
 
 
-@router.put("/{bom_id}", response_model=MachineBomRead)
-async def update_machine_bom(
-    bom_id: UUID,
-    payload: MachineBomUpdate,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("master:bom:update"))],
-) -> MachineBomRead:
-    return await svc.update_machine_bom(db, bom_id, payload.model_dump(exclude_unset=True))
-
-
-@router.delete("/{bom_id}", response_model=MachineBomRead)
-async def delete_machine_bom(
-    bom_id: UUID,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("master:bom:delete"))],
-) -> MachineBomRead:
-    return await svc.delete_machine_bom(db, bom_id)
-
-
 @router.post("/items", response_model=MachineBomItemRead, status_code=status.HTTP_201_CREATED)
 async def create_machine_bom_item(
     payload: MachineBomItemCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("master:bom_item:create"))],
 ) -> MachineBomItemRead:
-    return await svc.create_machine_bom_item(db, payload.model_dump(), current)
+    obj = await svc.create_machine_bom_item(db, payload.model_dump(), current)
+    return MachineBomItemRead.model_validate(obj)
 
 
 @router.post("/items/batch", response_model=list[MachineBomItemRead], status_code=status.HTTP_201_CREATED)
@@ -87,7 +60,8 @@ async def create_machine_bom_items_batch(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("master:bom_item:create"))],
 ) -> list[MachineBomItemRead]:
-    return await svc.create_bom_items_batch(db, [i.model_dump() for i in payload.items], current)
+    rows = await svc.create_bom_items_batch(db, [i.model_dump() for i in payload.items], current)
+    return [MachineBomItemRead.model_validate(row) for row in rows]
 
 
 @router.get("/items", response_model=PageResponse)
@@ -128,6 +102,34 @@ async def delete_machine_boms_batch(
     current: Annotated[User, Depends(require_permissions("master:bom:delete"))],
 ) -> dict:
     return await svc.delete_machine_boms_batch(db, payload.ids, current)
+
+
+@router.get("/{bom_id}", response_model=MachineBomRead)
+async def get_machine_bom(
+    bom_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("master:bom:read"))],
+) -> MachineBomRead:
+    return await svc.get_machine_bom(db, bom_id)
+
+
+@router.put("/{bom_id}", response_model=MachineBomRead)
+async def update_machine_bom(
+    bom_id: UUID,
+    payload: MachineBomUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("master:bom:update"))],
+) -> MachineBomRead:
+    return await svc.update_machine_bom(db, bom_id, payload.model_dump(exclude_unset=True))
+
+
+@router.delete("/{bom_id}", response_model=MachineBomRead)
+async def delete_machine_bom(
+    bom_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(require_permissions("master:bom:delete"))],
+) -> MachineBomRead:
+    return await svc.delete_machine_bom(db, bom_id)
 
 
 @router.post("/{bom_id}/actions/transition", response_model=MachineBomRead)

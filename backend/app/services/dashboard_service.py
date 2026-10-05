@@ -9,6 +9,7 @@ from app.domains.quote.repositories import quote_repository as quote_repo
 from app.models.notification import Notification
 from app.models.quote import Quote, QuoteExportTask
 from app.models.user import User
+from app.services import project_service as project_svc
 
 
 async def get_dashboard_overview(db: AsyncSession, current_user: User) -> dict:
@@ -77,6 +78,8 @@ async def get_dashboard_overview(db: AsyncSession, current_user: User) -> dict:
         for q in recent
     ]
 
+    profit_agg = await project_svc.aggregate_profit_kpis(db)
+
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "kpis": {
@@ -88,6 +91,13 @@ async def get_dashboard_overview(db: AsyncSession, current_user: User) -> dict:
             "unread_notifications": unread_notifications,
             "export_pending": export_pending,
         },
+        "profit_kpis": {
+            "active_projects": profit_agg["active_projects"],
+            "over_budget_count": profit_agg["over_budget_count"],
+            "total_realized_profit": profit_agg["total_realized_profit"],
+            "total_variance": profit_agg["total_variance"],
+        },
+        "over_budget_top3": profit_agg["over_budget_top3"],
         "recent_quotes": recent_items,
         "pipeline": [
             {"state": "draft", "count": draft},

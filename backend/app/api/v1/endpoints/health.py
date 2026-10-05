@@ -1,7 +1,7 @@
 from time import perf_counter
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,24 @@ from app.db.session import get_db
 from app.models.tasking import TaskQueue
 
 router = APIRouter()
+
+
+def _is_production() -> bool:
+    return settings.environment == "production" or settings.app_env == "prod"
+
+
+async def verify_metrics_access(
+    x_metrics_api_key: Annotated[str | None, Header(alias="X-Metrics-Api-Key")] = None,
+) -> None:
+    if not _is_production():
+        return
+    if not settings.metrics_api_key:
+        raise HTTPException(
+            status_code=403,
+            detail="Metrics endpoint is disabled in production until METRICS_API_KEY is configured",
+        )
+    if x_metrics_api_key != settings.metrics_api_key:
+        raise HTTPException(status_code=403, detail="Invalid or missing X-Metrics-Api-Key")
 
 
 @router.get("/live", summary="Liveness probe")
@@ -45,7 +63,11 @@ async def ready(db: Annotated[AsyncSession, Depends(get_db)]) -> dict:
     }
 
 
-@router.get("/metrics", summary="Enterprise metrics snapshot")
+@router.get(
+    "/metrics",
+    summary="Enterprise metrics snapshot",
+    dependencies=[Depends(verify_metrics_access)],
+)
 async def metrics(db: Annotated[AsyncSession, Depends(get_db)]) -> dict:
     pending = int(
         (

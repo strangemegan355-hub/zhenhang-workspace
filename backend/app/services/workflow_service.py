@@ -152,4 +152,8 @@ async def get_next_state_code(
             f"Action '{action_code}' is not allowed from '{current_state_code}'",
             status_code=400,
         )
-    return transition.to_state.code
+    states = {s.id: s for s in await repo.list_states(db, entity_type)}
+    to_state = states.get(transition.to_state_id)
+    if to_state is None:
+        raise BusinessException("WORKFLOW_STATE_NOT_FOUND", "Target workflow state not found", status_code=404)
+    return to_state.code

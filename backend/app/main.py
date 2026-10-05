@@ -1,5 +1,10 @@
 from contextlib import asynccontextmanager
+import asyncio
 import json
+import sys
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,14 +52,16 @@ openapi_tags = [
     {"name": "business.quote", "description": "Quote domain APIs"},
 ]
 
-app = FastAPI(title=settings.app_name, debug=settings.debug, lifespan=lifespan, openapi_tags=openapi_tags)
+_is_production = settings.environment == "production" or settings.app_env == "prod"
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title=settings.app_name,
+    debug=settings.debug,
+    lifespan=lifespan,
+    openapi_tags=openapi_tags,
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
 )
 
 
@@ -65,11 +72,18 @@ class UnifiedResponseMiddleware(BaseHTTPMiddleware):
         elapsed_ms = (now_perf() - started) * 1000
         enterprise_metrics.mark_request(elapsed_ms=elapsed_ms, is_error=response.status_code >= 400)
 
+        if request.method == "OPTIONS":
+            return response
         if not request.url.path.startswith(settings.api_v1_prefix):
             return response
         if request.url.path in {"/docs", "/redoc", "/openapi.json"}:
             return response
         if response.headers.get("content-type", "").startswith("text/event-stream"):
+            return response
+
+        if request.url.path.rstrip("/").endswith("/download"):
+            return response
+        if response.headers.get("content-disposition"):
             return response
 
         body = b""
@@ -96,6 +110,14 @@ class UnifiedResponseMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(UnifiedResponseMiddleware)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 
@@ -109,4 +131,7 @@ async def business_exception_handler(_: Request, exc: BusinessException) -> JSON
 
 @app.get("/", include_in_schema=False)
 async def root() -> dict[str, str]:
-    return {"service": settings.app_name, "version": __version__, "docs": "/docs"}
+    payload: dict[str, str] = {"service": settings.app_name, "version": __version__}
+    if not _is_production:
+        payload["docs"] = "/docs"
+    return payload

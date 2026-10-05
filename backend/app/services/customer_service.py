@@ -1,13 +1,24 @@
+from typing import TypeVar
+
 from fastapi import HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.repositories import customer_repository as repo
 from app.schemas.common import PageResponse
+from app.schemas.customer import CustomerContactRead, CustomerFollowupRead, CustomerRead
+
+T = TypeVar("T", bound=BaseModel)
 
 
-def _page(total: int, page: int, page_size: int, items: list) -> PageResponse:
-    return PageResponse(total=total, page=page, page_size=page_size, items=items)
+def _page(total: int, page: int, page_size: int, items: list, schema: type[T]) -> PageResponse:
+    return PageResponse(
+        total=total,
+        page=page,
+        page_size=page_size,
+        items=[schema.model_validate(i) for i in items],
+    )
 
 
 async def create_customer(db: AsyncSession, payload: dict, current_user: User):
@@ -17,7 +28,7 @@ async def create_customer(db: AsyncSession, payload: dict, current_user: User):
 
 async def list_customers(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, items = await repo.list_customers(db, page, page_size, q)
-    return _page(total, page, page_size, items)
+    return _page(total, page, page_size, items, CustomerRead)
 
 
 async def get_customer_or_404(db: AsyncSession, object_id):
@@ -44,7 +55,7 @@ async def create_customer_contact(db: AsyncSession, payload: dict, current_user:
 
 async def list_customer_contacts(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, items = await repo.list_customer_contacts(db, page, page_size, q)
-    return _page(total, page, page_size, items)
+    return _page(total, page, page_size, items, CustomerContactRead)
 
 
 async def get_customer_contact_or_404(db: AsyncSession, object_id):
@@ -71,7 +82,7 @@ async def create_customer_followup(db: AsyncSession, payload: dict, current_user
 
 async def list_customer_followups(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, items = await repo.list_customer_followups(db, page, page_size, q)
-    return _page(total, page, page_size, items)
+    return _page(total, page, page_size, items, CustomerFollowupRead)
 
 
 async def get_customer_followup_or_404(db: AsyncSession, object_id):

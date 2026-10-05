@@ -1,3 +1,5 @@
+import asyncio
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import verify_password
@@ -9,6 +11,7 @@ async def authenticate_user(db: AsyncSession, username: str, password: str) -> U
     user = await get_user_by_username(db, username)
     if user is None:
         return None
-    if not verify_password(password, user.hashed_password):
+    valid = await asyncio.to_thread(verify_password, password, user.hashed_password)
+    if not valid:
         return None
     return user

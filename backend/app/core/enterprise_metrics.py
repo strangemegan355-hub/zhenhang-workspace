@@ -103,13 +103,18 @@ class EnterpriseMetrics:
 
     def snapshot(self) -> dict:
         with self._lock:
+            avg_ms = (
+                round(self.request_latency_sum_ms / self.request_total, 2)
+                if self.request_total
+                else 0.0
+            )
             return {
                 "uptime_seconds": self.uptime_seconds(),
                 "api": {
                     "request_total": self.request_total,
                     "error_total": self.error_total,
                     "last_request_ms": round(self.last_request_ms, 2),
-                    "avg_request_ms": self.avg_request_ms(),
+                    "avg_request_ms": avg_ms,
                     "error_rate": round(self.error_total / max(self.request_total, 1), 4),
                 },
                 "realtime": {

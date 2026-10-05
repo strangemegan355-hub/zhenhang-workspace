@@ -21,5 +21,7 @@ class UserPublic(BaseModel):
     is_superuser: bool
     department_id: UUID | None = None
     roles: list[RoleBrief] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
+    data_scope: str = "self"
 
     model_config = {"from_attributes": True}

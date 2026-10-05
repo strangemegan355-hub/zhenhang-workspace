@@ -4,9 +4,11 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config.settings import settings
 from app.domains.quote.repositories import quote_repository as repo
 from app.models.customer import Customer
 from app.models.machine import Machine
+from app.services import business_settings_service as business_settings_svc
 
 
 async def build_export_payload(
@@ -70,6 +72,10 @@ async def build_export_payload(
     profit_amount = version.profit_amount if version else 0
     profit_rate = version.profit_rate if version else 0
 
+    biz = await business_settings_svc.get_business_settings_dict(db)
+    company_name = biz.get("company_name") or settings.company_name
+    footer_note = biz.get("export_footer") or settings.company_export_footer
+
     return {
         "format": export_format,
         "template_id": template_id,
@@ -88,6 +94,8 @@ async def build_export_payload(
         "total_cost": str(total_cost),
         "profit_amount": str(profit_amount),
         "profit_rate": str(profit_rate),
-        "company_name": "振航智能制造",
-        "footer_note": "本报价单由振航 ERP 工业报价模块生成，具有版本追溯能力。",
+        "company_name": company_name,
+        "footer_note": footer_note,
+        "default_tax_rate": biz.get("default_tax_rate"),
+        "default_currency": biz.get("default_currency") or quote.currency,
     }

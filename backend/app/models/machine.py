@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import AuditSoftDeleteMixin, Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.option_group import OptionGroup
     from app.models.user import User
 
 
@@ -49,6 +50,10 @@ class Machine(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
     model_no: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft", server_default="draft")
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    option_groups: Mapped[list[OptionGroup]] = relationship(
+        back_populates="machine", cascade="all, delete-orphan", order_by="OptionGroup.sort_order"
+    )
 
     category: Mapped[MachineCategory | None] = relationship(back_populates="machines")
     parameters: Mapped[list[MachineParameter]] = relationship(back_populates="machine")
@@ -114,6 +119,8 @@ class MachineBomItem(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, 
     loss_rate: Mapped[float] = mapped_column(Numeric(7, 4), nullable=False, default=0, server_default="0")
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    subsystem: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
 
     bom: Mapped[MachineBom] = relationship(back_populates="items")
     creator: Mapped["User | None"] = relationship(foreign_keys="MachineBomItem.created_by", lazy="joined")
