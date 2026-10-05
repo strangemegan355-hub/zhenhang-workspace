@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "src/index.ts",
+  "main": "src/index.tsx",
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.12"
   }

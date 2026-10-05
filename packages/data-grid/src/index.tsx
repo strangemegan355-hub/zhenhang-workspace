@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import type { CSSProperties, ReactNode } from "react";
 
 export type GridColumn<T> = {
   key: keyof T & string;
@@ -14,35 +14,59 @@ type Props<T extends Record<string, unknown>> = {
   rows: T[];
   page: number;
   total: number;
+  pageSize?: number;
   onPageChange: (page: number) => void;
   onExport?: () => void;
   persistenceKey?: string;
   rowKey?: (row: T, idx: number) => string;
   onBatchAction?: (selected: T[]) => void;
+  batchActionLabel?: string;
+  hideBatchToolbar?: boolean;
+  onSelectionChange?: (selected: T[]) => void;
   onRowClick?: (row: T) => void;
+  rowActions?: (row: T) => ReactNode;
+  emptyMessage?: string;
 };
+
+const CHECKBOX_COL_WIDTH = 40;
+const ACTIONS_COL_WIDTH = 112;
+const DEFAULT_COL_WIDTH = 160;
+
+function colWidth(width?: number) {
+  return width ?? DEFAULT_COL_WIDTH;
+}
+
+function cellStyle(width?: number): CSSProperties {
+  const w = colWidth(width);
+  return { width: w, minWidth: w, maxWidth: w };
+}
+
+function fixedColStyle(width?: number): CSSProperties {
+  return { ...cellStyle(width), left: CHECKBOX_COL_WIDTH };
+}
 
 export function DataGrid<T extends Record<string, unknown>>({
   columns,
   rows,
   page,
   total,
+  pageSize = 20,
   onPageChange,
   onExport,
   persistenceKey,
   rowKey,
   onBatchAction,
+  batchActionLabel = "删除选中",
+  hideBatchToolbar = false,
+  onSelectionChange,
   onRowClick,
+  rowActions,
+  emptyMessage = "暂无数据",
 }: Props<T>) {
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const [order, setOrder] = React.useState(columns.map((c) => c.key));
   const [selectedRows, setSelectedRows] = React.useState<Record<string, boolean>>({});
   const parentRef = React.useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 32,
-    overscan: 8,
-  });
 
   React.useEffect(() => {
     if (!persistenceKey) return;
@@ -57,11 +81,25 @@ export function DataGrid<T extends Record<string, unknown>>({
     localStorage.setItem(`grid-column-order:${persistenceKey}`, JSON.stringify(order));
   }, [order, persistenceKey]);
 
+  React.useEffect(() => {
+    setOrder(columns.map((c) => c.key));
+  }, [columns]);
+
   const visible = order
     .map((key) => columns.find((c) => c.key === key))
     .filter((c): c is GridColumn<T> => Boolean(c && c.canView !== false));
 
   const selected = rows.filter((row, idx) => selectedRows[(rowKey ? rowKey(row, idx) : String(idx))] === true);
+
+  React.useEffect(() => {
+    setSelectedRows({});
+  }, [rows]);
+
+  React.useEffect(() => {
+    if (!onSelectionChange) return;
+    const next = rows.filter((row, idx) => selectedRows[(rowKey ? rowKey(row, idx) : String(idx))] === true);
+    onSelectionChange(next);
+  }, [selectedRows, rows, rowKey, onSelectionChange]);
 
   const dragStart = (key: string) => (e: React.DragEvent<HTMLTableHeaderCellElement>) => {
     e.dataTransfer.setData("text/plain", key);
@@ -79,102 +117,169 @@ export function DataGrid<T extends Record<string, unknown>>({
     setOrder(next);
   };
 
+  const tableMinWidth =
+    CHECKBOX_COL_WIDTH +
+    visible.reduce((sum, col) => sum + colWidth(col.width), 0) +
+    (rowActions ? ACTIONS_COL_WIDTH : 0);
+
+  const hasToolbarActions = !hideBatchToolbar && Boolean(onBatchAction || onExport);
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-end gap-2">
-        {onBatchAction ? (
-          <button
-            type="button"
-            className="rounded border border-[#334155] bg-[#1E293B] px-2 text-xs text-[#CBD5E1] hover:border-[#475569]"
-            style={{ height: 32 }}
-            onClick={() => onBatchAction(selected)}
+    <div className="flex min-h-[240px] flex-1 flex-col gap-2">
+      {hasToolbarActions ? (
+        <div className="flex shrink-0 items-center justify-end gap-2">
+          {onBatchAction ? (
+            <button
+              type="button"
+              className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-danger)] transition-colors hover:bg-[var(--color-accent-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ height: 36 }}
+              disabled={selected.length === 0}
+              onClick={() => onBatchAction(selected)}
+            >
+              {batchActionLabel}
+              {selected.length > 0 ? ` (${selected.length})` : ""}
+            </button>
+          ) : null}
+          {onExport ? (
+            <button
+              type="button"
+              className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-soft)]"
+              style={{ height: 36 }}
+              onClick={onExport}
+            >
+              导出
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="min-h-0 flex-1">
+        {rows.length === 0 ? (
+          <div className="rounded border border-dashed border-[var(--color-border)] px-4 py-10 text-center text-sm text-[var(--color-text-muted)]">
+            {emptyMessage}
+          </div>
+        ) : (
+          <div
+            ref={parentRef}
+            className="h-full min-h-0 flex-1 overflow-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)]"
           >
-            Batch ({selected.length})
-          </button>
-        ) : null}
-        {onExport ? (
-          <button
-            type="button"
-            className="rounded border border-[#334155] bg-[#1E293B] px-2 text-xs text-[#CBD5E1] hover:border-[#475569]"
-            style={{ height: 32 }}
-            onClick={onExport}
-          >
-            Export
-          </button>
-        ) : null}
-      </div>
-      <div ref={parentRef} className="max-h-[480px] overflow-auto rounded border">
-        <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 z-20 bg-[#111827]">
-            <tr className="border-b border-[#334155]">
-              <th className="sticky left-0 z-30 h-8 w-10 bg-[#111827] px-2 py-1 text-xs text-[#94A3B8]">
-                <input
-                  type="checkbox"
-                  checked={selected.length > 0 && selected.length === rows.length}
-                  onChange={(e) =>
-                    setSelectedRows(
-                      e.target.checked
-                        ? Object.fromEntries(rows.map((row, idx) => [rowKey ? rowKey(row, idx) : String(idx), true]))
-                        : {},
-                    )
-                  }
-                />
-              </th>
-              {visible.map((col) => (
-                <th
-                  key={col.key}
-                  draggable
-                  onDragStart={dragStart(col.key)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={dragDrop(col.key)}
-                  className={`h-8 px-2 py-1 text-xs text-[#94A3B8] ${col.fixed === "left" ? "sticky left-10 z-30 bg-[#111827]" : ""}`}
-                  style={{ width: col.width ?? 180 }}
-                >
-                  {col.title}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const idx = virtualRow.index;
-              const row = rows[idx];
-              const key = rowKey ? rowKey(row, idx) : String(idx);
-              return (
-                <tr
-                  key={key}
-                  className={`absolute left-0 right-0 border-b border-[#334155] text-sm text-[#CBD5E1] ${onRowClick ? "cursor-pointer hover:bg-[#1a2332]" : ""}`}
-                  style={{ transform: `translateY(${virtualRow.start}px)`, height: 32 }}
-                  onClick={() => onRowClick?.(row)}
-                >
-                  <td className="sticky left-0 z-10 h-8 w-10 bg-[#0F172A] px-2 py-1">
+            <table className="w-full table-fixed border-collapse text-left text-sm" style={{ minWidth: tableMinWidth }}>
+              <colgroup>
+                <col style={{ width: CHECKBOX_COL_WIDTH }} />
+                {visible.map((col) => (
+                  <col key={col.key} style={cellStyle(col.width)} />
+                ))}
+                {rowActions ? <col style={{ width: ACTIONS_COL_WIDTH }} /> : null}
+              </colgroup>
+              <thead className="sticky top-0 z-20 bg-[var(--color-surface-soft)]">
+                <tr className="border-b border-[var(--color-border)]">
+                  <th
+                    className="sticky left-0 z-40 h-9 bg-[var(--color-surface-soft)] px-2 py-1 text-sm text-[var(--color-text-muted)]"
+                    style={cellStyle(CHECKBOX_COL_WIDTH)}
+                  >
                     <input
                       type="checkbox"
-                      checked={selectedRows[key] === true}
-                      onChange={(e) => setSelectedRows((s) => ({ ...s, [key]: e.target.checked }))}
+                      checked={selected.length > 0 && selected.length === rows.length}
+                      onChange={(e) =>
+                        setSelectedRows(
+                          e.target.checked
+                            ? Object.fromEntries(rows.map((row, idx) => [rowKey ? rowKey(row, idx) : String(idx), true]))
+                            : {},
+                        )
+                      }
                     />
-                  </td>
-                {visible.map((col) => (
-                    <td
+                  </th>
+                  {visible.map((col) => (
+                    <th
                       key={col.key}
-                      className={`h-8 px-2 py-1 ${col.fixed === "left" ? "sticky left-10 z-10 bg-[#0F172A]" : ""}`}
+                      draggable
+                      onDragStart={dragStart(col.key)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={dragDrop(col.key)}
+                      className={`h-9 truncate px-2 py-1 text-sm font-medium text-[var(--color-text-muted)] ${col.fixed === "left" ? "sticky z-30 bg-[var(--color-surface-soft)]" : ""}`}
+                      style={col.fixed === "left" ? fixedColStyle(col.width) : cellStyle(col.width)}
+                      title={col.title}
                     >
-                    {String(row[col.key] ?? "")}
-                  </td>
-                ))}
+                      {col.title}
+                    </th>
+                  ))}
+                  {rowActions ? (
+                    <th
+                      className="sticky right-0 z-30 h-9 bg-[var(--color-surface-soft)] px-2 py-1 text-sm text-[var(--color-text-muted)]"
+                      style={cellStyle(ACTIONS_COL_WIDTH)}
+                    >
+                      操作
+                    </th>
+                  ) : null}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {rows.map((row, idx) => {
+                  const key = rowKey ? rowKey(row, idx) : String(idx);
+                  return (
+                    <tr
+                      key={key}
+                      className={`border-b border-[var(--color-border-soft)] text-sm text-[var(--color-text)] ${onRowClick ? "cursor-pointer hover:bg-[var(--color-surface-soft)]" : ""}`}
+                      onClick={() => onRowClick?.(row)}
+                    >
+                      <td
+                        className="sticky left-0 z-20 h-9 bg-[var(--color-surface)] px-2 py-1"
+                        style={cellStyle(CHECKBOX_COL_WIDTH)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedRows[key] === true}
+                          onChange={(e) => setSelectedRows((s) => ({ ...s, [key]: e.target.checked }))}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </td>
+                      {visible.map((col) => (
+                        <td
+                          key={col.key}
+                          className={`h-9 truncate px-2 py-1 ${col.fixed === "left" ? "sticky z-10 bg-[var(--color-surface)]" : ""}`}
+                          style={col.fixed === "left" ? fixedColStyle(col.width) : cellStyle(col.width)}
+                          title={String(row[col.key] ?? "")}
+                        >
+                          {String(row[col.key] ?? "")}
+                        </td>
+                      ))}
+                      {rowActions ? (
+                        <td
+                          className="sticky right-0 z-10 h-9 bg-[var(--color-surface)] px-2 py-1"
+                          style={cellStyle(ACTIONS_COL_WIDTH)}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {rowActions(row)}
+                        </td>
+                      ) : null}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-      <div className="flex items-center justify-end gap-2">
-        <button onClick={() => onPageChange(Math.max(1, page - 1))}>Prev</button>
+      <footer className="mt-auto flex shrink-0 items-center justify-end gap-2 border-t border-[var(--color-border)] pt-2 text-sm text-[var(--color-text-muted)]">
+        <button
+          type="button"
+          className="rounded border border-[var(--color-border)] px-2 py-1 hover:bg-[var(--color-surface-soft)] disabled:opacity-40"
+          disabled={page <= 1}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+        >
+          上一页
+        </button>
         <span>
-          Page {page} / {Math.max(1, Math.ceil(total / 20))}
+          第 {page} / {pageCount} 页 · 共 {total} 条
         </span>
-        <button onClick={() => onPageChange(page + 1)}>Next</button>
-      </div>
+        <button
+          type="button"
+          className="rounded border border-[var(--color-border)] px-2 py-1 hover:bg-[var(--color-surface-soft)] disabled:opacity-40"
+          disabled={page >= pageCount}
+          onClick={() => onPageChange(page + 1)}
+        >
+          下一页
+        </button>
+      </footer>
     </div>
   );
 }

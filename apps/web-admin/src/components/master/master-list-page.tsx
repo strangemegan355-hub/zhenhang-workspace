@@ -14,7 +14,8 @@ import {
   useIndustrialShortcuts,
 } from "@zhenhang/ui";
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useCallback, useRef, useState } from "react";
+import { searchInputClass } from "@/lib/form-styles";
 
 type QueryLike = {
   isLoading: boolean;
@@ -40,6 +41,7 @@ type MasterListPageProps<T extends Record<string, unknown>> = {
   rowKey?: (row: T) => string;
   onRowClick?: (row: T) => void;
   rowActions?: (row: T) => React.ReactNode;
+  onBatchDelete?: (selected: T[]) => void | Promise<void>;
   toolbarExtra?: React.ReactNode;
   emptyHint?: string;
   embedded?: boolean;
@@ -67,6 +69,7 @@ export function MasterListPage<T extends Record<string, unknown>>({
   rowKey,
   onRowClick,
   rowActions,
+  onBatchDelete,
   toolbarExtra,
   emptyHint,
   embedded = false,
@@ -77,6 +80,16 @@ export function MasterListPage<T extends Record<string, unknown>>({
 }: MasterListPageProps<T>) {
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const [selectedRows, setSelectedRows] = useState<T[]>([]);
+
+  const handleSelectionChange = useCallback((rows: T[]) => {
+    setSelectedRows(rows);
+  }, []);
+
+  const handleBatchDelete = useCallback(() => {
+    if (!onBatchDelete || selectedRows.length === 0) return;
+    void onBatchDelete(selectedRows);
+  }, [onBatchDelete, selectedRows]);
 
   useIndustrialShortcuts([
     { id: "focus-search", key: "/", preventDefault: true, handler: () => searchRef.current?.focus() },
@@ -122,12 +135,21 @@ export function MasterListPage<T extends Record<string, unknown>>({
             type="search"
             placeholder={searchPlaceholder}
             value={search}
-            className="h-8 rounded border border-[#334155] bg-[#0F172A] px-2 text-xs text-[#F8FAFC]"
+            className={searchInputClass}
             onChange={(e) => onSearchChange(e.target.value)}
           />
           <WorkspaceToolbarButton keyboardHint="Ctrl+S" title="刷新" onClick={() => query.refetch()}>
             刷新
           </WorkspaceToolbarButton>
+          {onBatchDelete ? (
+            <WorkspaceToolbarButton
+              variant="danger"
+              disabled={selectedRows.length === 0}
+              onClick={handleBatchDelete}
+            >
+              删除选中{selectedRows.length > 0 ? ` (${selectedRows.length})` : ""}
+            </WorkspaceToolbarButton>
+          ) : null}
           {toolbarExtra}
           <span className={typography.caption}>Alt+1~4 切换主数据/车间</span>
         </div>
@@ -160,6 +182,9 @@ export function MasterListPage<T extends Record<string, unknown>>({
           persistenceKey={persistenceKey}
           onRowClick={onRowClick}
           rowActions={rowActions}
+          onBatchAction={onBatchDelete ? (rows) => void onBatchDelete(rows) : undefined}
+          hideBatchToolbar={Boolean(onBatchDelete)}
+          onSelectionChange={onBatchDelete ? handleSelectionChange : undefined}
           onExport={exportCsv}
           emptyMessage={`暂无${title.replace(/管理$/, "")}记录`}
         />

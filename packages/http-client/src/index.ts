@@ -49,7 +49,15 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
-    if (status !== 401 || original?._retry || !refreshHandler || !tokenStore.getRefreshToken()) {
+    const url = original?.url ?? "";
+    const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/refresh");
+    if (
+      status !== 401 ||
+      original?._retry ||
+      isAuthEndpoint ||
+      !refreshHandler ||
+      !tokenStore.getRefreshToken()
+    ) {
       throw error;
     }
     original._retry = true;

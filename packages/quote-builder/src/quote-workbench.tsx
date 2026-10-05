@@ -65,6 +65,9 @@ export type QuoteWorkbenchProps = {
   onExport: () => void;
   exporting?: boolean;
   exportStatus?: string;
+  exportFileName?: string;
+  exportMessage?: string | null;
+  exportError?: string | null;
   onDownloadExport?: () => void;
   diffFromVersion?: number;
   diffToVersion?: number;
@@ -115,6 +118,9 @@ export function QuoteWorkbench(props: QuoteWorkbenchProps) {
     onExport,
     exporting,
     exportStatus,
+    exportFileName,
+    exportMessage,
+    exportError,
     onDownloadExport,
     diffFromVersion = 1,
     diffToVersion = 2,
@@ -141,7 +147,13 @@ export function QuoteWorkbench(props: QuoteWorkbenchProps) {
   const [activeModule, setActiveModule] = React.useState<string>("lines");
   const [dockTabId, setDockTabId] = React.useState("approval");
   const [dockCollapsed, setDockCollapsed] = React.useState(false);
-  const [showExportPicker, setShowExportPicker] = React.useState(false);
+  const [showExportPicker, setShowExportPicker] = React.useState(workflowState === "approved");
+
+  React.useEffect(() => {
+    if (workflowState === "approved") {
+      setShowExportPicker(true);
+    }
+  }, [workflowState]);
 
   const treeNodes =
     bomNodes ??
@@ -445,8 +457,13 @@ export function QuoteWorkbench(props: QuoteWorkbenchProps) {
         }
         main={
           <WorkspaceMain>
-            {showExportPicker ? (
-              <WorkspacePanel title="导出模板" className="shrink-0">
+            {showExportPicker || workflowState === "approved" ? (
+              <WorkspacePanel title={workflowState === "approved" ? "报价确认 · 导出" : "导出模板"} className="shrink-0">
+                {workflowState === "approved" ? (
+                  <p className="mb-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-800 dark:text-emerald-200">
+                    报价已确认，可导出 Excel/PDF 表格。推荐使用「公司报价表（含公式）」模板，抬头与公式将按系统配置的公司名称生成。
+                  </p>
+                ) : null}
                 <ExportTemplatePicker
                   templates={templates}
                   selectedId={selectedTemplateId}
@@ -454,6 +471,9 @@ export function QuoteWorkbench(props: QuoteWorkbenchProps) {
                   onExport={onExport}
                   exporting={exporting}
                   exportStatus={exportStatus}
+                  exportFileName={exportFileName}
+                  exportMessage={exportMessage}
+                  exportError={exportError}
                   onDownload={onDownloadExport}
                 />
               </WorkspacePanel>

@@ -1,34 +1,73 @@
 import { apiClient, registerTokenStore } from "@zhenhang/http-client";
-import { queryKeys, useWorkshopBoardQuery } from "@zhenhang/query-hooks";
-import { useIndustrialRealtimeBridge } from "@zhenhang/realtime";
+import {
+  queryKeys,
+  useBomItemsQuery,
+  useQuoteDetailQuery,
+  useWorkshopBoardQuery,
+} from "@zhenhang/query-hooks";
+import { isOnline, useIndustrialRealtimeBridge } from "@zhenhang/realtime";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
+function setupHttpClient() {
+  apiClient.defaults.baseURL = API;
+  registerTokenStore({
+    getAccessToken: () => localStorage.getItem("access_token") ?? undefined,
+    getRefreshToken: () => localStorage.getItem("refresh_token") ?? undefined,
+    setTokens: ({ accessToken, refreshToken }) => {
+      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("refresh_token", refreshToken);
+    },
+    clearTokens: () => {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+    },
+  });
+}
+
+function groupBomModules(items: Record<string, unknown>[]) {
+  const modules = new Map<string, Record<string, unknown>[]>();
+  for (const row of items) {
+    const code = String(row.item_code ?? "");
+    const mod = code.split("-")[0] || "OTHER";
+    if (!modules.has(mod)) modules.set(mod, []);
+    modules.get(mod)!.push(row);
+  }
+  return [...modules.entries()].sort(([a], [b]) => a.localeCompare(b));
+}
+
 export function App() {
   const [token, setToken] = useState(localStorage.getItem("access_token") ?? "");
+  const [username, setUsername] = useState("admin");
+  const [password, setPassword] = useState("Admin@123456");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginPending, setLoginPending] = useState(false);
   const [clock, setClock] = useState(new Date());
+  const [online, setOnline] = useState(isOnline());
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+
   const queryClient = useQueryClient();
   const boardQuery = useWorkshopBoardQuery(Boolean(token));
   const board = boardQuery.data as Record<string, unknown> | undefined;
+  const quoteDetail = useQuoteDetailQuery(selectedQuoteId);
+  const detail = quoteDetail.data as Record<string, unknown> | undefined;
+  const bomId = detail?.bom_id ? String(detail.bom_id) : null;
+  const bomItemsQuery = useBomItemsQuery(bomId);
+  const bomItems = ((bomItemsQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? []);
 
   useEffect(() => {
-    apiClient.defaults.baseURL = API;
-    registerTokenStore({
-      getAccessToken: () => localStorage.getItem("access_token") ?? undefined,
-      getRefreshToken: () => localStorage.getItem("refresh_token") ?? undefined,
-      setTokens: ({ accessToken, refreshToken }) => {
-        localStorage.setItem("access_token", accessToken);
-        localStorage.setItem("refresh_token", refreshToken);
-      },
-      clearTokens: () => {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-      },
-    });
+    setupHttpClient();
     const t = setInterval(() => setClock(new Date()), 1000);
-    return () => clearInterval(t);
+    const onStatus = () => setOnline(isOnline());
+    window.addEventListener("online", onStatus);
+    window.addEventListener("offline", onStatus);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("online", onStatus);
+      window.removeEventListener("offline", onStatus);
+    };
   }, []);
 
   useIndustrialRealtimeBridge({
@@ -38,10 +77,16 @@ export function App() {
     onEvent: (kind) => {
       if (kind === "workshop.board_refresh" || kind.startsWith("quote.") || kind === "workflow.transition") {
         void queryClient.invalidateQueries({ queryKey: queryKeys.workshop.board() });
-        boardQuery.refetch();
+        void boardQuery.refetch();
+      }
+      if (selectedQuoteId && kind.startsWith("quote.")) {
+        void quoteDetail.refetch();
       }
     },
-    onReconnected: () => boardQuery.refetch(),
+    onReconnected: () => {
+      void boardQuery.refetch();
+      if (selectedQuoteId) void quoteDetail.refetch();
+    },
   });
 
   const liveQuotes = (board?.live_quotes as Array<Record<string, unknown>>) ?? [];
@@ -58,26 +103,67 @@ export function App() {
     return { reviewing, approved, oeePct: Number(oee.oee ?? 0) * 100 };
   }, [production, oee]);
 
+  const bomModules = useMemo(() => groupBomModules(bomItems), [bomItems]);
+
   const login = async () => {
-    const resp = await fetch(`${API}/api/v1/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "admin", password: "Admin@123456" }),
-    });
-    const json = await resp.json();
-    const access = json?.data?.access_token as string | undefined;
-    if (access) {
+    setLoginError(null);
+    setLoginPending(true);
+    try {
+      const resp = await fetch(`${API}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!resp.ok) {
+        setLoginError(resp.status === 401 ? "用户名或密码错误" : `登录失败 (${resp.status})`);
+        return;
+      }
+      const json = await resp.json();
+      const access = json?.data?.access_token as string | undefined;
+      const refresh = json?.data?.refresh_token as string | undefined;
+      if (!access) {
+        setLoginError("登录响应无效");
+        return;
+      }
       localStorage.setItem("access_token", access);
+      if (refresh) localStorage.setItem("refresh_token", refresh);
+      setupHttpClient();
       setToken(access);
+    } catch {
+      setLoginError(`无法连接后端 API，请确认 ${API} 已启动`);
+    } finally {
+      setLoginPending(false);
     }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    setToken("");
+    setSelectedQuoteId(null);
   };
 
   if (!token) {
     return (
       <main style={{ padding: 48, fontFamily: "monospace", background: "#0f172a", color: "#e2e8f0", minHeight: "100vh" }}>
         <h1 style={{ fontSize: 28 }}>车间数字看板</h1>
-        <button type="button" onClick={login} style={{ marginTop: 24, padding: "16px 40px", fontSize: 18, cursor: "pointer" }}>
-          启动终端
+        <p style={{ color: "#94a3b8", marginTop: 8 }}>产线状态 · 报价队列 · BOM 只读 · 实时协同</p>
+        <input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="用户名"
+          style={{ display: "block", width: 320, marginTop: 24, padding: 12, fontSize: 16, borderRadius: 8, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0" }}
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="密码"
+          style={{ display: "block", width: 320, marginTop: 10, padding: 12, fontSize: 16, borderRadius: 8, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0" }}
+        />
+        {loginError ? <p style={{ color: "#f87171", marginTop: 12 }}>{loginError}</p> : null}
+        <button type="button" onClick={login} disabled={loginPending} style={{ marginTop: 20, padding: "14px 40px", fontSize: 18, cursor: "pointer", borderRadius: 8, border: 0, background: "#2563eb", color: "#fff" }}>
+          {loginPending ? "登录中…" : "启动终端"}
         </button>
       </main>
     );
@@ -99,18 +185,34 @@ export function App() {
         color: "#e2e8f0",
       }}
     >
+      {!online ? (
+        <div style={{ background: "#78350f", color: "#fef3c7", padding: "10px 16px", borderRadius: 8, marginBottom: 16, textAlign: "center", fontSize: 14 }}>
+          网络已断开 · 显示缓存数据，恢复后将自动刷新
+        </div>
+      ) : null}
+
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 20, borderBottom: "1px solid #334155", paddingBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700 }}>产线数字看板</h1>
           <p style={{ margin: "6px 0 0", color: "#94a3b8", fontSize: 13 }}>
-            <span style={{ color: "#4ade80" }}>● 实时协同</span> · OEE 基础 · 设备 · 报警
+            <span style={{ color: online ? "#4ade80" : "#fbbf24" }}>● {online ? "实时协同" : "离线模式"}</span>
+            {" · OEE · 设备 · 报警 · BOM 只读"}
           </p>
         </div>
-        <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-          <div style={{ fontSize: 22, fontWeight: 600 }}>{clock.toLocaleTimeString("zh-CN")}</div>
-          <div style={{ fontSize: 12, color: "#64748b" }}>{clock.toLocaleDateString("zh-CN")}</div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
+          <button type="button" onClick={logout} style={{ background: "transparent", border: "1px solid #475569", color: "#94a3b8", padding: "6px 12px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>
+            退出
+          </button>
+          <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontSize: 22, fontWeight: 600 }}>{clock.toLocaleTimeString("zh-CN")}</div>
+            <div style={{ fontSize: 12, color: "#64748b" }}>{clock.toLocaleDateString("zh-CN")}</div>
+          </div>
         </div>
       </header>
+
+      {boardQuery.isError ? (
+        <div style={{ background: "#7f1d1d", padding: 12, borderRadius: 8, marginBottom: 16 }}>看板加载失败，请检查 API 连接</div>
+      ) : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         <Kpi label="待审批" value={String(stats.reviewing)} accent="#fbbf24" />
@@ -119,9 +221,10 @@ export function App() {
         <Kpi label="报警" value={String(alarms.length)} accent="#f87171" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 0.9fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
         <section style={panelStyle}>
           <h2 style={sectionTitle}>报价队列 · 实时</h2>
+          {boardQuery.isLoading ? <p style={{ color: "#64748b" }}>加载中…</p> : null}
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ color: "#64748b", fontSize: 11 }}>
@@ -132,7 +235,14 @@ export function App() {
             </thead>
             <tbody>
               {liveQuotes.map((q) => (
-                <tr key={String(q.id)}>
+                <tr
+                  key={String(q.id)}
+                  onClick={() => setSelectedQuoteId(String(q.id))}
+                  style={{
+                    cursor: "pointer",
+                    background: selectedQuoteId === String(q.id) ? "rgba(37,99,235,0.25)" : "transparent",
+                  }}
+                >
                   <td style={{ padding: "8px 4px", fontWeight: 600 }}>{String(q.quote_no)}</td>
                   <td style={{ padding: "8px 4px" }}>{String(q.workflow_state)}</td>
                   <td align="right" style={{ padding: "8px 4px" }}>
@@ -145,7 +255,7 @@ export function App() {
         </section>
 
         <section style={panelStyle}>
-          <h2 style={sectionTitle}>产线状态</h2>
+          <h2 style={sectionTitle}>产线 · 设备</h2>
           {lines.map((line) => (
             <div key={String(line.line_id)} style={{ marginBottom: 10, padding: 10, background: "rgba(15,23,42,0.5)", borderRadius: 8 }}>
               <div style={{ fontWeight: 700 }}>{String(line.name)}</div>
@@ -186,9 +296,37 @@ export function App() {
               </div>
             ))
           )}
-          <p style={{ marginTop: 12, fontSize: 10, color: "#64748b" }}>{String(oee.foundation_note ?? "")}</p>
         </section>
       </div>
+
+      {selectedQuoteId ? (
+        <section style={{ ...panelStyle, marginTop: 16, maxHeight: 320 }}>
+          <h2 style={sectionTitle}>
+            BOM 树（只读）· {String(detail?.quote_no ?? selectedQuoteId)}
+          </h2>
+          {quoteDetail.isLoading || bomItemsQuery.isLoading ? (
+            <p style={{ color: "#64748b" }}>加载 BOM…</p>
+          ) : bomModules.length === 0 ? (
+            <p style={{ color: "#64748b" }}>该报价无 BOM 物料</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              {bomModules.map(([mod, rows]) => (
+                <div key={mod} style={{ background: "rgba(15,23,42,0.5)", borderRadius: 8, padding: 10 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 8, color: "#38bdf8" }}>{mod}</div>
+                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, color: "#cbd5e1" }}>
+                    {rows.slice(0, 8).map((r) => (
+                      <li key={String(r.item_code)} style={{ marginBottom: 4 }}>
+                        {String(r.item_code)} · {String(r.item_name)}
+                      </li>
+                    ))}
+                    {rows.length > 8 ? <li style={{ color: "#64748b" }}>…共 {rows.length} 项</li> : null}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
     </main>
   );
 }

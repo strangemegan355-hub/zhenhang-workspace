@@ -5,52 +5,42 @@ import {
   queryKeys,
   useInvalidateQuoteQueries,
 } from "@zhenhang/query-hooks";
-import { useIndustrialRealtimeBridge, useToastStore } from "@zhenhang/realtime";
+import { useIndustrialRealtimeBridge } from "@zhenhang/realtime";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useCallback } from "react";
 import { useAuthStore } from "@/store/auth-store";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
+/** Realtime sync only — no toast popups (user preference for trial UI). */
 export function IndustrialRealtimeProvider({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token?.accessToken);
   const queryClient = useQueryClient();
   const invalidateQuotes = useInvalidateQuoteQueries();
-  const push = useToastStore((s) => s.push);
-  const seq = useRef(0);
+
+  const refreshAll = useCallback(() => {
+    invalidateQuotes();
+    invalidateByDomain(queryClient, "notifications");
+    invalidateByDomain(queryClient, "workflow");
+    void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.overview() });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.workshop.board() });
+  }, [invalidateQuotes, queryClient]);
 
   useIndustrialRealtimeBridge({
     apiBase: API_BASE,
     accessToken: token,
+    enabled: Boolean(token),
+    onReconnected: refreshAll,
     onEvent: (kind, _channel, payload) => {
-      seq.current += 1;
-      const id = `rt-${seq.current}`;
-
       switch (kind) {
         case "notification.new":
-          push({
-            id,
-            title: String(payload.title ?? "新通知"),
-            description: "消息中心已同步",
-          });
           invalidateByDomain(queryClient, "notifications");
+          void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.overview() });
           break;
         case "workflow.transition":
-          push({
-            id,
-            title: "审批状态更新",
-            description: `${payload.quote_no ?? ""} · ${payload.from_state} → ${payload.to_state}`,
-          });
-          invalidateQuotes();
-          invalidateByDomain(queryClient, "workflow");
+          refreshAll();
           break;
-        case "quote.export": {
-          const status = String(payload.status ?? "");
-          push({
-            id,
-            title: status === "completed" ? "导出完成" : "导出进度",
-            description: `${payload.quote_no ?? ""} · ${status}`,
-          });
+        case "quote.export":
           invalidateQuotes();
           if (payload.task_id) {
             void queryClient.invalidateQueries({
@@ -58,13 +48,14 @@ export function IndustrialRealtimeProvider({ children }: { children: React.React
             });
           }
           invalidateByDomain(queryClient, "notifications");
+          void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.overview() });
           break;
-        }
         case "quote.state_changed":
         case "quote.created":
         case "quote.version_created":
         case "quote.updated":
           invalidateQuotes();
+          void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.overview() });
           break;
         case "dashboard.refresh":
           void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.overview() });

@@ -22,8 +22,8 @@ export function StatusBadge({ status, label, compact = false, pulse = false, cla
     color: palette.fg,
     backgroundColor: palette.bg,
     border: `1px solid ${palette.border}`,
-    fontSize: compact ? 10 : 11,
-    padding: compact ? "2px 6px" : "3px 8px",
+    fontSize: compact ? 12 : 13,
+    padding: compact ? "2px 7px" : "4px 9px",
     lineHeight: 1.2,
     transition: `border-color ${interactionTokens.transition.fast}, background-color ${interactionTokens.transition.fast}`,
   };

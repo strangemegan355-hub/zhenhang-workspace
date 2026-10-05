@@ -20,6 +20,8 @@ export type IndustrialPanelProps = {
   empty?: boolean;
   emptyMessage?: string;
   headerExtra?: ReactNode;
+  /** Expand panel to fill available workspace height */
+  fill?: boolean;
 };
 
 export function IndustrialPanel({
@@ -33,6 +35,7 @@ export function IndustrialPanel({
   empty = false,
   emptyMessage = "暂无数据",
   headerExtra,
+  fill = false,
 }: IndustrialPanelProps) {
   const shellStyle: CSSProperties = {
     backgroundColor: designTokens.colors.background.panel,
@@ -45,26 +48,33 @@ export function IndustrialPanel({
   const pad = interactionTokens.layout.panelPadding;
 
   return (
-    <section className={cn("relative overflow-hidden", className)} style={shellStyle}>
+    <section
+      className={cn("relative flex flex-col overflow-hidden", fill && "min-h-0 flex-1", className)}
+      style={shellStyle}
+    >
       <InlineLoadingBar active={inlineLoading || loading} />
       {hasHeader ? (
         <header
-          className="flex flex-wrap items-center justify-between gap-3 border-b"
+          className="flex shrink-0 flex-col gap-2 border-b"
           style={{
             borderColor: designTokens.colors.border.muted,
             padding: `${pad}px ${pad}px 8px`,
             minHeight: interactionTokens.layout.toolbar,
           }}
         >
-          <div className="min-w-0 flex-1">
-            {title ? <h2 className={typography.cardTitle}>{title}</h2> : null}
-          </div>
-          {headerExtra ? <div className="flex shrink-0 items-center gap-2">{headerExtra}</div> : null}
+          {title || headerExtra ? (
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="min-w-0">
+                {title ? <h2 className={typography.cardTitle}>{title}</h2> : null}
+              </div>
+              {headerExtra ? <div className="flex shrink-0 items-center gap-2">{headerExtra}</div> : null}
+            </div>
+          ) : null}
           {toolbar ? <div className="flex flex-wrap items-center gap-2">{toolbar}</div> : null}
         </header>
       ) : null}
 
-      <div className={cn(contentClassName)} style={{ padding: pad }}>
+      <div className={cn("flex min-h-0 flex-1 flex-col", contentClassName)} style={{ padding: pad }}>
         {loading ? (
           <PanelSkeleton />
         ) : empty ? (

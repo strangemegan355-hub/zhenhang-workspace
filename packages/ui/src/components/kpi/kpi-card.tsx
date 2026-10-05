@@ -78,8 +78,8 @@ export function KpiCard({
       type={onClick ? "button" : undefined}
       onClick={onClick}
       className={cn(
-        "group block w-full text-left transition duration-150",
-        "hover:border-[#475569] hover:bg-[#1a2332]",
+        "group block w-full text-left transition-all duration-150",
+        "hover:border-[#c8d8f0] hover:bg-[#f0f6ff] hover:shadow-sm",
         onClick && "cursor-pointer",
         className,
       )}
@@ -95,7 +95,7 @@ export function KpiCard({
               title={status}
             />
           ) : null}
-          {icon ? <span className="text-[#94A3B8]">{icon}</span> : null}
+          {icon ? <span className="text-[#6b7fa3]">{icon}</span> : null}
         </div>
       </div>
 

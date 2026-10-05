@@ -6,7 +6,7 @@ import { queryKeys } from "../keys";
 type ApiWrap<T> = { code: string; message: string; data: T };
 type PageData = { items?: Record<string, unknown>[]; total?: number };
 
-export function useQuotesQuery(params: { page: number; keyword?: string }) {
+export function useQuotesQuery(params: { page: number; keyword?: string; quoteKind?: string }) {
   const policy = getQueryPolicy("quotes");
   return useQuery({
     queryKey: queryKeys.quotes.list(params),
@@ -15,7 +15,7 @@ export function useQuotesQuery(params: { page: number; keyword?: string }) {
     retry: policy.retry,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiWrap<PageData>>("/api/v1/quotes", {
-        params: { page: params.page, q: params.keyword },
+        params: { page: params.page, q: params.keyword, quote_kind: params.quoteKind },
       });
       return data.data;
     },
@@ -180,6 +180,63 @@ export function useCreateQuoteWizardMutation() {
       invalidateByDomain(queryClient, "quotes");
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.overview() });
     },
+  });
+}
+
+export type CustomerQuoteLine = {
+  machine_id?: string;
+  product_id?: string;
+  name: string;
+  spec?: string;
+  unit?: string;
+  power_kw?: string;
+  motor_product_id?: string;
+  motor_unit_price?: number;
+  quantity: number;
+  unit_price: number;
+};
+
+export type CustomerQuotePayload = {
+  title: string;
+  customer_id: string;
+  project_id?: string;
+  currency?: string;
+  tax_rate?: number;
+  valid_until?: string;
+  remark?: string;
+  machine_lines: CustomerQuoteLine[];
+};
+
+export function useCreateCustomerQuoteMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: CustomerQuotePayload) => {
+      const { data } = await apiClient.post<ApiWrap<Record<string, unknown>>>("/api/v1/quotes/customer", body);
+      return data.data;
+    },
+    onSettled: () => invalidateByDomain(queryClient, "quotes"),
+  });
+}
+
+export function useUpdateCustomerQuoteMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: Partial<CustomerQuotePayload> }) => {
+      const { data } = await apiClient.put<ApiWrap<Record<string, unknown>>>(`/api/v1/quotes/${id}/customer`, body);
+      return data.data;
+    },
+    onSettled: () => invalidateByDomain(queryClient, "quotes"),
+  });
+}
+
+export function useDeleteCustomerQuoteMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.delete<ApiWrap<Record<string, unknown>>>(`/api/v1/quotes/${id}/customer`);
+      return data.data;
+    },
+    onSettled: () => invalidateByDomain(queryClient, "quotes"),
   });
 }
 

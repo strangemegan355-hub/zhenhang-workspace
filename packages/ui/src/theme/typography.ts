@@ -4,13 +4,13 @@ const { colors } = designTokens;
 
 /** Tailwind-friendly class strings referencing token colors. */
 export const typography = {
-  pageTitle: `text-xl font-semibold tracking-tight text-[${colors.text.primary}]`,
-  sectionTitle: `text-sm font-semibold uppercase tracking-wide text-[${colors.text.secondary}]`,
-  cardTitle: `text-sm font-semibold text-[${colors.text.primary}]`,
-  body: `text-sm leading-relaxed text-[${colors.text.secondary}]`,
-  caption: `text-xs text-[${colors.text.muted}]`,
-  kpi: `text-2xl font-semibold tabular-nums text-[${colors.text.primary}]`,
-  monoNumber: `font-mono text-sm tabular-nums text-[${colors.text.primary}]`,
+  pageTitle: `text-2xl font-semibold tracking-tight text-[${colors.text.primary}]`,
+  sectionTitle: `text-base font-semibold uppercase tracking-wide text-[${colors.text.secondary}]`,
+  cardTitle: `text-base font-semibold text-[${colors.text.primary}]`,
+  body: `text-base leading-relaxed text-[${colors.text.secondary}]`,
+  caption: `text-sm text-[${colors.text.muted}]`,
+  kpi: `text-3xl font-semibold tabular-nums text-[${colors.text.primary}]`,
+  monoNumber: `font-mono text-base tabular-nums text-[${colors.text.primary}]`,
 } as const;
 
 export type TypographyVariant = keyof typeof typography;

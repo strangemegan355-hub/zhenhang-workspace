@@ -89,7 +89,7 @@ export function WorkspaceToolbarButton({
   const h = compact ? interactionTokens.controlHeight.toolbarButton : interactionTokens.controlHeight.input;
   const palette =
     variant === "primary"
-      ? { bg: designTokens.colors.primary.default, fg: designTokens.colors.text.primary, border: designTokens.colors.primary.hover }
+      ? { bg: designTokens.colors.primary.default, fg: designTokens.colors.text.inverse, border: designTokens.colors.primary.hover }
       : variant === "danger"
         ? { bg: designTokens.colors.danger.muted, fg: designTokens.colors.danger.default, border: designTokens.colors.danger.default }
         : {

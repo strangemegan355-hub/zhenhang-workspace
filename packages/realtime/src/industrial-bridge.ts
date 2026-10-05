@@ -52,9 +52,6 @@ export function useIndustrialRealtimeBridge(options: {
         const json = await resp.json();
         const events = (json?.data?.events ?? json?.events ?? []) as Array<Record<string, unknown>>;
         for (const envelope of events) {
-          const inner = (envelope.payload as Record<string, unknown> | undefined) ?? envelope;
-          const kind = String(inner.kind ?? "unknown");
-          options.onEvent(kind, String(envelope.channel ?? "notification"), inner);
           saveRealtimeCursor(extractCursor(envelope));
         }
         if (events.length > 0) {
@@ -105,5 +102,6 @@ export function useIndustrialRealtimeBridge(options: {
       const kind = String(inner.kind ?? envelope.kind ?? "unknown");
       options.onEvent(kind, channel, inner);
     },
+    onReconnect: () => options.onReconnected?.(),
   });
 }

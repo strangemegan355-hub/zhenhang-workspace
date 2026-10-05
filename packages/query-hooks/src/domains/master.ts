@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@zhenhang/http-client";
+import { qk } from "@zhenhang/query-policy-registry";
 import { queryKeys } from "../keys";
 
 type ApiWrap<T> = { code: string; message: string; data: T };
@@ -18,16 +19,40 @@ export function useCustomersQuery(page = 1, q?: string) {
   });
 }
 
-export function useMachinesQuery(page = 1, q?: string) {
-  return useQuery({
-    queryKey: queryKeys.master.machines(page, q),
-    queryFn: async () => {
-      const { data } = await apiClient.get<ApiWrap<PageData>>("/api/v1/machines", {
-        params: { page, page_size: 50, q },
-      });
+export function useCreateCustomerMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      code: string;
+      name: string;
+      short_name?: string;
+      industry?: string;
+      level?: string;
+      status?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+      remarks?: string;
+    }) => {
+      const { data } = await apiClient.post<ApiWrap<Record<string, unknown>>>("/api/v1/customers", body);
       return data.data;
     },
-    staleTime: 60_000,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk("master", "customers") });
+    },
+  });
+}
+
+export function useDeleteCustomerMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.delete<ApiWrap<Record<string, unknown>>>(`/api/v1/customers/${id}`);
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk("master", "customers") });
+    },
   });
 }
 

@@ -13,12 +13,12 @@ export const interactionTokens = {
     toolbarButton: 32,
     input: 32,
     dockTab: 28,
-    tableRow: 32,
+    tableRow: 36,
   },
 
   layout: {
-    toolbar: 40,
-    panelPadding: 12,
+    toolbar: 44,
+    panelPadding: 16,
     dockHeader: 32,
     sectionGapSm: 8,
     sectionGapMd: 12,
@@ -34,41 +34,42 @@ export const interactionTokens = {
     success: {
       fg: designTokens.colors.success.default,
       bg: designTokens.colors.success.muted,
-      border: `${designTokens.colors.success.default}44`,
+      border: `${designTokens.colors.success.default}33`,
     },
     warning: {
       fg: designTokens.colors.warning.default,
       bg: designTokens.colors.warning.muted,
-      border: `${designTokens.colors.warning.default}44`,
+      border: `${designTokens.colors.warning.default}33`,
     },
     danger: {
       fg: designTokens.colors.danger.default,
       bg: designTokens.colors.danger.muted,
-      border: `${designTokens.colors.danger.default}44`,
+      border: `${designTokens.colors.danger.default}33`,
     },
     info: {
       fg: designTokens.colors.primary.default,
-      bg: designTokens.colors.primary.muted,
-      border: `${designTokens.colors.primary.default}44`,
+      bg: designTokens.colors.primary.light,
+      border: `${designTokens.colors.primary.default}22`,
     },
     idle: {
       fg: designTokens.colors.text.muted,
-      bg: designTokens.colors.background.panel,
+      bg: designTokens.colors.background.subtle,
       border: designTokens.colors.border.default,
     },
     processing: {
       fg: designTokens.colors.warning.default,
       bg: designTokens.colors.warning.muted,
-      border: `${designTokens.colors.warning.default}55`,
+      border: `${designTokens.colors.warning.default}44`,
     },
   },
 
-  focusRing: `0 0 0 2px ${designTokens.colors.background.base}, 0 0 0 3px ${designTokens.colors.primary.default}66`,
+  focusRing: `0 0 0 2px ${designTokens.colors.background.base}, 0 0 0 3px ${designTokens.colors.primary.muted}`,
 
   hover: {
     border: designTokens.colors.border.default,
-    borderEmphasis: "#475569",
-    bg: "#1a2332",
+    borderEmphasis: "#1677ff",
+    bg: designTokens.colors.primary.light,
+    bgSubtle: "#f0f6ff",
   },
 } as const;
 

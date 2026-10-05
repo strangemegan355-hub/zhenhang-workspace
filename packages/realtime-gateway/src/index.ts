@@ -20,6 +20,7 @@ type GatewayOptions = {
   onEnvelope?: (envelope: RealtimeEnvelope) => void;
   onMessage?: (channel: RealtimeChannelType, payload: unknown) => void;
   onCursor?: (cursor: { eventId?: string; sequence?: number }) => void;
+  onReconnect?: () => void;
 };
 
 function parseRaw(raw: string): RealtimeEnvelope | null {
@@ -71,6 +72,10 @@ export function useRealtimeGateway(options: GatewayOptions) {
           dispatch(envelope, channel, envelope?.payload ?? message.data);
         });
       });
+      sse.onopen = () => {
+        if (attemptRef.current > 0) options.onReconnect?.();
+        attemptRef.current = 0;
+      };
       sse.onerror = () => {
         sse?.close();
         attemptRef.current += 1;
@@ -83,6 +88,7 @@ export function useRealtimeGateway(options: GatewayOptions) {
       const ws = new WebSocket(options.wsUrl);
       wsRef.current = ws;
       ws.onopen = () => {
+        if (attemptRef.current > 0) options.onReconnect?.();
         attemptRef.current = 0;
         ws.send(JSON.stringify(createReconnectRequest(options.lastEventId, options.channels)));
         ws.send(JSON.stringify(createSubscribeRequest(options.channels)));

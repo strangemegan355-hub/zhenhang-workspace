@@ -35,7 +35,7 @@ export function ApprovalUxPanel({
 
   const fire = React.useCallback(
     (code: string, c?: string) => {
-      onTransition(code, c ?? comment || undefined);
+      onTransition(code, (c ?? comment) || undefined);
       setComment("");
     },
     [comment, onTransition],

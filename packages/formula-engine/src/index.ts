@@ -14,6 +14,9 @@ const REF_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
 /** Minimal safe formula parser — no eval(). */
 export function parseFormula(expression: string): FormulaAST {
+  if (typeof expression !== "string" || !expression.trim()) {
+    throw new Error("Invalid formula: empty expression");
+  }
   const trimmed = expression.replace(/\s+/g, "");
   if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
     return { type: "literal", value: Number(trimmed) };
@@ -94,10 +97,17 @@ export function evaluatePricingFormulas(
   ctx: FormulaContext,
 ): Record<string, number> {
   const graph = buildDependencyGraph(formulas);
-  const out: Record<string, number> = { ...Object.fromEntries(Object.entries(ctx).filter(([, v]) => typeof v === "number")) };
+  const out: Record<string, number> = {};
+  for (const [key, value] of Object.entries(ctx)) {
+    if (typeof value === "number") {
+      out[key] = value;
+    }
+  }
   const order = topologicalSort(graph);
   for (const field of order) {
-    out[field] = evaluateFormula(formulas[field], out as FormulaContext, true);
+    const expression = formulas[field];
+    if (typeof expression !== "string" || !expression.trim()) continue;
+    out[field] = evaluateFormula(expression, out as FormulaContext, true);
   }
   return out;
 }
@@ -109,7 +119,7 @@ function topologicalSort(graph: Map<string, string[]>): string[] {
     if (visited.has(node)) return;
     visited.add(node);
     for (const dep of graph.get(node) ?? []) visit(dep);
-    result.push(node);
+    if (graph.has(node)) result.push(node);
   };
   for (const node of graph.keys()) visit(node);
   return result;
