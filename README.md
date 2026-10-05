@@ -63,6 +63,17 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `BOOTSTRAP_ADMIN_USERNAME`（默认 `admin`）
 - `BOOTSTRAP_ADMIN_PASSWORD`（默认 `Admin@123456`）
 
+> **⚠️ 安全警告**
+>
+> 上述默认密码**仅用于本地开发与首次 bootstrap**。生产或内部试运行部署完成后，**必须立即修改 admin 密码**，并同步更换：
+>
+> - `SECRET_KEY`（`backend/.env.prod`）
+> - `POSTGRES_PASSWORD`
+> - `MINIO_ROOT_PASSWORD`
+> - `METRICS_API_KEY`（生产 metrics 访问密钥）
+>
+> 交付验收清单见 [`docs/DELIVERY_ACCEPTANCE.md`](docs/DELIVERY_ACCEPTANCE.md)。自动化基础检查：`.\scripts\verify_delivery.ps1`
+
 ## Docker Compose（推荐）
 
 在仓库根目录：
@@ -77,6 +88,102 @@ docker compose up --build
 - Swagger：`http://localhost:8000/docs`
 
 Compose 会执行：`alembic upgrade head` → `bootstrap_admin.py` → `seed_workflows.py` → `uvicorn`。
+
+## 本地完整启动（后端 + Web 管理端）
+
+推荐按以下顺序启动，确保 Dashboard 可正常加载。
+
+### 1. 启动后端
+
+**方式 A（推荐，需可访问 Docker Hub 拉取 `python:3.11-slim`）**
+
+在仓库根目录：
+
+```bash
+docker compose up --build
+```
+
+**方式 B（Windows 本地混合模式：基础设施用 Docker，API 用本机 Python）**
+
+当 `docker compose build api` 因网络无法拉取基础镜像时：
+
+```bash
+# 1) 仅启动基础设施
+docker compose up -d postgres redis minio
+
+# 2) 配置后端环境（复制 backend/.env.example → backend/.env，SECRET_KEY 需 ≥32 字符）
+cd backend
+copy .env.example .env
+
+# 3) 迁移与初始化（Windows 需 Python 3.11+；若 bcrypt 报错可执行 pip install bcrypt==4.0.1）
+python -m alembic upgrade head
+python scripts/bootstrap_admin.py
+python scripts/seed_workflows.py
+python scripts/seed_tenant.py
+python scripts/seed_demo_quote.py
+
+# 4) 启动 API（Windows 下使用专用入口，避免 asyncio 事件循环问题）
+python scripts/run_local_api.py
+```
+
+**演示数据（DEMO_QUOTE）：** 完成上述初始化后，在 `backend` 目录执行 `python scripts/seed_demo_quote.py`，将创建 1 个客户、1 个机型、24 行 BOM 物料、1 张 draft 报价（单号 `DEMO-Q-001`）。Windows 本地请确保 `backend/.env` 中 `DATABASE_URL` 使用 `127.0.0.1` 而非 `localhost`。
+
+**异步 Worker（导出 PDF/Excel、事件重试）：** 另开终端，在 `backend` 目录执行：
+
+```bash
+python -m workers.event_worker
+```
+
+等待 API 就绪后验证：
+
+```bash
+curl http://localhost:8000/api/v1/health/live
+```
+
+应返回 `{"code":"SUCCESS",...}` 或等价 JSON。
+
+默认管理员（可被环境变量覆盖）：
+
+- 用户名：`admin`（`BOOTSTRAP_ADMIN_USERNAME`）
+- 密码：`Admin@123456`（`BOOTSTRAP_ADMIN_PASSWORD`）
+
+### 2. 配置 Web 前端
+
+```bash
+cd apps/web-admin
+copy .env.local.example .env.local   # Windows
+# cp .env.local.example .env.local     # Unix
+```
+
+`.env.local` 中需包含：
+
+```
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
+
+> `docker-compose.yml` 中 `CORS_ORIGINS` 已包含 `http://localhost:3000` 与 `http://127.0.0.1:3000`，供 Next.js 开发服务器跨域访问 API。
+
+### 3. 安装依赖并启动 Web 开发服务器
+
+在仓库根目录（monorepo）：
+
+```bash
+npm install
+npm run dev -w web-admin
+```
+
+浏览器打开 [http://localhost:3000](http://localhost:3000)，使用默认管理员登录，进入 `/dashboard` 验证页面可渲染、控制台无关键 CORS/401 报错。
+
+### 4. 常见问题
+
+| 现象 | 排查 |
+|------|------|
+| 登录失败 / 401 | 确认 API 已启动、`NEXT_PUBLIC_API_BASE_URL` 指向 `http://localhost:8000` |
+| CORS 报错 | 确认 `docker-compose.yml` 中 `CORS_ORIGINS` 含当前前端 origin |
+| Dashboard 白屏 | 打开浏览器控制台，检查 `/api/v1/dashboard/overview` 等接口是否 200 |
+| `docker compose build` 超时 | 使用上文 **方式 B** 混合启动 |
+| Windows 登录 500 / asyncio | 使用 `python scripts/run_local_api.py` 而非直接 `uvicorn` |
+| 端口占用 | API 默认 8000，Web 默认 3000；修改端口时需同步更新 CORS 与 `.env.local` |
 
 ## REST 入口（阶段二收口）
 
@@ -145,5 +252,9 @@ pytest integration_tests -q
 ## 生产环境注意
 
 - **必须**设置强随机 `SECRET_KEY`（建议 32+ 字节）。
+- **必须**在首次部署后修改 admin 默认密码及所有数据库/MinIO 凭证。
+- **必须**在生产环境配置 `METRICS_API_KEY`；未配置时 `/api/v1/health/metrics` 返回 403。
 - CORS 通过 `CORS_ORIGINS` 逗号分隔配置；不要随意使用 `*` 搭配 credentials。
 - 数据库迁移以 Alembic 为准；不要在生产环境依赖 `create_all`。
+- 交付验收：[`docs/DELIVERY_ACCEPTANCE.md`](docs/DELIVERY_ACCEPTANCE.md)
+- **内部试运行**：[`docs/INTERNAL_TRIAL_GUIDE.md`](docs/INTERNAL_TRIAL_GUIDE.md) · `python scripts/setup_trial_users.py` · `python scripts/import_initial_master_data.py`

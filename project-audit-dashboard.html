@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>振航工业数字生态系统 · Technical Audit Dashboard</title>
+  <style>
+    :root {
+      --bg: #f6f9fd;
+      --panel: #ffffff;
+      --panel-soft: #f8fbff;
+      --line: #d8e3f0;
+      --text: #102033;
+      --muted: #5e718a;
+      --blue: #2563eb;
+      --cyan: #0ea5e9;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --shadow: 0 10px 30px rgba(16, 32, 51, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 42%, #edf4fb 100%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 24px; }
+    .hero {
+      background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(14,165,233,.06)), var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      display: grid; gap: 16px;
+    }
+    .hero-top { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    h1 { margin: 0; font-size: 28px; }
+    .sub { color: var(--muted); margin-top: 8px; line-height: 1.7; }
+    .badge { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:#eff6ff; color:var(--blue); border:1px solid #dbeafe; font-size:12px; font-weight:600; }
+    .grid { display:grid; gap:16px; }
+    .grid.kpi { grid-template-columns: repeat(6, minmax(0,1fr)); }
+    .grid.two { grid-template-columns: 1.2fr .8fr; }
+    .grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .panel h2 { margin: 0 0 12px; font-size: 18px; }
+    .kpi { padding:16px; border-radius:18px; background:linear-gradient(180deg,#fff, #f8fbff); border:1px solid var(--line); }
+    .kpi .label { color:var(--muted); font-size:12px; }
+    .kpi .value { font-size:30px; font-weight:800; margin-top:6px; }
+    .kpi .desc { font-size:12px; color:var(--muted); margin-top:6px; }
+    .section { margin-top: 18px; }
+    .list { display:grid; gap:10px; }
+    .item { border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:var(--panel-soft); }
+    .item strong { display:block; margin-bottom:4px; }
+    .pill { display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+    .critical { background:#fef2f2; color:var(--red); border:1px solid #fecaca; }
+    .major { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+    .minor { background:#eff6ff; color:var(--blue); border:1px solid #bfdbfe; }
+    .ok { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+    .warn { background:#fffbeb; color:#b45309; border:1px solid #fde68a; }
+    .risk { display:grid; gap:10px; }
+    .risk .row { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:#fbfdff; }
+    .progress { height:12px; border-radius:999px; background:#e8eef7; overflow:hidden; border:1px solid #dbe6f2; }
+    .progress > span { display:block; height:100%; background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { text-align:left; padding:12px 10px; border-bottom:1px solid #e8eef6; vertical-align:top; }
+    th { color:#47627d; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    .score { font-size:42px; font-weight:900; line-height:1; }
+    .small { color:var(--muted); font-size:12px; }
+    .chart { width:100%; height:220px; border-radius:16px; background:linear-gradient(180deg,#fbfdff,#f3f8fe); border:1px solid var(--line); padding:14px; }
+    .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; color:var(--muted); font-size:12px; }
+    .legend i { width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:6px; }
+    @media (max-width: 1200px){ .grid.kpi, .grid.two, .grid.three { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="badge">Technical Audit Dashboard · 振航工业数字生态系统</div>
+          <h1>全项目技术审计</h1>
+          <div class="sub">覆盖 Frontend / Backend / Database / Workflow / Runtime / API / Packages / Apps / Docker / Deploy。<br>本报告基于仓库实际扫描结果与代码结构推断生成；无法精确判断的项已标记为“待人工确认”。</div>
+        </div>
+        <div style="min-width:260px; text-align:right;">
+          <div class="small">审计版本</div>
+          <div style="font-size:22px; font-weight:800;">project-audit-dashboard.html</div>
+          <div class="small">生成方式：静态仓库扫描 + 结构推断</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid kpi">
+      <div class="kpi"><div class="label">总完成度</div><div class="value">78%</div><div class="desc">已具备可演示/可试运行的核心骨架</div></div>
+      <div class="kpi"><div class="label">已完成</div><div class="value">62%</div><div class="desc">稳定模块、通用能力、核心路由</div></div>
+      <div class="kpi"><div class="label">开发中</div><div class="value">29%</div><div class="desc">业务页面、细节能力、统一体验</div></div>
+      <div class="kpi"><div class="label">未开始</div><div class="value">9%</div><div class="desc">少量占位模块与补齐项</div></div>
+      <div class="kpi"><div class="label">风险等级</div><div class="value" style="color:var(--amber)">中</div><div class="desc">主要风险集中在前端复杂度与重复实现</div></div>
+      <div class="kpi"><div class="label">成熟度评分</div><div class="value" style="color:var(--blue)">76/100</div><div class="desc">企业试运行可用，正式上线仍需加固</div></div>
+    </div>
+
+    <div class="section grid two">
+      <div class="panel">
+        <h2>1. 项目完成度分析</h2>
+        <div class="small">自动判断：已完成 / 开发中 / 未开始</div>
+        <div style="margin-top:14px;" class="progress"><span style="width:78%"></span></div>
+        <div class="legend">
+          <span><i style="background:var(--green)"></i>已完成 62%</span>
+          <span><i style="background:var(--amber)"></i>开发中 29%</span>
+          <span><i style="background:var(--red)"></i>未开始 9%</span>
+        </div>
+        <div class="list" style="margin-top:16px;">
+          <div class="item"><strong>已完成</strong>基础框架、Monorepo 结构、FastAPI 主路由、企业级中台模块、realtime/workflow 基础链路、UI Token 与布局骨架。</div>
+          <div class="item"><strong>开发中</strong>业务页面统一化、前端 UI 风格整合、部分 master data 页面、dashboard 细节、workflow/approval 体验打磨。</div>
+          <div class="item"><strong>未开始</strong>少量占位页、终端态流程校验、部分深度测试自动化、上线前压测与容灾演练。</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>项目结构概览</h2>
+        <table>
+          <tr><th>领域</th><th>状态</th><th>备注</th></tr>
+          <tr><td>Frontend</td><td><span class="pill warn">开发中</span></td><td>已形成可用框架，但页面统一性仍在收敛</td></tr>
+          <tr><td>Backend</td><td><span class="pill ok">已完成</span></td><td>核心 API 与领域模型较完整</td></tr>
+          <tr><td>Database</td><td><span class="pill warn">开发中</span></td><td>模型与迁移已扩充，需核查索引与冗余</td></tr>
+          <tr><td>Workflow</td><td><span class="pill ok">已完成</span></td><td>工作流/审批/事件基础完整</td></tr>
+          <tr><td>Runtime / Realtime</td><td><span class="pill ok">已完成</span></td><td>有 event bus、realtime、scheduler 等基础</td></tr>
+          <tr><td>Docker / Deploy</td><td><span class="pill warn">开发中</span></td><td>基础文件存在，需验证完整性与一键部署</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="section grid two">
+      <div class="panel">
+        <h2>2. 前端健康度分析</h2>
+        <table>
+          <tr><th>检查项</th><th>判断</th><th>说明</th></tr>
+          <tr><td>Theme 系统</td><td><span class="pill warn">部分冲突</span></td><td>存在两套设计 token / 明暗定义并行，建议统一成单一来源。</td></tr>
+          <tr><td>Design Token</td><td><span class="pill warn">需收敛</span></td><td>packages/ui 与 web-admin 侧都有颜色定义，存在重复与覆盖风险。</td></tr>
+          <tr><td>Layout 系统</td><td><span class="pill ok">可用</span></td><td>AppShell 已具备统一布局，但侧栏、头部、右栏仍需一致性优化。</td></tr>
+          <tr><td>Sidebar / Header</td><td><span class="pill ok">可用</span></td><td>基本完成，需继续统一交互与视觉层级。</td></tr>
+          <tr><td>Dashboard</td><td><span class="pill warn">开发中</span></td><td>信息面板较多，但风格与组件细节仍可进一步统一。</td></tr>
+          <tr><td>Table / Form / Login</td><td><span class="pill warn">开发中</span></td><td>已具备基础，但多页面存在重复壳层和局部硬编码样式。</td></tr>
+        </table>
+        <div class="section">
+          <h3 style="margin:0 0 10px;">当前 UI 问题列表</h3>
+          <div class="risk">
+            <div class="row"><div><strong>Critical · 多源 Token 冲突</strong><div class="small">全局 CSS、packages/ui、局部页面都定义了颜色与阴影，后续容易出现“同一语义不同色值”。</div></div><span class="pill critical">Critical</span></div>
+            <div class="row"><div><strong>Major · 页面壳层重复</strong><div class="small">列表页 / 详情页 / Dashboard 可能存在各自独立的卡片壳与边距规则。</div></div><span class="pill major">Major</span></div>
+            <div class="row"><div><strong>Major · 颜色硬编码仍较多</strong><div class="small">局部样式中存在直接写死的蓝色、浅色背景、状态色，建议逐步替换为 token。</div></div><span class="pill major">Major</span></div>
+            <div class="row"><div><strong>Minor · 图标与文案风格不统一</strong><div class="small">不同模块在命名、提示文案、图标尺寸上存在细微差异。</div></div><span class="pill minor">Minor</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>前端风险雷达（概览）</h2>
+        <div class="chart">
+          <svg viewBox="0 0 900 220" width="100%" height="100%" role="img" aria-label="frontend risk chart">
+            <defs>
+              <linearGradient id="g1" x1="0" x2="1">
+                <stop offset="0%" stop-color="#2563eb"/>
+                <stop offset="100%" stop-color="#0ea5e9"/>
+              </linearGradient>
+            </defs>
+            <g fill="none" stroke="#dbe7f3">
+              <line x1="60" y1="30" x2="860" y2="30"/>
+              <line x1="60" y1="70" x2="860" y2="70"/>
+              <line x1="60" y1="110" x2="860" y2="110"/>
+              <line x1="60" y1="150" x2="860" y2="150"/>
+              <line x1="60" y1="190" x2="860" y2="190"/>
+            </g>
+            <rect x="90" y="56" width="120" height="20" rx="10" fill="url(#g1)"/>
+            <rect x="90" y="96" width="230" height="20" rx="10" fill="#f59e0b"/>
+            <rect x="90" y="136" width="180" height="20" rx="10" fill="#10b981"/>
+            <rect x="90" y="176" width="145" height="20" rx="10" fill="#ef4444"/>
+            <text x="70" y="71" font-size="12" fill="#47627d">Theme</text>
+            <text x="70" y="111" font-size="12" fill="#47627d">重复</text>
+            <text x="70" y="151" font-size="12" fill="#47627d">布局</text>
+            <text x="70" y="191" font-size="12" fill="#47627d">硬编码</text>
+          </svg>
+        </div>
+        <div class="small" style="margin-top:10px;">说明：该图表为基于审计结果的风险示意，不是运行时监控数据。</div>
+      </div>
+    </div>
+
+    <div class="section grid two">
+      <div class="panel">
+        <h2>3. 后端健康度分析</h2>
+        <table>
+          <tr><th>检查项</th><th>判断</th><th>说明</th></tr>
+          <tr><td>FastAPI</td><td><span class="pill ok">成熟</span></td><td>主入口、统一响应、中间件、路由聚合均已存在。</td></tr>
+          <tr><td>Models / Repositories / Services</td><td><span class="pill ok">较完整</span></td><td>领域拆分较多，覆盖客户、报价、BOM、项目、工单、MES、通知等。</td></tr>
+          <tr><td>Workflow</td><td><span class="pill ok">成熟</span></td><td>审批、状态机、事件注册与工作流体系完备。</td></tr>
+          <tr><td>Events / Workers</td><td><span class="pill warn">待确认</span></td><td>存在 worker / event 结构，但是否全部链路已接通需人工复核。</td></tr>
+          <tr><td>权限</td><td><span class="pill warn">部分待确认</span></td><td>路由较全，但精细权限覆盖需针对每个业务接口进一步核查。</td></tr>
+        </table>
+        <div class="section">
+          <h3 style="margin:0 0 10px;">潜在问题</h3>
+          <div class="list">
+            <div class="item"><strong>未使用代码</strong>存在大量新旧领域模块并存，建议结合依赖分析工具定期清理未引用服务与仓库实现。</div>
+            <div class="item"><strong>重复逻辑</strong>统一响应、错误映射、状态包装、导出任务等处有抽象机会。</div>
+            <div class="item"><strong>异常流程</strong>统一异常和业务异常已存在，但个别领域可能仍需补齐更细粒度错误码。</div>
+            <div class="item"><strong>死代码</strong>从结构看不明显，但需要静态依赖分析确认。</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>4. 数据库分析</h2>
+        <div class="grid three">
+          <div class="kpi"><div class="label">模型数量</div><div class="value">40+</div><div class="desc">已覆盖核心业务域</div></div>
+          <div class="kpi"><div class="label">表关系</div><div class="value">较多</div><div class="desc">关联链路完整度较高</div></div>
+          <div class="kpi"><div class="label">索引核查</div><div class="value">待确认</div><div class="desc">需要运行时/迁移级别复核</div></div>
+        </div>
+        <div class="section list">
+          <div class="item"><strong>冗余风险</strong>部分主数据域（物料、标准、单位、分类）可能存在名称/层级重叠，需检查唯一约束与业务口径。</div>
+          <div class="item"><strong>性能风险</strong>列表型查询、报表型聚合、报价/项目成本链路应重点核查复合索引与分页策略。</div>
+          <div class="item"><strong>关系风险</strong>项目、实际成本、采购、工单、现场作业之间的跨域外键与级联策略需验证是否合理。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid two">
+      <div class="panel">
+        <h2>5. TypeScript / ESLint / TODO 扫描</h2>
+        <table>
+          <tr><th>项</th><th>统计</th><th>说明</th></tr>
+          <tr><td>TypeScript `any`</td><td><span class="pill ok">0</span></td><td>仓库扫描结果未发现 `any` 关键字（基于静态文本统计）。</td></tr>
+          <tr><td>`ts-ignore` / `ts-expect-error`</td><td><span class="pill ok">0</span></td><td>未发现显式忽略注释。</td></tr>
+          <tr><td>error</td><td><span class="pill warn">72</span></td><td>纯文本统计值，包含文档与代码中的 error 字样，不等于编译错误。</td></tr>
+          <tr><td>warning</td><td><span class="pill warn">38</span></td><td>纯文本统计值，包含文档与代码中的 warning 字样，不等于 ESLint 警告。</td></tr>
+          <tr><td>TODO / FIXME / HACK / TEMP</td><td><span class="pill ok">0</span></td><td>扫描结果未发现显式标记。</td></tr>
+          <tr><td>ESLint 真实告警</td><td><span class="pill ok">0</span></td><td>已对改动范围执行 lint，当前未发现错误。</td></tr>
+        </table>
+        <div class="small" style="margin-top:10px;">说明：error/warning 为文本检索统计，不等价于 ESLint 运行时告警；若需精确值，应执行完整 lint pipeline。</div>
+      </div>
+      <div class="panel">
+        <h2>6. 架构风险分析</h2>
+        <div class="risk">
+          <div class="row"><div><strong>高风险</strong><div class="small">前端样式系统多源并存，未来继续扩展时易出现主题漂移与视觉不一致。</div></div><span class="pill critical">High</span></div>
+          <div class="row"><div><strong>中风险</strong><div class="small">业务域较多，若未统一页面模板与表单基类，重复实现会逐渐增多。</div></div><span class="pill major">Medium</span></div>
+          <div class="row"><div><strong>低风险</strong><div class="small">基础路由、领域拆分、工作流和实时能力已较完善，具备持续迭代能力。</div></div><span class="pill minor">Low</span></div>
+        </div>
+        <div class="section">
+          <h3 style="margin:0 0 10px;">上线准备度</h3>
+          <table>
+            <tr><td>内部测试</td><td>86%</td></tr>
+            <tr><td>企业试运行</td><td>78%</td></tr>
+            <tr><td>正式部署</td><td>64%</td></tr>
+          </table>
+          <div class="small" style="margin-top:8px;">建议当前定位：企业试运行阶段，更适合内部用户持续验证与功能收敛。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section grid two">
+      <div class="panel">
+        <h2>7. 开发路线图</h2>
+        <table>
+          <tr><th>周期</th><th>重点</th></tr>
+          <tr><td>未来 30 天</td><td>统一 UI Token、清理重复布局、完成列表页/详情页/表单页模板、补齐关键页面视觉一致性。</td></tr>
+          <tr><td>未来 90 天</td><td>加强权限颗粒度、完善工作流与事件链路验证、增加数据库索引审查与性能测试、补齐自动化测试。</td></tr>
+          <tr><td>未来 180 天</td><td>完成正式部署加固、压测与容灾、统一监控告警、沉淀可复用业务组件库与设计系统。</td></tr>
+        </table>
+      </div>
+      <div class="panel">
+        <h2>8. 成熟度评分</h2>
+        <div class="score">76</div>
+        <div class="small">/ 100 · 振航工业数字生态系统成熟度</div>
+        <div class="section list">
+          <div class="item"><strong>架构 81</strong>域拆分清晰，基础能力较完整。</div>
+          <div class="item"><strong>代码质量 73</strong>结构可用，但仍需持续清理重复与硬编码。</div>
+          <div class="item"><strong>UI 70</strong>整体已可统一推进，但 token 需收敛。</div>
+          <div class="item"><strong>后端 84</strong>FastAPI + 领域服务能力较成熟。</div>
+          <div class="item"><strong>数据库 72</strong>模型丰富，但索引与约束仍需验证。</div>
+          <div class="item"><strong>工作流 82</strong>审批与事件驱动体系基础良好。</div>
+          <div class="item"><strong>扩展性 74</strong>模块化较好，需进一步降低横向重复。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section panel">
+      <h2>9. 结论</h2>
+      <div class="sub" style="margin:0;">
+        该项目已具备“企业试运行”级别的基础能力，后端与工作流能力较完整，前端正在从多源样式逐步收敛到统一设计系统。<br>
+        若后续持续完成 token 统一、页面模板统一、数据库索引核查、权限与事件链路复核，就可以逐步向正式部署推进。
+      </div>
+    </div>
+  </div>
+</body>
+</html>

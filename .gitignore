@@ -1,8 +1,9 @@
-﻿.venv/
+.venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .env
+backend/.env.prod
 .idea/
 .vscode/
 
@@ -13,4 +14,17 @@ dist/
 build/
 coverage/
 *.log
+
+# local env files created by the runbook (examples stay tracked)
+apps/*/.env.local
+backend/.env
+
+# local TLS material — generated, must never be committed
+deploy/nginx/certs/*.pem
+deploy/nginx/certs/*.key
+deploy/nginx/certs/*.crt
+
+# scratch files left behind by tooling runs
+scripts/_s_test.json
+scripts/_verify.txt
 

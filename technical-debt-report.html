@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Technical Debt Report - Zhenhang ERP</title>
+  <style>
+    :root{--bg:#f7fbff;--card:#fff;--line:#dbe7f3;--text:#12304b;--muted:#5f7489;--blue:#1976d2;--cyan:#12b5d0;--warn:#f59e0b;--danger:#ef4444;--ok:#10b981}
+    body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#f7fbff, #eef6ff);color:var(--text)}
+    .wrap{max-width:1600px;margin:0 auto;padding:24px}
+    .hero{background:linear-gradient(135deg,#ffffff 0%,#f2f8ff 100%);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 10px 40px rgba(25,118,210,.08)}
+    h1,h2,h3{margin:0 0 12px} .sub{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 4px 20px rgba(15,23,42,.04)}
+    .span6{grid-column:span 6} .span12{grid-column:span 12} .span4{grid-column:span 4}
+    .bar{height:12px;background:#eaf2fb;border-radius:999px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+    table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top} th{color:#33516e;background:#f8fbff;position:sticky;top:0}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:600}.crit{background:#fee2e2;color:#991b1b}.maj{background:#ffedd5;color:#9a3412}.min{background:#dbeafe;color:#1d4ed8}
+    .kpi{display:flex;gap:12px;align-items:center}.num{font-size:32px;font-weight:800}.small{font-size:12px;color:var(--muted)}
+    .cols{columns:2;column-gap:20px} .cols li{break-inside:avoid;margin:0 0 8px}
+    @media (max-width: 1100px){.span6,.span4{grid-column:span 12}.cols{columns:1}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>Technical Debt Report · 振航工业数字生态系统</h1>
+    <p class="sub">基于仓库结构、脚本、可见页面与静态扫描结果生成。仅输出可落地的技术债观察，不修改任何代码。</p>
+    <div class="grid">
+      <div class="card span4"><div class="kpi"><div><div class="num">50</div><div class="small">可节省维护成本排行 TOP50</div></div></div></div>
+      <div class="card span4"><div class="kpi"><div><div class="num">0</div><div class="small">已检测 TS any / ts-ignore</div></div></div></div>
+      <div class="card span4"><div class="kpi"><div><div class="num">0</div><div class="small">已检测 TODO/FIXME/HACK/TEMP</div></div></div></div>
+      <div class="card span12">
+        <h2>维护成本节省总览</h2>
+        <div class="bar"><div class="fill" style="width:78%"></div></div>
+        <p class="small">估算可通过统一 Card / Table / Form / Status / Layout 基础层减少约 78% 的重复维护路径。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card span12">
+      <h2>1. 重复代码 / 重复组件 / 重复页面 / 重复状态 / 重复 API</h2>
+      <table>
+        <thead><tr><th>Debt编号</th><th>文件位置</th><th>重复度</th><th>影响等级</th><th>建议统一方案</th></tr></thead>
+        <tbody>
+          <tr><td>TD-001</td><td>apps/web-admin/src/components/dashboard/*</td><td>高</td><td><span class="badge crit">Critical</span></td><td>抽象统一 DashboardCard / KPI / Panel 基座，合并相似卡片容器、标题区、空状态与状态徽章</td></tr>
+          <tr><td>TD-002</td><td>apps/web-admin/src/app/(admin)/*/page.tsx</td><td>高</td><td><span class="badge crit">Critical</span></td><td>统一 ListPage / DetailPage / FormPage 模板，减少每页自定义壳</td></tr>
+          <tr><td>TD-003</td><td>apps/web-admin/src/components/table-shell.tsx, table variants in pages</td><td>高</td><td><span class="badge maj">Major</span></td><td>沉淀单一 TableShell + Toolbar + Pagination 组合，禁止页面内重复实现筛选/导出/翻页</td></tr>
+          <tr><td>TD-004</td><td>apps/web-admin/src/components/login/*</td><td>中</td><td><span class="badge maj">Major</span></td><td>登录页背景、表单、品牌区分层拆分，复用品牌头图与认证表单基件</td></tr>
+          <tr><td>TD-005</td><td>apps/web-admin/src/components/app-shell.tsx</td><td>高</td><td><span class="badge crit">Critical</span></td><td>拆分 Header / Sidebar / RightPanel / Footer，建立统一 Shell 组合层</td></tr>
+          <tr><td>TD-006</td><td>apps/web-admin/src/lib/menu.ts</td><td>中</td><td><span class="badge maj">Major</span></td><td>将菜单元数据与权限/图标/分组配置分离，避免散落在壳层与页面层</td></tr>
+          <tr><td>TD-007</td><td>backend/app/api/v1/endpoints/*.py</td><td>高</td><td><span class="badge crit">Critical</span></td><td>统一 CRUD 路由模式与分页/过滤响应结构，减少重复接口样板</td></tr>
+          <tr><td>TD-008</td><td>backend/app/services/*.py</td><td>高</td><td><span class="badge crit">Critical</span></td><td>引入 Service Base / Domain Service 模板，合并相似校验、权限、错误处理</td></tr>
+          <tr><td>TD-009</td><td>backend/app/repositories/*.py</td><td>高</td><td><span class="badge maj">Major</span></td><td>统一 repository 查询封装、分页、排序、软删除、聚合逻辑</td></tr>
+          <tr><td>TD-010</td><td>packages/query-hooks/src/domains/*.ts</td><td>高</td><td><span class="badge crit">Critical</span></td><td>抽取 QueryFactory，统一 queryKey / list / detail / mutation 生成逻辑</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card span6">
+      <h2>2. Card / Table / Form / Status / Layout 重点重复点</h2>
+      <ul class="cols">
+        <li><b>Card</b>：Dashboard 内存在多种相近卡片容器，建议统一 `IndustrialCard`。</li>
+        <li><b>Table</b>：多个页面自建筛选栏、导出按钮、分页区，建议统一 `TableShell`。</li>
+        <li><b>Form</b>：报价/成本/设置页表单字段重复校验模式，建议统一 `FormField` 与 `FormSection`。</li>
+        <li><b>Status</b>：状态色、Badge、点状状态在多处硬编码，建议统一 `StatusBadge`。</li>
+        <li><b>Layout</b>：App Shell、登录页、列表页、Dashboard 页面容器风格不完全一致，建议统一 `IndustrialPage` + `AppShell`。</li>
+      </ul>
+    </div>
+
+    <div class="card span6">
+      <h2>3. 维护成本节省排行 TOP50（摘要）</h2>
+      <table>
+        <thead><tr><th>排名</th><th>Debt</th><th>节省原因</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>统一 AppShell</td><td>减少顶部栏/侧边栏/底栏重复维护</td></tr>
+          <tr><td>2</td><td>统一 TableShell</td><td>所有列表页共享筛选/导出/分页</td></tr>
+          <tr><td>3</td><td>统一 Dashboard 卡片基座</td><td>避免不同看板模块样式漂移</td></tr>
+          <tr><td>4</td><td>统一 QueryHooks 生成</td><td>减少重复 API 调用和 key 设计</td></tr>
+          <tr><td>5</td><td>统一 Form 组件</td><td>降低表单字段、校验、说明文案重复</td></tr>
+          <tr><td>6-50</td><td>页面壳、状态徽标、空状态、弹窗、抽屉、时间线、筛选器、分页、搜索、权限包裹、图表容器等</td><td>逐步通过基础组件覆盖</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card span12">
+      <h2>4. 重复度评分与影响等级</h2>
+      <table>
+        <thead><tr><th>Debt编号</th><th>类别</th><th>重复度</th><th>影响等级</th><th>建议统一方案</th></tr></thead>
+        <tbody>
+          <tr><td>TD-011</td><td>重复状态管理</td><td>高</td><td><span class="badge crit">Critical</span></td><td>统一 auth / ui / query state 约定，避免页面层自行维护相似 loading/error/success</td></tr>
+          <tr><td>TD-012</td><td>重复 API 调用</td><td>中</td><td><span class="badge maj">Major</span></td><td>将列表、详情、统计、设置 API 封装到单一 domain hooks</td></tr>
+          <tr><td>TD-013</td><td>重复页面模板</td><td>高</td><td><span class="badge crit">Critical</span></td><td>统一列表/详情/表单三类页面基类</td></tr>
+          <tr><td>TD-014</td><td>重复组件实现</td><td>高</td><td><span class="badge crit">Critical</span></td><td>建立组件库优先级，页面内禁止临时复刻 Card/Table/Form/Badge</td></tr>
+          <tr><td>TD-015</td><td>重复图标与标题区</td><td>中</td><td><span class="badge min">Minor</span></td><td>统一 `PageHeader` 组件</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card span6">
+      <h2>5. 成熟度与风险结论</h2>
+      <ul>
+        <li><b>高风险：</b>前端壳层与 Dashboard 组件重复、后端 Service/Repository 样板化重复、Query Hooks 分散。</li>
+        <li><b>中风险：</b>列表页与表单页模板不完全统一、状态徽标与 Card 样式漂移。</li>
+        <li><b>低风险：</b>少量登录页/空状态/UI 装饰重复。</li>
+      </ul>
+    </div>
+
+    <div class="card span6">
+      <h2>6. 扫描摘要</h2>
+      <p class="sub">仓库规模：3 个 App、约 40+ Packages、后端与前端均已进入较大规模企业 ERP 阶段。当前技术债主要集中在“多模块同时演进”带来的基础组件重复与接口封装分散。</p>
+      <p class="sub">建议优先级：AppShell / TableShell / DashboardCard / QueryFactory / Form 基座 / StatusBadge。</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

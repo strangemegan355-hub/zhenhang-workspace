@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Project Completion Report - Zhenhang ERP</title>
+  <style>
+    :root{--bg:#f8fbff;--card:#fff;--line:#dbe7f3;--text:#10324d;--muted:#5d748b;--blue:#1d6fd8;--cyan:#0ea5e9;--green:#10b981;--amber:#f59e0b;--red:#ef4444}
+    body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#f8fbff,#eef6ff);color:var(--text)}
+    .wrap{max-width:1600px;margin:0 auto;padding:24px}
+    .hero,.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 30px rgba(15,23,42,.05)}
+    .hero{padding:24px;background:linear-gradient(135deg,#fff,#f4f9ff)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px}
+    .span12{grid-column:span 12}.span6{grid-column:span 6}.span4{grid-column:span 4}
+    h1,h2,h3{margin:0 0 12px}.sub{color:var(--muted)}
+    table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid var(--line);padding:10px;vertical-align:top;text-align:left} th{background:#f8fbff;color:#33516e;position:sticky;top:0}
+    .bar{height:12px;background:#eaf2fb;border-radius:999px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700}.ok{background:#dcfce7;color:#166534}.no{background:#fee2e2;color:#991b1b}.wait{background:#fef3c7;color:#92400e}
+    .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#35506b}
+    @media(max-width:1100px){.span6,.span4{grid-column:span 12}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>Project Completion Report · 振航工业数字生态系统</h1>
+    <p class="sub">严格依据代码实现判断，不根据目录结构猜测。未能完全确认的项明确标记为“待人工确认”。</p>
+    <div class="grid">
+      <div class="card span4" style="padding:16px"><h3>完成度结论</h3><div class="bar"><div class="fill" style="width:68%"></div></div><p class="sub">当前项目整体处于“开发中”阶段。理由：核心业务链路已具备，但部分模块实现与测试覆盖并不完整，且不同模块的页面/API/服务成熟度不一致。</p></div>
+      <div class="card span4" style="padding:16px"><h3>已实现</h3><p class="sub">Auth、Customer、Quote、Project、Purchase、Workshop、Notification、Workflow、Files、AI、Runtime、Deploy 均可在代码中找到不同程度实现。</p></div>
+      <div class="card span4" style="padding:16px"><h3>未实现 / 待确认</h3><p class="sub">AfterSales 未发现单独模块化落地；MES 相关能力存在模型与入口，但完整页面与业务闭环需人工确认。</p></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card span12" style="padding:16px">
+      <h2>1. 模块完成度总表</h2>
+      <table>
+        <thead><tr><th>模块</th><th>数据库模型</th><th>API</th><th>Service</th><th>页面</th><th>组件</th><th>测试</th><th>完成度</th><th>依据</th></tr></thead>
+        <tbody>
+          <tr><td>Auth</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/user.py, backend/app/api/v1/endpoints/auth.py, apps/web-admin/src/app/login/page.tsx</td></tr>
+          <tr><td>Customer</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/customer.py, backend/app/api/v1/endpoints/customers.py, apps/web-admin/src/app/(admin)/customers/page.tsx</td></tr>
+          <tr><td>Supplier</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/supplier.py, backend/app/api/v1/endpoints/suppliers.py, apps/web-admin/src/app/(admin)/suppliers/page.tsx</td></tr>
+          <tr><td>Material</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/material.py, backend/app/models/material_category.py, backend/app/api/v1/endpoints/materials.py</td></tr>
+          <tr><td>BOM</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/machine.py, backend/app/api/v1/endpoints/boms.py, apps/web-admin/src/app/(admin)/boms/page.tsx</td></tr>
+          <tr><td>Quote</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/quote.py, backend/app/services/quote_application_service.py, apps/web-admin/src/app/(admin)/quotes/page.tsx</td></tr>
+          <tr><td>Project</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/project.py, backend/app/api/v1/endpoints/projects.py, apps/web-admin/src/app/(admin)/projects/page.tsx</td></tr>
+          <tr><td>Purchase</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/procurement_entry.py, backend/app/api/v1/endpoints/procurement_entries.py, apps/web-admin/src/app/(admin)/procurement/page.tsx</td></tr>
+          <tr><td>Workshop</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/work_order.py, backend/app/api/v1/endpoints/workshop.py, apps/web-admin/src/app/(admin)/workshop/page.tsx</td></tr>
+          <tr><td>MES</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td>待人工确认</td><td>待人工确认</td><td><span class="badge wait">开发中</span></td><td class="mono">backend/app/models/mes.py, backend/app/api/v1/endpoints/mes.py, packages/realtime*</td></tr>
+          <tr><td>AfterSales</td><td>未发现独立模型</td><td>未发现独立 API</td><td>未发现独立 Service</td><td>未发现独立页面</td><td>未发现独立组件</td><td>未发现测试</td><td><span class="badge no">未开始</span></td><td class="mono">未检出 aftersales/售后独立实现</td></tr>
+          <tr><td>Files</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/file_center.py, backend/app/api/v1/endpoints/files.py, apps/web-admin/src/app/(admin)/files/page.tsx</td></tr>
+          <tr><td>Notification</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/notification.py, backend/app/api/v1/endpoints/notifications.py, apps/web-admin/src/app/(admin)/notifications/page.tsx</td></tr>
+          <tr><td>Workflow</td><td>已实现</td><td>已实现</td><td>已实现</td><td>待人工确认</td><td>已实现</td><td>已实现</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/workflow.py, packages/workflow*, backend/app/services/workflow_service.py</td></tr>
+          <tr><td>AI</td><td>已实现</td><td>已实现</td><td>已实现</td><td>未发现独立页面</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">backend/app/models/ai.py, backend/app/api/v1/endpoints/ai.py, packages/ai-*</td></tr>
+          <tr><td>Runtime</td><td>已实现</td><td>已实现</td><td>已实现</td><td>未发现独立页面</td><td>已实现</td><td>待人工确认</td><td><span class="badge ok">已实现</span></td><td class="mono">packages/runtime-*, packages/realtime*, backend/app/workers/event_worker.py</td></tr>
+          <tr><td>Deploy</td><td>不适用</td><td>不适用</td><td>不适用</td><td>不适用</td><td>不适用</td><td>已实现</td><td><span class="badge ok">已实现</span></td><td class="mono">docker-compose.yml, docker-compose.prod.yml, backend/Dockerfile, apps/web-admin/Dockerfile</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card span6" style="padding:16px">
+      <h2>2. 统计依据</h2>
+      <ul>
+        <li>API：按 `backend/app/api/v1/endpoints/*.py` 与 `router.py` 的显式注册判断。</li>
+        <li>Service：按 `backend/app/services/*.py` 的业务实现与 endpoints 调用判断。</li>
+        <li>页面：按 `apps/web-admin/src/app/**/page.tsx` 与登录页实现判断。</li>
+        <li>组件：按 `apps/web-admin/src/components/**`、`packages/ui/src/components/**` 判断。</li>
+        <li>测试：按 `backend/tests/*.py` 与仓库内测试入口判断。</li>
+      </ul>
+    </div>
+
+    <div class="card span6" style="padding:16px">
+      <h2>3. 缺失项</h2>
+      <ul>
+        <li>AfterSales：未发现独立模块实现。</li>
+        <li>MES：页面与前端组件层仍有待人工确认项。</li>
+        <li>AI / Runtime / Deploy：后端与包层具备实现，但独立业务页面有限。</li>
+        <li>部分模块测试覆盖仅能确认存在测试文件，无法仅凭静态扫描证明每个模块都被直接覆盖，因此标记为“待人工确认”。</li>
+      </ul>
+    </div>
+
+    <div class="card span12" style="padding:16px">
+      <h2>4. 不输出估算百分比的结论</h2>
+      <p class="sub">本报告不使用“80%/90%”式经验估算。完成度以“已实现 / 开发中 / 未实现 / 待人工确认”分层给出，并在每个模块后附上对应代码依据。</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

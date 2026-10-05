@@ -1,0 +1,16 @@
+node_modules
+.git
+.github
+**/.next
+**/dist
+**/coverage
+**/*.md
+!apps/web-admin/README.md
+backend/.env
+backend/.env.*
+!backend/.env.prod.example
+!backend/.env.example
+volumes
+*.log
+.cursor
+agent-transcripts

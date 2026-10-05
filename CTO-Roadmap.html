@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CTO Roadmap - 振航工业数字生态系统</title>
+  <style>
+    :root{--bg:#f7fbff;--panel:#fff;--line:#d9e6f2;--text:#12324d;--muted:#58738d;--blue:#1976d2;--cyan:#13b5d0;--green:#0ea5a4;--gold:#f59e0b;--red:#ef4444;--shadow:0 10px 35px rgba(25,118,210,.08)}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#f7fbff,#eef6ff);color:var(--text)}
+    .wrap{max-width:1600px;margin:0 auto;padding:24px} .hero,.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+    .hero{padding:24px} h1,h2,h3,p{margin:0 0 12px} .muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px} .span12{grid-column:span 12} .span6{grid-column:span 6} .span4{grid-column:span 4}
+    .card{padding:16px} .kpi{font-size:32px;font-weight:800} .small{font-size:12px;color:var(--muted)}
+    table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top} th{background:#f8fbff;position:sticky;top:0}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700} .p1{background:#dbeafe;color:#1d4ed8}.p2{background:#dcfce7;color:#166534}.p3{background:#fee2e2;color:#991b1b}.p4{background:#fef3c7;color:#92400e}
+    .bar{height:12px;background:#e8f1fb;border-radius:999px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+    .phase{display:flex;gap:12px;align-items:flex-start}.idx{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+    .timeline{position:relative;padding-left:24px}.timeline:before{content:"";position:absolute;left:10px;top:0;bottom:0;width:2px;background:#dbeafe}
+    .dot{position:absolute;left:2px;top:6px;width:18px;height:18px;border-radius:999px;background:#fff;border:4px solid var(--blue)}
+    @media (max-width:1100px){.span4,.span6{grid-column:span 12}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>CTO Roadmap · 振航工业数字生态系统</h1>
+    <p class="muted">身份：首席架构师 · 目标：把系统推向正式上线。以下路线图基于当前架构、当前代码、交付说明、Docker/Compose、后端路由与仓库可见实现进行分析。</p>
+    <div class="grid">
+      <div class="card span4"><div class="kpi">当前现状</div><p class="small">前后端、工作流、报价、文件、通知、审计、实时、Docker 已有代码基础；多模块闭环仍在推进，适合分阶段收口。</p></div>
+      <div class="card span4"><div class="kpi">正式上线路径</div><p class="small">先稳定 UI 与主流程，再补齐报价/采购/工单闭环，随后接入 MES / IoT / 移动端。</p></div>
+      <div class="card span4"><div class="kpi">风险焦点</div><p class="small">重复基础组件、模块接口不完全统一、业务闭环与设备接入之间的依赖链较长。</p></div>
+      <div class="card span12">
+        <h2>总路线图（未来 30 / 90 / 180 / 365 天）</h2>
+        <div class="bar"><div class="fill" style="width:22%"></div></div>
+        <p class="small">当前策略：先稳态化，再闭环，再接入设备与移动端，最终进入正式上线与规模化运营。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card span12">
+      <h2>当前架构、当前代码、当前完成度、当前风险</h2>
+      <table>
+        <thead><tr><th>维度</th><th>观察</th><th>依据</th></tr></thead>
+        <tbody>
+          <tr><td>当前架构</td><td>Monorepo + Next.js Web + Vite Mobile/Workshop + FastAPI Backend + Packages 复用层 + Docker Compose</td><td>README、package.json、docker-compose.yml、backend/router.py</td></tr>
+          <tr><td>当前代码</td><td>已存在 Auth / Dashboard / Quotes / Boms / Files / Notifications / Workflow / Realtime / AI / 部分主数据与业务域</td><td>backend/app/api/v1/endpoints、backend/app/models、apps/web-admin/pages</td></tr>
+          <tr><td>当前完成度</td><td>已完成基础平台骨架与多个业务入口；未完全闭环的模块仍以页面/接口/服务碎片方式存在</td><td>README 中“阶段二收口 / 阶段三第二阶段”描述 + 代码树可见实现</td></tr>
+          <tr><td>当前风险</td><td>模块重复、基础组件漂移、流程闭环未收口、设备接入链路尚未完全稳定</td><td>多个页面与组件壳层、Service/Repository/Query hooks 分散</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card span12">
+      <h2>Phase 1 - UI 稳定化</h2>
+      <div class="phase"><div class="idx">1</div><div><p><b>目标：</b>统一设计 token、布局壳、Table / Form / Status / Card 组件，消除视觉漂移。</p><p class="small">预计工期：7-14 天 · 依赖项：现有 Next Web 代码、design tokens、AppShell、Dashboard skeleton · 风险：页面内硬编码样式残留 · 收益：提升交付速度、减少返工、统一品牌。</p><p class="small">优先级：最高</p></div></div>
+    </div>
+
+    <div class="card span12">
+      <h2>Phase 2 - 报价系统闭环</h2>
+      <div class="phase"><div class="idx">2</div><div><p><b>目标：</b>报价创建、版本、审批、导出、对客报价、成本联动闭环。</p><p class="small">预计工期：14-21 天 · 依赖项：quotes API、quote builder、quote export payload、workflow、files、audit · 风险：成本口径不统一、审批链与导出异步任务耦合 · 收益：业务收入入口闭环。</p><p class="small">优先级：极高</p></div></div>
+    </div>
+
+    <div class="card span12">
+      <h2>Phase 3 - 采购系统闭环</h2>
+      <div class="phase"><div class="idx">3</div><div><p><b>目标：</b>采购申请、供应商、入库、对账、采购单流转闭环。</p><p class="small">预计工期：14-21 天 · 依赖项：suppliers、procurement_entries、materials、units、files、workflow · 风险：主数据质量、单据状态机边界 · 收益：连接报价与生产执行的资源侧闭环。</p><p class="small">优先级：高</p></div></div>
+    </div>
+
+    <div class="card span12">
+      <h2>Phase 4 - 生产工单闭环</h2>
+      <div class="phase"><div class="idx">4</div><div><p><b>目标：</b>工单、排产、执行、工序、异常、返工、完工回写。</p><p class="small">预计工期：21-30 天 · 依赖项：work_orders、projects、actual costs、workflow、realtime · 风险：执行层与财务/成本联动复杂 · 收益：生产执行可视化与可控化。</p><p class="small">优先级：极高</p></div></div>
+    </div>
+
+    <div class="card span12">
+      <h2>Phase 5 - MES 接入</h2>
+      <div class="phase"><div class="idx">5</div><div><p><b>目标：</b>打通设备/产线信号、工位报工、状态采集、事件总线。</p><p class="small">预计工期：30-45 天 · 依赖项：mes endpoints、realtime gateway、event worker、runtime bus、worker queue · 风险：协议适配、幂等、补偿、离线重试 · 收益：现场数据进入系统核心链路。</p><p class="small">优先级：高</p></div></div>
+    </div>
+
+    <div class="card span12">
+      <h2>Phase 6 - IoT 设备接入</h2>
+      <div class="phase"><div class="idx">6</div><div><p><b>目标：</b>设备遥测、告警、产线数据聚合、边缘网关接入。</p><p class="small">预计工期：30-60 天 · 依赖项：runtime telemetry、realtime bridge、device registry、notification · 风险：海量事件吞吐、协议碎片化、运维复杂度上升 · 收益：设备层数据资产化。</p><p class="small">优先级：中高</p></div></div>
+    </div>
+
+    <div class="card span12">
+      <h2>Phase 7 - 移动端</h2>
+      <div class="phase"><div class="idx">7</div><div><p><b>目标：</b>移动端报工、查询、审批、巡检、通知处理。</p><p class="small">预计工期：30-45 天 · 依赖项：API 收口、权限体系、轻量表单、消息中心 · 风险：交互碎片化、与桌面端主流程重复 · 收益：现场操作覆盖，提升响应效率。</p><p class="small">优先级：中</p></div></div>
+    </div>
+
+    <div class="card span6">
+      <h2>未来 30 天</h2>
+      <div class="timeline"><span class="dot"></span><p><b>1-2 周：</b>UI 稳定化、基础组件收口、Dashboard/登录/列表统一。</p></div>
+      <div class="timeline"><span class="dot"></span><p><b>2-4 周：</b>报价系统闭环收口、导出/审批/文件链路打通。</p></div>
+      <p class="small">重点：把“可演示”变成“可交付”。</p>
+    </div>
+
+    <div class="card span6">
+      <h2>未来 90 天</h2>
+      <div class="timeline"><span class="dot"></span><p><b>第 1-2 月：</b>采购闭环、工单闭环、主数据治理。</p></div>
+      <div class="timeline"><span class="dot"></span><p><b>第 2-3 月：</b>MES 事件链路、Worker 稳定化、告警通知闭环。</p></div>
+      <p class="small">重点：把“单点功能”变成“核心业务链路”。</p>
+    </div>
+
+    <div class="card span6">
+      <h2>未来 180 天</h2>
+      <div class="timeline"><span class="dot"></span><p><b>第 4-6 月：</b>IoT 接入、现场数据入湖、设备状态监控。</p></div>
+      <div class="timeline"><span class="dot"></span><p><b>持续优化：</b>流程编排、异常补偿、性能与观测体系。</p></div>
+      <p class="small">重点：把“业务系统”升级成“实时运营系统”。</p>
+    </div>
+
+    <div class="card span6">
+      <h2>未来 365 天</h2>
+      <div class="timeline"><span class="dot"></span><p><b>全年目标：</b>移动端覆盖、跨端统一体验、正式上线与规模化运营。</p></div>
+      <div class="timeline"><span class="dot"></span><p><b>平台目标：</b>标准化 API、稳定工作流、标准设备接入、可观测与可运维。</p></div>
+      <p class="small">重点：形成可复制的工业数字化平台能力。</p>
+    </div>
+
+    <div class="card span12">
+      <h2>路线图总表</h2>
+      <table>
+        <thead><tr><th>阶段</th><th>预计工期</th><th>依赖项</th><th>风险</th><th>收益</th><th>优先级</th></tr></thead>
+        <tbody>
+          <tr><td>Phase 1 UI 稳定化</td><td>7-14 天</td><td>Design Token / AppShell / Dashboard / Table / Form</td><td>硬编码样式残留</td><td>统一体验，提升交付速度</td><td><span class="pill p1">最高</span></td></tr>
+          <tr><td>Phase 2 报价闭环</td><td>14-21 天</td><td>quotes / workflow / files / audit / export</td><td>审批和成本口径</td><td>收入入口闭环</td><td><span class="pill p1">极高</span></td></tr>
+          <tr><td>Phase 3 采购闭环</td><td>14-21 天</td><td>suppliers / procurement / materials / units</td><td>主数据质量</td><td>资源侧闭环</td><td><span class="pill p2">高</span></td></tr>
+          <tr><td>Phase 4 工单闭环</td><td>21-30 天</td><td>work orders / projects / cost / realtime</td><td>执行与财务联动</td><td>生产可视化</td><td><span class="pill p1">极高</span></td></tr>
+          <tr><td>Phase 5 MES 接入</td><td>30-45 天</td><td>mes / event worker / runtime / realtime</td><td>协议、幂等、补偿</td><td>现场信号入链路</td><td><span class="pill p2">高</span></td></tr>
+          <tr><td>Phase 6 IoT 接入</td><td>30-60 天</td><td>runtime telemetry / device registry / notifications</td><td>吞吐与运维</td><td>设备数据资产化</td><td><span class="pill p4">中高</span></td></tr>
+          <tr><td>Phase 7 移动端</td><td>30-45 天</td><td>API 收口 / 权限 / 轻表单 / 通知</td><td>交互碎片化</td><td>现场效率提升</td><td><span class="pill p4">中</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

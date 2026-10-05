@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>振航ERP — 项目完成度分析 & 工作流图</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #f4f8ff;
+  --card: #ffffff;
+  --text: #0f1a2e;
+  --muted: #8896a8;
+  --blue: #1677ff;
+  --blue-dark: #0b2545;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --border: #e5edf7;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+.header { background: linear-gradient(135deg, #071a2f 0%, #0b2545 50%, #0f3060 100%); color: #fff; padding: 48px 20px; text-align: center; }
+.header h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 8px; }
+.header p { font-size: 1.1rem; color: #b8c7da; }
+.container { max-width: 1320px; margin: 0 auto; padding: 24px 20px 60px; }
+
+/* Cards */
+.card { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 28px; margin-bottom: 24px; border: 1px solid var(--border); }
+.card h2 { font-size: 1.35rem; font-weight: 700; color: var(--blue-dark); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.card h2 .icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; font-size: 1.1rem; }
+.icon-analysis { background: #e8f1ff; color: var(--blue); }
+.icon-workflow { background: #e6f9ed; color: var(--green); }
+.icon-progress { background: #fef3c7; color: var(--amber); }
+.icon-roadmap { background: #fde8e8; color: var(--red); }
+
+/* Progress Bars */
+.progress-bar-wrap { background: #e5edf7; border-radius: 8px; height: 10px; overflow: hidden; margin: 4px 0 12px; }
+.progress-bar-fill { height: 100%; border-radius: 8px; transition: width 0.8s ease; }
+.fill-green { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.fill-blue { background: linear-gradient(90deg, #1677ff, #2563eb); }
+.fill-amber { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.fill-red { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.stat-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 18px; text-align: center; }
+.stat-card .num { font-size: 2rem; font-weight: 800; }
+.stat-card .label { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+/* Module Table */
+.module-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.module-table th { background: #f0f4fa; padding: 12px 14px; text-align: left; font-weight: 600; color: var(--blue-dark); border-bottom: 2px solid var(--border); }
+.module-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.module-table tr:hover { background: #f8fafc; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
+.badge-done { background: #dcfce7; color: #166534; }
+.badge-wip { background: #fef3c7; color: #92400e; }
+.badge-todo { background: #fee2e2; color: #991b1b; }
+.badge-planned { background: #e0e7ff; color: #3730a3; }
+
+/* Flow columns */
+.flow-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 8px; }
+.flow-col { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.flow-col h4 { font-size: 0.95rem; color: var(--blue); margin-bottom: 10px; }
+.flow-col ul { list-style: none; padding: 0; }
+.flow-col li { padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+.flow-col li:last-child { border-bottom: none; }
+.flow-col li .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: #22c55e; }
+.dot-amber { background: #f59e0b; }
+.dot-red { background: #ef4444; }
+.dot-blue { background: #1677ff; }
+
+.mermaid-box { background: #fff; border-radius: 8px; padding: 16px; overflow-x: auto; text-align: center; }
+
+.roadmap-step { display: flex; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.roadmap-step:last-child { border-bottom: none; }
+.roadmap-num { width: 40px; height: 40px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; flex-shrink: 0; }
+.roadmap-num.phase2 { background: var(--amber); }
+.roadmap-num.phase3 { background: var(--red); }
+.roadmap-body h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.roadmap-body p { font-size: 0.88rem; color: var(--muted); }
+
+footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.82rem; }
+
+/* Risk tag */
+.risk-tag { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 0.72rem; margin-left: 6px; }
+.risk-high { background: #fee2e2; color: #991b1b; }
+.risk-mid { background: #fef3c7; color: #92400e; }
+.risk-low { background: #dcfce7; color: #166534; }
+
+.gauge-wrap { display: flex; align-items: center; justify-content: center; gap: 30px; flex-wrap: wrap; padding: 10px 0; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1>🛠️ 振航ERP — 项目全景分析</h1>
+  <p>振航智能制造 · 让制造更智慧 &nbsp;|&nbsp; 分析日期：2026-05-30 &nbsp;|&nbsp; 版本 v2.1.0</p>
+</header>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- SECTION 1: 项目概览 -->
+<!-- ============================================================ -->
+<div class="card">
+  <h2><span class="icon icon-analysis">📊</span> 一、项目概况 & 完成度总览</h2>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="num" style="color:var(--blue)">899</div>
+      <div class="label">项目总文件数</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:var(--blue)">22+</div>
+      <div class="label">内部 npm 包</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:var(--green)">~60%</div>
+      <div class="label">整体完成度</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:var(--amber)">3</div>
+      <div class="label">顶层目录 (apps/packages/backend)</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:var(--green)">FastAPI</div>
+      <div class="label">后端技术栈</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:var(--blue)">Next.js</div>
+      <div class="label">前端技术栈</div>
+    </div>
+  </div>
+
+  <div class="gauge-wrap" style="margin-top:20px;">
+    <div style="text-align:center;">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#e5edf7" stroke-width="16"/>
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#1677ff" stroke-width="16"
+          stroke-dasharray="478" stroke-dashoffset="191" stroke-linecap="round"
+          transform="rotate(-90 90 90)" style="transition: stroke-dashoffset 1s ease;"/>
+        <text x="90" y="80" text-anchor="middle" font-size="48" font-weight="800" fill="#1677ff">60%</text>
+        <text x="90" y="108" text-anchor="middle" font-size="14" fill="#8896a8">整体完成度</text>
+      </svg>
+    </div>
+    <div style="text-align:center;">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#e5edf7" stroke-width="16"/>
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#22c55e" stroke-width="16"
+          stroke-dasharray="478" stroke-dashoffset="96" stroke-linecap="round"
+          transform="rotate(-90 90 90)" style="transition: stroke-dashoffset 1s ease;"/>
+        <text x="90" y="80" text-anchor="middle" font-size="48" font-weight="800" fill="#22c55e">80%</text>
+        <text x="90" y="108" text-anchor="middle" font-size="14" fill="#8896a8">后端 API 完成度</text>
+      </svg>
+    </div>
+    <div style="text-align:center;">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#e5edf7" stroke-width="16"/>
+        <circle cx="90" cy="90" r="76" fill="none" stroke="#f59e0b" stroke-width="16"
+          stroke-dasharray="478" stroke-dashoffset="239" stroke-linecap="round"
+          transform="rotate(-90 90 90)" style="transition: stroke-dashoffset 1s ease;"/>
+        <text x="90" y="80" text-anchor="middle" font-size="48" font-weight="800" fill="#f59e0b">50%</text>
+        <text x="90" y="108" text-anchor="middle" font-size="14" fill="#8896a8">前端 UI 完成度</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: 模块完成度详表 -->
+<!-- ============================================================ -->
+<div class="card">
+  <h2><span class="icon icon-progress">📋</span> 二、各模块完成度详表</h2>
+
+  <table class="module-table">
+    <thead>
+      <tr>
+        <th>模块</th>
+        <th>子模块/文件</th>
+        <th>完成度</th>
+        <th>状态</th>
+        <th>备注</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>🏗️ 基础设施</strong></td>
+        <td>monorepo / turborepo / pnpm / ESLint / tsconfig</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-green" style="width:90%"></div></div>
+          90%
+        </td>
+        <td><span class="badge badge-done">基本完成</span></td>
+        <td>根目录 pnpm-workspace.yaml / turbo.json / tsconfig 均已配置</td>
+      </tr>
+      <tr>
+        <td><strong>🔐 后端 API</strong></td>
+        <td>FastAPI / SQLAlchemy / Alembic / JWT / RBAC</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-green" style="width:80%"></div></div>
+          80%
+        </td>
+        <td><span class="badge badge-done">核心已完成</span></td>
+        <td>auth / RBAC / quotes / materials / projects / work-orders 等核心 domain 路由齐全；部分边缘功能待补</td>
+      </tr>
+      <tr>
+        <td><strong>🖥️ 前端 Admin</strong></td>
+        <td>Next.js App Router / Login / Dashboard / Quotes / Materials / Projects</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-amber" style="width:50%"></div></div>
+          50%
+        </td>
+        <td><span class="badge badge-wip">进行中</span></td>
+        <td>框架搭好；Dashboard/Quotes/Materials/WorkOrders 页面骨架存在，但 UI 需重构；部分页面仅占位</td>
+      </tr>
+      <tr>
+        <td><strong>📦 共享 UI 包</strong></td>
+        <td>@zhenhang/ui (KpiCard / TableToolbar / hooks / theme)</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-amber" style="width:45%"></div></div>
+          45%
+        </td>
+        <td><span class="badge badge-wip">进行中</span></td>
+        <td>KpiCard / DataGrid / typography / theme 存在但不完整；缺少 StatusBadge / DataCard / SectionHeader 等通用组件</td>
+      </tr>
+      <tr>
+        <td><strong>📊 公式引擎</strong></td>
+        <td>@zhenhang/formula-engine / formula-dag / formula-runtime</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-green" style="width:85%"></div></div>
+          85%
+        </td>
+        <td><span class="badge badge-done">基本完成</span></td>
+        <td>DAG 计算图 + 公式解析 + 运行时已构建；独立测试可用</td>
+      </tr>
+      <tr>
+        <td><strong>📝 报价构建器</strong></td>
+        <td>@zhenhang/quote-builder</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-amber" style="width:60%"></div></div>
+          60%
+        </td>
+        <td><span class="badge badge-wip">核心可用</span></td>
+        <td>报价单创建 / 材料清单 / 价格计算逻辑完成；UI 交互需完善</td>
+      </tr>
+      <tr>
+        <td><strong>🔌 实时通信</strong></td>
+        <td>@zhenhang/realtime / realtime-gateway / event-stream</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-green" style="width:75%"></div></div>
+          75%
+        </td>
+        <td><span class="badge badge-done">核心已完成</span></td>
+        <td>WebSocket / SSE 双通道；notification / industrial-realtime-provider 已集成</td>
+      </tr>
+      <tr>
+        <td><strong>🤖 AI 模块</strong></td>
+        <td>@zhenhang/ai-ui / ai-command / ai-runtime / agent-*</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-amber" style="width:40%"></div></div>
+          40%
+        </td>
+        <td><span class="badge badge-wip">前期阶段</span></td>
+        <td>包结构搭建；部分 agent 框架实现；尚未深度集成到业务流程</td>
+      </tr>
+      <tr>
+        <td><strong>📋 表单引擎</strong></td>
+        <td>@zhenhang/form-engine / data-grid / form-examples</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-amber" style="width:55%"></div></div>
+          55%
+        </td>
+        <td><span class="badge badge-wip">核心可用</span></td>
+        <td>动态表单 / DataGrid / 列配置完成；字段校验和复杂联动待完善</td>
+      </tr>
+      <tr>
+        <td><strong>🔧 分布式运行时</strong></td>
+        <td>@zhenhang/distributed-runtime / runtime-bus / consensus-coordination</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-red" style="width:35%"></div></div>
+          35%
+        </td>
+        <td><span class="badge badge-todo">早期</span></td>
+        <td>架构定义完成；运行时调度 / 共识协调待实现</td>
+      </tr>
+      <tr>
+        <td><strong>📄 导出模块</strong></td>
+        <td>PDF/Excel 导出（内嵌在 backend 和 quote-builder）</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-amber" style="width:65%"></div></div>
+          65%
+        </td>
+        <td><span class="badge badge-wip">基本可用</span></td>
+        <td>后端 PDF 生成存在；前端导出状态面板完成；格式美化待优化</td>
+      </tr>
+      <tr>
+        <td><strong>🧪 测试</strong></td>
+        <td>各包 __tests__ 目录</td>
+        <td>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill fill-red" style="width:25%"></div></div>
+          25%
+        </td>
+        <td><span class="badge badge-todo">缺口大</span></td>
+        <td>部分包有测试；backend 有 script/test 入口；覆盖率不足</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: 系统工作流图 -->
+<!-- ============================================================ -->
+<div class="card">
+  <h2><span class="icon icon-workflow">🔄</span> 三、系统工作流图（Mermaid 流程图）</h2>
+  <p style="color:var(--muted); margin-bottom:16px;">振航ERP 核心业务流程：从客户询价 → 报价生成 → 审批 → 工单 → 采购 → 生产 → 交付</p>
+  <div class="mermaid-box">
+    <div class="mermaid">
+graph TB
+    subgraph 客户交互层["👤 客户交互层"]
+        A[客户询价] --> B[销售创建报价单]
+        B --> C[报价单草稿]
+    end
+
+    subgraph 报价引擎["📝 报价引擎"]
+        C --> D[公式引擎计算成本]
+        D --> E[材料清单BOM展开]
+        E --> F[利润分析 & 定价]
+        F --> G[报价单提交审批]
+    end
+
+    subgraph 审批流程["✅ 审批流程"]
+        G --> H{审批人审核}
+        H -->|通过| I[报价批准]
+        H -->|驳回| C
+    end
+
+    subgraph 项目执行["🏗️ 项目执行"]
+        I --> J[创建项目]
+        J --> K[生成工单]
+        K --> L[物料需求 MRP]
+        L --> M[采购订单]
+        M --> N[供应商交货]
+    end
+
+    subgraph 生产制造["⚙️ 生产制造"]
+        N --> O[车间排产]
+        O --> P[设备加工]
+        P --> Q[质量检验]
+        Q --> R[成品入库]
+    end
+
+    subgraph 交付结算["💰 交付结算"]
+        R --> S[出货物流]
+        S --> T[客户验收]
+        T --> U[财务结算]
+        U --> V[项目归档]
+    end
+
+    subgraph 实时监控["📡 实时监控层"]
+        W[WebSocket/SSE 实时推送]
+        X[告警 & 通知]
+        Y[工业运营驾驶舱]
+        Z[系统健康指标]
+    end
+
+    W -.-> G
+    W -.-> K
+    W -.-> O
+    Y --> W
+    X --> W
+    Z --> W
+
+    style A fill:#e8f1ff,stroke:#1677ff
+    style I fill:#dcfce7,stroke:#22c55e
+    style V fill:#e0e7ff,stroke:#6366f1
+    style H fill:#fef3c7,stroke:#f59e0b
+    style Y fill:#e8f1ff,stroke:#1677ff
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 4: 三阶段推进路线图 -->
+<!-- ============================================================ -->
+<div class="card">
+  <h2><span class="icon icon-roadmap">🗺️</span> 四、逐步推进建议 — 三阶段工作流程图</h2>
+
+  <div class="mermaid-box">
+    <div class="mermaid">
+flowchart LR
+    subgraph P1["🔵 第一阶段：核心闭环 (当前 → 4周)"]
+        direction TB
+        A1["1. 前端 UI 重构<br/>━━━━━━━━━<br/>· 登录页左右分栏<br/>· AppShell 深蓝侧栏<br/>· Design Tokens 统一<br/>· 通用组件补齐"] --> A2["2. Dashboard 升级<br/>━━━━━━━━━<br/>· KPI 卡片工业风<br/>· 实时状态栏<br/>· 快捷操作面板"]
+        A2 --> A3["3. 核心页面完善<br/>━━━━━━━━━<br/>· 报价列表/详情<br/>· 物料管理 CRUD<br/>· 工单跟踪"]
+        A3 --> A4["4. 端到端流程打通<br/>━━━━━━━━━<br/>· 报价→审批→项目<br/>· 导出 PDF/Excel<br/>· 基础 RBAC 权限"]
+    end
+
+    subgraph P2["🟡 第二阶段：功能增强 (5-8周)"]
+        direction TB
+        B1["5. 高级功能<br/>━━━━━━━━━<br/>· 公式引擎 UI 集成<br/>· 动态表单完善<br/>· DataGrid 增强"] --> B2["6. AI 辅助<br/>━━━━━━━━━<br/>· AI 报价建议<br/>· 异常检测告警<br/>· 智能排产推荐"]
+        B2 --> B3["7. 协同 & 通知<br/>━━━━━━━━━<br/>· 消息中心<br/>· 审批流增强<br/>· 移动端适配"]
+        B3 --> B4["8. 测试补强<br/>━━━━━━━━━<br/>· E2E 测试<br/>· API 集成测试<br/>· 性能测试"]
+    end
+
+    subgraph P3["🔴 第三阶段：规模化 (9-16周)"]
+        direction TB
+        C1["9. 分布式扩展<br/>━━━━━━━━━<br/>· 多租户支持<br/>· 分布式调度<br/>· 事件溯源"] --> C2["10. 数据分析<br/>━━━━━━━━━<br/>· BI 看板<br/>· 成本分析<br/>· 趋势预测"]
+        C2 --> C3["11. 集成 & 部署<br/>━━━━━━━━━<br/>· CI/CD 完善<br/>· Docker/K8s<br/>· 监控告警"]
+        C3 --> C4["12. 正式发布 🚀<br/>━━━━━━━━━<br/>· 生产环境部署<br/>· 用户培训<br/>· 运维手册"]
+    end
+
+    P1 --> P2 --> P3
+
+    style P1 fill:#e8f1ff,stroke:#1677ff,stroke-width:2px
+    style P2 fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    style P3 fill:#fee2e2,stroke:#ef4444,stroke-width:2px
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 5: 详细推进建议 -->
+<!-- ============================================================ -->
+<div class="card">
+  <h2><span class="icon icon-roadmap">📝</span> 五、详细推进步骤 & 优先级</h2>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="color:var(--blue); margin-bottom: 12px;">🔵 第一阶段：核心闭环（当前 → 4 周）— <span class="risk-tag risk-high">最高优先级</span></h3>
+
+    <div class="roadmap-step">
+      <div class="roadmap-num">1</div>
+      <div class="roadmap-body">
+        <h4>前端 UI 重构 <span class="risk-tag risk-high">P0</span></h4>
+        <p>统一 Design Tokens → 重写 Login 左右分栏 → 重写 AppShell 深蓝侧栏 → 补齐 StatusBadge / DataCard / SectionHeader 通用组件。当前登录页仍是旧版，需优先替换为规范设计。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num">2</div>
+      <div class="roadmap-body">
+        <h4>Dashboard 工业风升级 <span class="risk-tag risk-high">P0</span></h4>
+        <p>KpiCard 增加渐变/阴影/动态数据；RealtimeStatusBar 增加 WS 连接指示器；QuickActionsPanel 快捷入口。当前 Dashboard 骨架可用但视觉需统一。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num">3</div>
+      <div class="roadmap-body">
+        <h4>核心业务页面完善 <span class="risk-tag risk-high">P0</span></h4>
+        <p>Quotes 报价列表/详情/新建；Materials 物料 CRUD + 分类树；Work Orders 工单状态流转。确保"报价→审批→生产"核心链路完整可用。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num">4</div>
+      <div class="roadmap-body">
+        <h4>端到端 MVP 闭环 <span class="risk-tag risk-mid">P1</span></h4>
+        <p>打通报价→审批→项目→工单完整流程；PDF/Excel 导出美化；基础 RBAC 权限校验（admin / sales / operator）。</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="color:var(--amber); margin-bottom: 12px;">🟡 第二阶段：功能增强（5-8 周）— <span class="risk-tag risk-mid">中优先级</span></h3>
+
+    <div class="roadmap-step">
+      <div class="roadmap-num phase2">5</div>
+      <div class="roadmap-body">
+        <h4>公式引擎 UI 集成 <span class="risk-tag risk-mid">P1</span></h4>
+        <p>将 @zhenhang/formula-engine 能力通过 UI 暴露给用户——可视化公式编辑器、DAG 计算图预览、材料成本自动计算。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num phase2">6</div>
+      <div class="roadmap-body">
+        <h4>AI 辅助功能 <span class="risk-tag risk-mid">P1</span></h4>
+        <p>报价建议（基于历史数据）；生产异常检测；智能排产推荐。激活已有的 @zhenhang/ai-* 和 agent-* 包。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num phase2">7</div>
+      <div class="roadmap-body">
+        <h4>协同 & 通知体系 <span class="risk-tag risk-mid">P2</span></h4>
+        <p>消息中心（站内信）；审批流增强（多级审批）；响应式适配（平板/手机）。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num phase2">8</div>
+      <div class="roadmap-body">
+        <h4>测试体系补强 <span class="risk-tag risk-mid">P1</span></h4>
+        <p>Playwright E2E 测试覆盖核心流程；pytest API 集成测试；k6 性能基准测试。</p>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <h3 style="color:var(--red); margin-bottom: 12px;">🔴 第三阶段：规模化（9-16 周）— <span class="risk-tag risk-low">低优先级</span></h3>
+
+    <div class="roadmap-step">
+      <div class="roadmap-num phase3">9</div>
+      <div class="roadmap-body">
+        <h4>分布式 & 多租户 <span class="risk-tag risk-low">P2</span></h4>
+        <p>多租户数据隔离；分布式任务调度（@zhenhang/distributed-runtime）；事件溯源（runtime-event-store）。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num phase3">10</div>
+      <div class="roadmap-body">
+        <h4>BI & 数据分析 <span class="risk-tag risk-low">P3</span></h4>
+        <p>运营 BI 看板；成本趋势分析；产能预测。需要积累足够生产数据后才有意义。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num phase3">11</div>
+      <div class="roadmap-body">
+        <h4>CI/CD & 容器化 <span class="risk-tag risk-low">P2</span></h4>
+        <p>GitHub Actions / GitLab CI；Docker Compose 一键部署；K8s Helm Chart；Prometheus + Grafana 监控。</p>
+      </div>
+    </div>
+    <div class="roadmap-step">
+      <div class="roadmap-num phase3">12</div>
+      <div class="roadmap-body">
+        <h4>正式发布 🚀 <span class="risk-tag risk-low">P3</span></h4>
+        <p>生产环境部署；用户培训手册；运维 Runbook；数据备份策略。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 6: 风险 & 技术债 -->
+<!-- ============================================================ -->
+<div class="card">
+  <h2><span class="icon icon-analysis">⚠️</span> 六、风险 & 技术债清单</h2>
+
+  <div class="flow-cols">
+    <div class="flow-col">
+      <h4>🔴 高风险项</h4>
+      <ul>
+        <li><span class="dot dot-red"></span> TypeScript 7.0 弃用警告：baseUrl 将在 TS7 移除，需迁移到 paths</li>
+        <li><span class="dot dot-red"></span> 测试覆盖率极低 (~25%)，回归风险高</li>
+        <li><span class="dot dot-red"></span> 前端多个页面仅有占位，核心链路不全</li>
+        <li><span class="dot dot-red"></span> UI 风格不统一（工业风 vs 传统 Admin）</li>
+      </ul>
+    </div>
+    <div class="flow-col">
+      <h4>🟡 中风险项</h4>
+      <ul>
+        <li><span class="dot dot-amber"></span> AI 模块与主流程集成度低</li>
+        <li><span class="dot dot-amber"></span> 移动端适配缺失</li>
+        <li><span class="dot dot-amber"></span> 缺少 CI/CD 自动化流水线</li>
+        <li><span class="dot dot-amber"></span> 多租户方案未落地</li>
+      </ul>
+    </div>
+    <div class="flow-col">
+      <h4>🟢 优势项</h4>
+      <ul>
+        <li><span class="dot dot-green"></span> monorepo 架构清晰，包拆分合理</li>
+        <li><span class="dot dot-green"></span> 后端 API 80%+ 完成，domain 建模成熟</li>
+        <li><span class="dot dot-green"></span> 实时通信双通道（WS+SSE）设计先进</li>
+        <li><span class="dot dot-green"></span> 公式引擎独立可用，DAG 计算能力强</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.container -->
+
+<footer>
+  振航科技 © 2026 · 振航ERP 项目分析报告 · 自动生成于 2026-05-30 · 仅供内部参考
+</footer>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#1677ff', primaryTextColor: '#0f1a2e', primaryBorderColor: '#e5edf7', lineColor: '#1677ff', secondaryColor: '#f4f8ff', tertiaryColor: '#f8fafc' } });
+</script>
+</body>
+</html>

@@ -12,9 +12,14 @@
     "dev:mobile": "npm run dev -w mobile-app",
     "dev:workshop": "npm run dev -w workshop-terminal",
     "build:web": "npm run build -w web-admin",
+    "build:mobile": "npm run build -w mobile-app",
+    "build:workshop": "npm run build -w workshop-terminal",
     "lint:web": "npm run lint -w web-admin",
     "sdk:generate": "npm run generate -w @zhenhang/api-sdk",
     "analyze:deps": "node packages/dependency-analyzer/src/cli.mjs",
     "governance:check": "npm run analyze:deps && npm run lint:web"
+  },
+  "dependencies": {
+    "lucide-react": "^1.17.0"
   }
 }

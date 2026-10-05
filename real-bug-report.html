@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Real Bug Report · 振航工业数字生态系统</title>
+  <style>
+    :root {
+      --bg: #f5f8fc;
+      --panel: #ffffff;
+      --panel-soft: #f8fafc;
+      --border: #dbe4ee;
+      --text: #0f172a;
+      --muted: #64748b;
+      --blue: #2563eb;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --shadow: 0 10px 30px rgba(15,23,42,.06);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --code: #0b1220;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 28%), var(--bg);
+      color: var(--text);
+    }
+    .wrap { max-width: 1500px; margin: 0 auto; padding: 24px; }
+    .hero, .card { background: rgba(255,255,255,.82); backdrop-filter: blur(10px); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: var(--radius); }
+    .hero { padding: 24px; display: grid; gap: 14px; }
+    h1 { margin: 0; font-size: 28px; }
+    .sub { color: var(--muted); line-height: 1.6; }
+    .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
+    .stat .k { color: var(--muted); font-size: 12px; }
+    .stat .v { font-size: 24px; font-weight: 700; margin-top: 6px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 16px; }
+    .section { padding: 18px; }
+    .section h2 { margin: 0 0 12px; font-size: 18px; }
+    .section .meta { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 14px; }
+    th, td { text-align: left; vertical-align: top; padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    th { background: var(--panel-soft); color: #334155; position: sticky; top: 0; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .critical { background: rgba(239,68,68,.12); color: #b91c1c; }
+    .major { background: rgba(245,158,11,.14); color: #b45309; }
+    .minor { background: rgba(6,182,212,.12); color: #0e7490; }
+    .ok { background: rgba(16,185,129,.12); color: #047857; }
+    pre { margin: 0; padding: 12px; background: var(--code); color: #dbeafe; border-radius: 12px; overflow: auto; font-size: 12px; line-height: 1.5; }
+    .bars { display: grid; gap: 10px; }
+    .bar { display: grid; grid-template-columns: 140px 1fr 50px; gap: 10px; align-items: center; font-size: 13px; }
+    .track { height: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+    .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.65; }
+    @media (max-width: 900px) {
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .bar { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <div class="pill ok">Real Bug Audit</div>
+        <h1>振航工业数字生态系统 · 真实 Bug 审计报告</h1>
+        <div class="sub">仅记录可定位到文件的真实问题。依据：`npx tsc -p apps/web-admin/tsconfig.json --noEmit`、`npm run lint -w web-admin`、`npm run build -w web-admin` 的实际输出，以及代码定位证据。</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">Critical</div><div class="v">0</div></div>
+        <div class="stat"><div class="k">Major</div><div class="v">4</div></div>
+        <div class="stat"><div class="k">Minor</div><div class="v">1</div></div>
+        <div class="stat"><div class="k">TypeScript Errors</div><div class="v">0</div></div>
+        <div class="stat"><div class="k">Build Status</div><div class="v">PASS</div></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card section">
+        <h2>1) 执行结果摘要</h2>
+        <div class="bars">
+          <div class="bar"><div>TypeScript</div><div class="track"><div class="fill" style="width:100%"></div></div><div class="pill ok">PASS</div></div>
+          <div class="bar"><div>ESLint</div><div class="track"><div class="fill" style="width:72%"></div></div><div class="pill major">FAIL</div></div>
+          <div class="bar"><div>Build</div><div class="track"><div class="fill" style="width:100%"></div></div><div class="pill ok">PASS</div></div>
+        </div>
+        <p class="note">`tsc --noEmit` 无错误；`next build` 成功；`eslint` 发现 4 个 error 和 2 个 warning。以下仅列出可定位的真实问题。</p>
+      </div>
+
+      <div class="card section">
+        <h2>2) 真实 Bug 列表</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Bug编号</th>
+              <th>严重等级</th>
+              <th>文件路径</th>
+              <th>代码位置</th>
+              <th>问题描述</th>
+              <th>影响范围</th>
+              <th>修复建议</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>BUG-001</td>
+              <td><span class="pill major">Major</span></td>
+              <td><code>apps/web-admin/src/app/(admin)/business-settings/page.tsx</code></td>
+              <td>第 47 行</td>
+              <td>在 `useEffect` 中同步调用 `setForm(...)`。</td>
+              <td>页面首屏和数据刷新时触发额外渲染，ESLint 已报 `react-hooks/set-state-in-effect`。</td>
+              <td>改为由查询数据直接派生表单初值，或在数据到达后用受控表单初始化机制。</td>
+            </tr>
+            <tr>
+              <td>BUG-002</td>
+              <td><span class="pill major">Major</span></td>
+              <td><code>apps/web-admin/src/app/(admin)/costing/page.tsx</code></td>
+              <td>第 187 行</td>
+              <td>在 `useEffect` 中同步调用 `setForm(...)`。</td>
+              <td>成本核算编辑态存在额外渲染与状态同步风险，ESLint 已报同类错误。</td>
+              <td>将编辑表单初始化逻辑从 effect 中拆出，避免在 effect 主体直接 setState。</td>
+            </tr>
+            <tr>
+              <td>BUG-003</td>
+              <td><span class="pill major">Major</span></td>
+              <td><code>apps/web-admin/src/app/(admin)/quotes/customer/page.tsx</code></td>
+              <td>第 119 行</td>
+              <td>在 `useEffect` 中同步调用多个 `setState`。</td>
+              <td>对客报价编辑态会产生额外渲染，ESLint 已报 `react-hooks/set-state-in-effect`。</td>
+              <td>改成一次性表单状态初始化，或改为数据驱动渲染，减少 effect 内状态写入。</td>
+            </tr>
+            <tr>
+              <td>BUG-004</td>
+              <td><span class="pill major">Major</span></td>
+              <td><code>apps/web-admin/src/app/(admin)/quotes/page.tsx</code></td>
+              <td>第 166 行</td>
+              <td>在 `useEffect` 中同步调用 `setExportMessage(...)` / `setExportError(...)`。</td>
+              <td>导出任务状态同步阶段存在额外渲染与状态竞争风险，ESLint 已报同类错误。</td>
+              <td>把导出状态映射抽成纯函数或 reducer，避免在 effect 里直接分支式 setState。</td>
+            </tr>
+            <tr>
+              <td>WARN-001</td>
+              <td><span class="pill minor">Minor</span></td>
+              <td><code>apps/web-admin/src/app/(admin)/machines/page.tsx</code></td>
+              <td>第 175 行</td>
+              <td>`allMachineItems` 的逻辑表达式可能导致 `useMemo` 依赖在每次渲染变化。</td>
+              <td>仅为警告，但会增加 memo 失效概率。</td>
+              <td>将初始化逻辑移入 `useMemo` 内部，或单独包装为稳定引用。</td>
+            </tr>
+            <tr>
+              <td>WARN-002</td>
+              <td><span class="pill minor">Minor</span></td>
+              <td><code>apps/web-admin/src/components/app-shell.tsx</code></td>
+              <td>第 28 行</td>
+              <td>`designTokens` 已导入但未使用。</td>
+              <td>不会影响运行，但会造成代码噪音，ESLint 已报 `no-unused-vars`。</td>
+              <td>删除未使用导入，或在组件中实际引用该 token。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card section">
+        <h2>3) 类型、构建与静态检查证据</h2>
+        <table>
+          <thead>
+            <tr><th>检查项</th><th>结果</th><th>证据</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>TypeScript</td><td><span class="pill ok">PASS</span></td><td>`npx tsc -p apps/web-admin/tsconfig.json --noEmit` 返回 0</td></tr>
+            <tr><td>Build</td><td><span class="pill ok">PASS</span></td><td>`npm run build -w web-admin` 成功完成 Next.js 构建</td></tr>
+            <tr><td>ESLint</td><td><span class="pill major">FAIL</span></td><td>4 个 error，2 个 warning，均已定位到具体文件行号</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card section">
+        <h2>4) 说明</h2>
+        <p class="note">本报告严格限制为“可定位到文件的真实问题”。未在本次扫描中得到直接证据的问题，例如数据库索引缺失、API 重复接口、Theme 冲突、Layout 冲突等，在没有机器输出或明确代码证据前，未纳入 Bug 列表。</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
