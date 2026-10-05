@@ -250,7 +250,7 @@ export default function AcceptancePage() {
 
   // ── Detail modal & punch items ──
 
-  async function openDetail(recordId: string, focusPunch?: boolean) {
+  async function openDetail(recordId: string) {
     try {
       const { data: resp } = await apiClient.get<{ data: Record<string, unknown> }>(
         `/api/v1/acceptance-records/${recordId}`

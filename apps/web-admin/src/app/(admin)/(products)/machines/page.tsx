@@ -174,8 +174,10 @@ export default function MachinesPage() {
   const catData = (catsQuery.data as { items?: Record<string, unknown>[]; total?: number } | undefined) ?? {};
   const machineData =
     (machinesQuery.data as { items?: Record<string, unknown>[]; total?: number } | undefined) ?? {};
-  const allMachineItems =
-    (allMachinesQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? [];
+  const allMachineItems = useMemo(
+    () => (allMachinesQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? [],
+    [allMachinesQuery.data],
+  );
   const paramData = (paramsQuery.data as { items?: Record<string, unknown>[]; total?: number } | undefined) ?? {};
   const imageData = (imagesQuery.data as { items?: Record<string, unknown>[]; total?: number } | undefined) ?? {};
 

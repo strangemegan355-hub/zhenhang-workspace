@@ -41,7 +41,7 @@ export default function ApprovalsPage() {
   const [filter, setFilter] = useState<string>("all");
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const items = inboxQuery.data?.items ?? [];
+  const items = useMemo(() => inboxQuery.data?.items ?? [], [inboxQuery.data]);
   const filtered = useMemo(
     () => (filter === "all" ? items : items.filter((i) => i.task_type === filter)),
     [items, filter],

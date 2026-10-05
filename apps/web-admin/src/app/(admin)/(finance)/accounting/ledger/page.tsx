@@ -121,7 +121,7 @@ export default function AccountingLedgerPage() {
   const customerTotal = (customersQuery.data as { total?: number } | undefined)?.total ?? customerRows.length;
 
   const detail = detailQuery.data;
-  const openReceivables = detail?.open_receivables ?? [];
+  const openReceivables = useMemo(() => detail?.open_receivables ?? [], [detail]);
 
   const outstandingRows = useMemo(
     () =>

@@ -8,6 +8,16 @@ const eslintConfig = defineConfig([
   {
     files: ["src/**/*.{ts,tsx}"],
     rules: {
+      // A leading underscore marks a binding that exists only to be discarded, which is how the
+      // code strips a field out of a payload before sending the rest ({ field: _field, ...rest }).
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
       // Governance: app cannot bypass hooks by directly importing SDK internals.
       "no-restricted-imports": [
         "error",

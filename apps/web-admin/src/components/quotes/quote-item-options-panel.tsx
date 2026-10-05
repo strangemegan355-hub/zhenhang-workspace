@@ -51,7 +51,9 @@ export default function QuoteItemOptionsPanel({
       .catch(() => { if (!ignore) setMachineOptions([]); })
       .finally(() => { if (!ignore) setLoading(false); });
     return () => { ignore = true; };
-  }, [selectedItemId, selectedItem?.machine_id]);
+    // `items` comes from a query result, so an item keeps its identity between renders and this
+    // dependency cannot make the effect loop.
+  }, [selectedItemId, selectedItem?.machine_id, selectedItem?.selected_options]);
 
   async function saveOptions() {
     if (!selectedItemId) return;

@@ -12,13 +12,11 @@ import {
 } from "@zhenhang/query-hooks";
 import { IndustrialPage, IndustrialPanel, WorkspaceToolbarButton } from "@zhenhang/ui";
 import { useMemo, useState } from "react";
-import { fieldInputClass, fieldLabelClass, formPanelClass, tableBodyRowClass, tableHeaderRowClass, dangerActionClass, linkActionClass } from "@/lib/form-styles";
+import { dangerActionClass, fieldInputClass, fieldLabelClass, formPanelClass, tableBodyRowClass, tableHeaderRowClass } from "@/lib/form-styles";
 
 const STATUS_LABEL: Record<string, string> = { draft: "草稿", confirmed: "已确认", in_progress: "处理中", completed: "已完成", cancelled: "已取消" };
 const PRIORITY_LABEL: Record<string, string> = { low: "低", medium: "中", high: "高", urgent: "紧急" };
 const PRIORITY_COLOR: Record<string, string> = { low: "text-[var(--color-text-muted)]", medium: "text-[var(--color-warning)]", high: "text-[var(--color-danger)]", urgent: "text-[var(--color-danger)] font-semibold" };
-
-function todayInputValue() { return new Date().toISOString().slice(0, 10); }
 
 const emptyForm = { title: "", customer_id: "", equipment_unit_id: "", priority: "medium", description: "", assigned_to: "", scheduled_date: "" };
 

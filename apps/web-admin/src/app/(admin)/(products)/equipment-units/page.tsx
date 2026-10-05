@@ -6,10 +6,8 @@ import {
   useAdvanceEquipmentStatusMutation,
   useCreateEquipmentUnitMutation,
   useEquipmentUnitsQuery,
-  useEquipmentUnitDetailQuery,
   useUpdateEquipmentUnitMutation,
   useMachinesQuery,
-  useCustomersQuery,
 } from "@zhenhang/query-hooks";
 import { IndustrialPage, WorkspaceToolbarButton } from "@zhenhang/ui";
 import { useMemo, useState } from "react";
@@ -35,16 +33,6 @@ const BUILD_STATUS_LABEL: Record<string, string> = {
   running: "运行中",
   under_maintenance: "维修中",
   decommissioned: "已报废",
-};
-
-const BUILD_STATUS_COLOR: Record<string, string> = {
-  in_production: "text-blue-400",
-  in_stock: "text-emerald-400",
-  shipped: "text-amber-400",
-  installed: "text-violet-400",
-  running: "text-green-500",
-  under_maintenance: "text-orange-400",
-  decommissioned: "text-red-400",
 };
 
 const BUILD_STATUS_OPTIONS = Object.entries(BUILD_STATUS_LABEL).map(([value, label]) => ({
@@ -74,7 +62,8 @@ export default function EquipmentUnitsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [machineFilter, setMachineFilter] = useState("");
+  // No control sets a machine filter yet; the query still accepts one when a control exists.
+  const machineFilter = "";
   const [showCreate, setShowCreate] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [createForm, setCreateForm] = useState(INITIAL_CREATE_FORM);
@@ -88,16 +77,16 @@ export default function EquipmentUnitsPage() {
     statusFilter || undefined,
     machineFilter || undefined,
   );
-  const editQuery = useEquipmentUnitDetailQuery(editId ?? "");
   const createMut = useCreateEquipmentUnitMutation();
   const updateMut = useUpdateEquipmentUnitMutation();
   const advanceMut = useAdvanceEquipmentStatusMutation();
   const machinesQuery = useMachinesQuery(1);
-  const customersQuery = useCustomersQuery(1);
 
   const unitData = (unitsQuery.data as { items?: Record<string, unknown>[]; total?: number } | undefined) ?? {};
-  const machineItems = (machinesQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? [];
-  const customerItems = (customersQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? [];
+  const machineItems = useMemo(
+    () => (machinesQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? [],
+    [machinesQuery.data],
+  );
 
   const machineOptions = useMemo(
     () =>
