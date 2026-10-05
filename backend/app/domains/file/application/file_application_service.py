@@ -30,7 +30,10 @@ async def upload_file(
     category: str,
     current_user,
 ) -> object:
-    await ensure_lifecycle_policy(db, category, current_user.id)
+    # Apply the bucket lifecycle rules (abort incomplete multipart uploads). No retention row is
+    # created: a `file_lifecycle_policies` row should mean an administrator decided something, and
+    # nothing enforces those rows, so silently writing a 365-day default would be a false record.
+    apply_lifecycle_policies(settings.minio_bucket)
     content = await file.read()
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
@@ -179,14 +182,3 @@ async def download_file_content(db: AsyncSession, file_id: UUID) -> tuple[bytes,
     data = get_object_bytes(bucket=file_obj.bucket, object_name=file_obj.object_name)
     return data, file_obj.file_name, file_obj.mime_type or "application/octet-stream"
 
-
-async def ensure_lifecycle_policy(db: AsyncSession, category: str, current_user_id: UUID | None) -> None:
-    policy = await repo.get_lifecycle_policy_by_category(db, category)
-    if policy is None:
-        await repo.create_lifecycle_policy(
-            db,
-            {"category": category, "retention_days": 365, "created_by": current_user_id},
-            autocommit=False,
-        )
-        await db.commit()
-    apply_lifecycle_policies(settings.minio_bucket)

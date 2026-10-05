@@ -56,6 +56,15 @@ class FilePreviewCache(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin
 
 
 class FileLifecyclePolicy(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
+    """Retention intent per file category. Nothing enforces it, and no code writes rows.
+
+    The table exists for a retention feature that was never built, and it has no API. Its rows must
+    not be created implicitly: a policy means an administrator decided something. Object expiration
+    is deliberately absent from the MinIO lifecycle configuration — see
+    `app/domains/file/infrastructure/minio_client.py` for why turning `retention_days` into a real
+    expiry rule would destroy documents.
+    """
+
     __tablename__ = "file_lifecycle_policies"
 
     category: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)

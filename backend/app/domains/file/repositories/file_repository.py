@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.file_center import FileLifecyclePolicy, FileObject, FilePreviewCache, FileRelation
+from app.models.file_center import FileObject, FilePreviewCache, FileRelation
 
 
 async def create_file_object(db: AsyncSession, data: dict, *, autocommit: bool = True) -> FileObject:
@@ -38,24 +38,6 @@ async def create_preview_cache(db: AsyncSession, data: dict, *, autocommit: bool
 
 async def get_preview_cache(db: AsyncSession, cache_key: str) -> FilePreviewCache | None:
     stmt = select(FilePreviewCache).where(FilePreviewCache.cache_key == cache_key, FilePreviewCache.is_deleted.is_(False))
-    return (await db.execute(stmt)).scalar_one_or_none()
-
-
-async def create_lifecycle_policy(db: AsyncSession, data: dict, *, autocommit: bool = True) -> FileLifecyclePolicy:
-    obj = FileLifecyclePolicy(**data)
-    db.add(obj)
-    await db.flush()
-    if autocommit:
-        await db.commit()
-    await db.refresh(obj)
-    return obj
-
-
-async def get_lifecycle_policy_by_category(db: AsyncSession, category: str) -> FileLifecyclePolicy | None:
-    stmt = select(FileLifecyclePolicy).where(
-        FileLifecyclePolicy.category == category,
-        FileLifecyclePolicy.is_deleted.is_(False),
-    )
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
