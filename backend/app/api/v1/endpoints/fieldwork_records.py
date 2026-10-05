@@ -34,9 +34,9 @@ async def create_fieldwork_record(
 @router.get("/summary", response_model=FieldworkSummary)
 async def get_fieldwork_summary(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:fieldwork:read"))],
+    current: Annotated[User, Depends(require_permissions("business:fieldwork:read"))],
 ) -> FieldworkSummary:
-    return await svc.get_summary(db)
+    return await svc.get_summary(db, current)
 
 
 @router.get("", response_model=PageResponse)

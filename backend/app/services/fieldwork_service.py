@@ -202,8 +202,10 @@ async def advance_record_status(db: AsyncSession, object_id: UUID) -> FieldworkR
     return _to_read(obj)
 
 
-async def get_summary(db: AsyncSession) -> FieldworkSummary:
-    counts = await repo.count_by_type(db)
+async def get_summary(db: AsyncSession, current_user: User) -> FieldworkSummary:
+    # The counts carry the same scope as the list: a total is a read of every row it sums.
+    predicate = scope_predicate(FieldworkRecord, current_user)
+    counts = await repo.count_by_type(db, predicate)
     repair = counts.get("repair", 0)
     shortage = counts.get("shortage", 0)
     loading = counts.get("loading", 0)
@@ -212,5 +214,5 @@ async def get_summary(db: AsyncSession) -> FieldworkSummary:
         repair=repair,
         shortage=shortage,
         loading=loading,
-        open_shortages=await repo.count_open_shortages(db),
+        open_shortages=await repo.count_open_shortages(db, predicate),
     )

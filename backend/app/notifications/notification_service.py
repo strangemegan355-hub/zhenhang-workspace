@@ -1,3 +1,17 @@
+"""Create and read in-app notifications, and say plainly what that means.
+
+Only the in-app channel is implemented. For it, the stored row *is* the delivery: the list endpoint
+serves the notification to its receiver, so "sent" means "visible to its receiver in the app".
+It does not mean emailed, texted or posted to a webhook — `NotificationProvider` models those
+channels and no sender exists for them anywhere in the codebase, which is why no notification is
+ever given a `provider_id`.
+
+The realtime push below is a live-update convenience on top of the stored row, not the delivery.
+It is therefore best-effort: a failure is logged and cannot fail the creation, because the
+notification the receiver can already read must not be lost to a missed toast.
+"""
+
+import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -7,6 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notification import Notification
 from app.realtime.publish import push_notification_event
+
+logger = logging.getLogger(__name__)
 
 
 async def create_notification(
@@ -39,13 +55,16 @@ async def create_notification(
         await db.commit()
     await db.refresh(obj)
     if receiver_id is not None:
-        await push_notification_event(
-            user_id=receiver_id,
-            notification_id=obj.id,
-            title=title,
-            biz_type=biz_type,
-            biz_id=biz_id,
-        )
+        try:
+            await push_notification_event(
+                user_id=receiver_id,
+                notification_id=obj.id,
+                title=title,
+                biz_type=biz_type,
+                biz_id=biz_id,
+            )
+        except Exception:  # noqa: BLE001 - a lost live update must not lose the notification
+            logger.exception("notification %s could not be pushed to receiver %s", obj.id, receiver_id)
     return obj
 
 

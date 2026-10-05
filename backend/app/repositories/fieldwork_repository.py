@@ -90,20 +90,24 @@ async def soft_delete_record(db: AsyncSession, obj: FieldworkRecord) -> Fieldwor
     return obj
 
 
-async def count_by_type(db: AsyncSession) -> dict[str, int]:
+async def count_by_type(db: AsyncSession, predicate=None) -> dict[str, int]:
     stmt = (
         select(FieldworkRecord.record_type, func.count())
         .where(FieldworkRecord.is_deleted.is_(False))
         .group_by(FieldworkRecord.record_type)
     )
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     rows = (await db.execute(stmt)).all()
     return {record_type: int(count) for record_type, count in rows}
 
 
-async def count_open_shortages(db: AsyncSession) -> int:
+async def count_open_shortages(db: AsyncSession, predicate=None) -> int:
     stmt = select(func.count()).select_from(FieldworkRecord).where(
         FieldworkRecord.is_deleted.is_(False),
         FieldworkRecord.record_type == "shortage",
         FieldworkRecord.status.in_(("reported", "acknowledged")),
     )
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     return int((await db.execute(stmt)).scalar_one())
