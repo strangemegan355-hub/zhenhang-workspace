@@ -100,7 +100,13 @@ export function App() {
     const pipeline = (production.quote_pipeline as Array<{ state: string; count: number }>) ?? [];
     const reviewing = pipeline.find((p) => p.state === "reviewing")?.count ?? 0;
     const approved = pipeline.find((p) => p.state === "approved")?.count ?? 0;
-    return { reviewing, approved, oeePct: Number(oee.oee ?? 0) * 100 };
+    // The API sends percentages; rescaling here showed 7267.5% for a real 72.7%.
+    return {
+      reviewing,
+      approved,
+      oeePct: Number(oee.oee ?? 0),
+      oeeSource: String(oee.source ?? "estimated"),
+    };
   }, [production, oee]);
 
   const bomModules = useMemo(() => groupBomModules(bomItems), [bomItems]);
@@ -217,7 +223,11 @@ export function App() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         <Kpi label="待审批" value={String(stats.reviewing)} accent="#fbbf24" />
         <Kpi label="已通过" value={String(stats.approved)} accent="#4ade80" />
-        <Kpi label="OEE" value={`${stats.oeePct.toFixed(1)}%`} accent="#38bdf8" />
+        <Kpi
+          label={stats.oeeSource === "mes" ? "OEE" : "OEE（估算）"}
+          value={`${stats.oeePct.toFixed(1)}%`}
+          accent="#38bdf8"
+        />
         <Kpi label="报警" value={String(alarms.length)} accent="#f87171" />
       </div>
 

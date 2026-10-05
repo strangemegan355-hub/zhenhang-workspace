@@ -11,6 +11,46 @@ from app.services import work_order_service as work_order_svc
 from app.services.mes_integration_service import latest_oee_by_line, list_recent_signals
 
 
+def _estimate_oee(*, approved: int, reviewing: int, export_pending: int, total_active: int) -> dict:
+    """Fallback used only when no MES snapshot exists, and it is not a measurement.
+
+    Availability is the share of recent quotes already approved; performance and quality are
+    penalties per pending review and per queued export. The result is in percentages so the entire
+    payload has one scale, and every caller must label it as an estimate.
+    """
+    availability = round((approved / total_active) * 100, 1)
+    performance = round(max(0, 100 - reviewing * 8), 1)
+    quality = round(max(0, 100 - export_pending * 5), 1)
+    return {
+        "availability": availability,
+        "performance": performance,
+        "quality": quality,
+        "oee": round((availability * performance * quality) / 10000, 3),
+    }
+
+
+def _average_mes_oee(mes_oee: dict[str, dict]) -> dict | None:
+    """Average the components of the latest snapshot per line and recompute OEE from them.
+
+    Averaging the components rather than the OEE values keeps the three factors consistent with the
+    headline number. It is an unweighted average across lines: the snapshot table stores no output
+    quantity, so a production-weighted figure is not derivable from it, and the note says so.
+    """
+    if not mes_oee:
+        return None
+    lines = list(mes_oee.values())
+    availability = round(sum(float(line.get("availability", 0)) for line in lines) / len(lines), 1)
+    performance = round(sum(float(line.get("performance", 0)) for line in lines) / len(lines), 1)
+    quality = round(sum(float(line.get("quality", 0)) for line in lines) / len(lines), 1)
+    return {
+        "availability": availability,
+        "performance": performance,
+        "quality": quality,
+        "oee": round((availability * performance * quality) / 10000, 3),
+        "line_count": len(lines),
+    }
+
+
 async def get_workshop_board(db: AsyncSession) -> dict:
     now = datetime.now(UTC)
     quote_rows = list(
@@ -41,17 +81,24 @@ async def get_workshop_board(db: AsyncSession) -> dict:
     reviewing = by_state.get("reviewing", 0)
     approved = by_state.get("approved", 0)
     total_active = len(quote_rows) or 1
-    oee_availability = round((approved / total_active) * 100, 1)
-    oee_performance = round(max(0, 100 - reviewing * 8), 1)
-    oee_quality = round(max(0, 100 - export_pending * 5), 1)
-    oee = round((oee_availability * oee_performance * oee_quality) / 10000, 3)
-    mes_oee = await latest_oee_by_line(db) if settings.mes_enabled else {}
-    if mes_oee:
-        first = next(iter(mes_oee.values()))
-        oee_availability = first.get("availability", oee_availability)
-        oee_performance = first.get("performance", oee_performance)
-        oee_quality = first.get("quality", oee_quality)
-        oee = first.get("oee", oee)
+
+    # A stored snapshot is real data, so it is used whenever one exists; `settings.mes_enabled`
+    # governs the raw signal list below, not the truth of a measurement already in the table.
+    mes_oee = await latest_oee_by_line(db)
+    mes_summary = _average_mes_oee(mes_oee)
+    if mes_summary is not None:
+        oee_values = {key: mes_summary[key] for key in ("availability", "performance", "quality", "oee")}
+        mes_line_count = int(mes_summary["line_count"])
+        oee_source = "mes"
+    else:
+        oee_values = _estimate_oee(
+            approved=approved,
+            reviewing=reviewing,
+            export_pending=export_pending,
+            total_active=total_active,
+        )
+        mes_line_count = 0
+        oee_source = "estimated"
 
     mes_signals = []
     if settings.mes_enabled:
@@ -154,12 +201,22 @@ async def get_workshop_board(db: AsyncSession) -> dict:
         "equipment": equipment,
         "alarms": alarms[:10],
         "oee": {
-            "availability": oee_availability,
-            "performance": oee_performance,
-            "quality": oee_quality,
-            "oee": oee,
+            "availability": oee_values["availability"],
+            "performance": oee_values["performance"],
+            "quality": oee_values["quality"],
+            "oee": oee_values["oee"],
+            # One scale for the whole payload: percentages, 0-100. Displays must not rescale it.
+            "unit": "percent",
+            # "mes" means a stored snapshot; "estimated" means derived from quote state and
+            # therefore not usable as an OEE indicator.
+            "source": oee_source,
+            "mes_line_count": mes_line_count,
             "mes_lines": mes_oee,
-            "foundation_note": "ERP 推算 + MES 快照；可经 /api/v1/mes 接入实采",
+            "note": (
+                f"MES 实测快照，{mes_line_count} 条产线未加权平均"
+                if oee_source == "mes"
+                else "无 MES 快照：按报价状态推算的估算值，不可用作 OEE 指标"
+            ),
         },
         "mes_signals": mes_signals,
         "work_orders": {

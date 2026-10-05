@@ -31,7 +31,7 @@ export {
   saveOfflineCache,
   loadOfflineCache,
 } from "./offline-store";
-export type { OfflineMutation, OfflineCacheSnapshot } from "./offline-store";
+export type { OfflineMutation, OfflineCacheInput, OfflineCacheSnapshot } from "./offline-store";
 
 export function useNotificationRealtime(options?: { sseUrl?: string; onMessage?: (data: unknown) => void }) {
   useEffect(() => {

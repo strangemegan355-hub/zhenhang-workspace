@@ -43,7 +43,10 @@ export default function WorkshopPage() {
     return {
       reviewing: pipeline.find((p) => p.state === "reviewing")?.count ?? 0,
       approved: pipeline.find((p) => p.state === "approved")?.count ?? 0,
-      oeePct: Number(oee.oee ?? 0) * 100,
+      // The API reports OEE as a percentage, so it is displayed as it arrives. Multiplying by 100
+      // here rendered a real 72.675 as 7267.5%.
+      oeePct: Number(oee.oee ?? 0),
+      oeeSource: String(oee.source ?? "estimated"),
     };
   }, [board]);
 
@@ -78,7 +81,11 @@ export default function WorkshopPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <KpiCard title="待审批" value={String(stats.reviewing)} trend="实时" />
         <KpiCard title="已通过" value={String(stats.approved)} trend="实时" />
-        <KpiCard title="平均 OEE" value={`${stats.oeePct.toFixed(1)}%`} trend="实时" />
+        <KpiCard
+          title="平均 OEE"
+          value={`${stats.oeePct.toFixed(1)}%`}
+          trend={stats.oeeSource === "mes" ? "MES 实测" : "估算"}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

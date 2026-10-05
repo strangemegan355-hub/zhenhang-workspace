@@ -8,9 +8,14 @@ export type OfflineMutation = {
   createdAt: string;
 };
 
-export type OfflineCacheSnapshot = {
+/** What a caller supplies. `updatedAt` is stamped by `saveOfflineCache`, not by the caller. */
+export type OfflineCacheInput = {
   quotes?: Record<string, unknown>;
   notifications?: Record<string, unknown>;
+};
+
+/** What is stored and loaded: a caller's payload plus the timestamp it was written at. */
+export type OfflineCacheSnapshot = OfflineCacheInput & {
   updatedAt: string;
 };
 
@@ -42,7 +47,7 @@ export function clearOfflineQueue() {
   localStorage.removeItem(OFFLINE_QUEUE_KEY);
 }
 
-export function saveOfflineCache(snapshot: OfflineCacheSnapshot) {
+export function saveOfflineCache(snapshot: OfflineCacheInput) {
   localStorage.setItem(
     OFFLINE_CACHE_KEY,
     JSON.stringify({ ...snapshot, updatedAt: new Date().toISOString() }),
