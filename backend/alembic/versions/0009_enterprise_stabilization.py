@@ -43,7 +43,7 @@ def upgrade() -> None:
         )
         op.create_index(f"ix_{table}_tenant_id", table, ["tenant_id"])
 
-    op.create_index("ix_realtime_events_created_at", "realtime_events", ["created_at"])
+    # ix_realtime_events_created_at already created in 0008_production_hardening_realtime
 
     op.create_table(
         "realtime_events_archive",

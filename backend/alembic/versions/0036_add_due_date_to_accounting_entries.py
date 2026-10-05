@@ -1,14 +1,14 @@
 """add due_date to accounting_entries
 
 Revision ID: 0036
-Revises: 0035
+Revises: 0035_installation_plans
 Create Date: 2026-06-28 21:22:00
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = "0036"
-down_revision = "0035"
+down_revision = "0035_installation_plans"
 branch_labels = None
 depends_on = None
 
