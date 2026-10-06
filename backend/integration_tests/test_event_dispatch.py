@@ -21,7 +21,10 @@ import pytest  # noqa: E402
 from sqlalchemy import delete, func, select, text  # noqa: E402
 
 from app.db.session import AsyncSessionLocal  # noqa: E402
-from app.domains.events.application import event_bus, register_default_event_handlers  # noqa: E402
+from app.domains.events.application import event_bus  # noqa: E402
+from app.domains.events.application.register_handlers import (  # noqa: E402
+    register_default_event_handlers,
+)
 from app.domains.events.repositories.task_queue_repository import (  # noqa: E402
     mark_task_done,
     mark_task_running,

@@ -20,7 +20,7 @@ from app.core.monitoring import now_perf
 from app.core.redis_client import close_redis
 from app.core.response import error_response, success_response
 from app.db.session import dispose_engine
-from app.domains.events.application import register_default_event_handlers
+from app.domains.events.application.register_handlers import register_default_event_handlers
 
 
 @asynccontextmanager
