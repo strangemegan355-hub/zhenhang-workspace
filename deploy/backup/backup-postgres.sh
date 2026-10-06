@@ -13,8 +13,17 @@ FILE="${BACKUP_DIR}/erp_db_${STAMP}.sql.gz"
 
 mkdir -p "${BACKUP_DIR}"
 
+# Write to a temporary name and move it into place only once the dump has succeeded. Redirecting straight
+# into ${FILE} leaves a truncated file when pg_dump fails - one that keeps a backup's name and passes
+# `gzip -t`, because gzip closes a valid empty stream - so an unattended cron would fill this directory
+# with files that restore to nothing. The trap also cleans up an interrupted run.
+TMP="${FILE}.part"
+trap 'rm -f "${TMP}"' EXIT INT TERM
+
 docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T postgres \
-  pg_dump -U "${POSTGRES_USER:-erp}" "${POSTGRES_DB:-erp_db}" | gzip -9 > "${FILE}"
+  pg_dump -U "${POSTGRES_USER:-erp}" "${POSTGRES_DB:-erp_db}" | gzip -9 > "${TMP}"
+
+mv "${TMP}" "${FILE}"
 
 find "${BACKUP_DIR}" -name 'erp_db_*.sql.gz' -mtime +"${RETAIN_DAYS}" -delete
 
