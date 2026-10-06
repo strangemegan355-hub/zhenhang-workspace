@@ -2,6 +2,7 @@ import asyncio
 import os
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.security import get_password_hash
 from app.db.session import AsyncSessionLocal
@@ -34,52 +35,100 @@ def _required_password() -> str:
     return password
 
 
+async def _get_or_create_department(db, code: str, name: str, description: str) -> Department:
+    existing = (
+        await db.execute(select(Department).where(Department.code == code))
+    ).scalar_one_or_none()
+    if existing is not None:
+        return existing
+    department = Department(name=name, code=code, parent_id=None, sort_order=0, description=description)
+    db.add(department)
+    await db.flush()
+    print(f"+ department {code} ({name})")
+    return department
+
+
+async def _get_or_create_permission(db, code: str, name: str, resource: str, action: str) -> Permission:
+    existing = (
+        await db.execute(select(Permission).where(Permission.code == code))
+    ).scalar_one_or_none()
+    if existing is not None:
+        return existing
+    permission = Permission(
+        name=name, code=code, resource=resource, action=action, description="RBAC demo permission"
+    )
+    db.add(permission)
+    await db.flush()
+    print(f"+ permission {code}")
+    return permission
+
+
+async def _get_or_create_role(
+    db, code: str, name: str, description: str, permission: Permission
+) -> Role:
+    """Return the role, with `permission` attached.
+
+    The attachment happens inside the branch because the two branches behave differently and only one of them
+    may touch the collection: a role created here is still transient when the permission is appended, so its
+    `permissions` is a plain empty list; a role that already exists had its collection loaded by selectinload.
+    Appending to a *persistent* role with an unloaded collection raises MissingGreenlet, which is what an
+    earlier attempt at this fix did.
+    """
+    existing = (
+        await db.execute(select(Role).where(Role.code == code).options(selectinload(Role.permissions)))
+    ).scalar_one_or_none()
+    if existing is not None:
+        if permission not in existing.permissions:
+            existing.permissions.append(permission)
+        return existing
+
+    role = Role(name=name, code=code, description=description, is_system=True)
+    role.permissions.append(permission)
+    db.add(role)
+    await db.flush()
+    print(f"+ role {code} ({name})")
+    return role
+
+
 async def bootstrap() -> None:
     username = os.getenv("BOOTSTRAP_ADMIN_USERNAME", "admin")
     password = _required_password()
 
     async with AsyncSessionLocal() as db:
-        existing = await db.execute(select(User).where(User.username == username))
-        if existing.scalar_one_or_none() is not None:
+        existing = (
+            await db.execute(select(User).where(User.username == username))
+        ).scalar_one_or_none()
+        if existing is not None:
+            # Say so. This is step 1 of the acceptance guide and an operator re-runs it; silence would leave
+            # them unable to tell whether the account already existed — and it would not say that the
+            # BOOTSTRAP_ADMIN_PASSWORD they just supplied was **not** applied.
+            print(
+                f"~ admin {username} already exists; the supplied password was not applied "
+                "(delete the account or change it through the admin API)"
+            )
             return
 
-        dept = Department(name="总部", code="ROOT", parent_id=None, sort_order=0, description="Bootstrap department")
-        db.add(dept)
-        await db.flush()
-
-        perm_read = Permission(
-            name="用户读取",
-            code="system:user:read",
-            resource="system:user",
-            action="read",
-            description="RBAC demo permission",
+        department = await _get_or_create_department(db, "ROOT", "总部", "Bootstrap department")
+        permission = await _get_or_create_permission(
+            db, "system:user:read", "用户读取", "system:user", "read"
         )
-        db.add(perm_read)
-        await db.flush()
-
-        role_admin = Role(
-            name="系统管理员",
-            code="admin",
-            description="Bootstrap role",
-            is_system=True,
-        )
-        role_admin.permissions.append(perm_read)
-        db.add(role_admin)
-        await db.flush()
+        role = await _get_or_create_role(db, "admin", "系统管理员", "Bootstrap role", permission)
 
         admin = User(
             username=username,
-            email=os.getenv("BOOTSTRAP_ADMIN_EMAIL", "admin@example.com"),
+            # Username-derived so a second administrator does not collide on the unique email index while
+            # the documented path is unchanged: for `admin` this is still admin@example.com.
+            email=os.getenv("BOOTSTRAP_ADMIN_EMAIL", f"{username}@example.com"),
             hashed_password=get_password_hash(password),
             full_name="系统管理员",
             is_active=True,
             is_superuser=True,
-            department_id=dept.id,
+            department_id=department.id,
         )
-        admin.roles.append(role_admin)
+        admin.roles.append(role)
         db.add(admin)
-
         await db.commit()
+        print(f"+ admin {username} created with role 'admin'")
 
 
 def main() -> None:
