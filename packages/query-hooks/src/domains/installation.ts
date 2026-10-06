@@ -4,7 +4,23 @@ import { qk } from "@zhenhang/query-policy-registry";
 
 type ApiWrap<T> = { code: string; message: string; data: T };
 
-export type InstallationPlan = Record<string, unknown>;
+export type InstallationPlan = {
+  id: string;
+  equipment_unit_id: string;
+  status: string;
+  planned_start_date: string | null;
+  planned_end_date: string | null;
+  actual_start_date: string | null;
+  actual_end_date: string | null;
+  customer_accepted: boolean | null;
+  customer_accepted_date: string | null;
+  customer_representative: string | null;
+  remarks: string | null;
+  install_items: unknown[] | null;
+  commissioning_items: unknown[] | null;
+  created_at: string;
+};
+
 
 const PLANS = qk("installation", "plans");
 

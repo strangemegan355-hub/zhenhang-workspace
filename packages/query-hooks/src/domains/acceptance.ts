@@ -4,8 +4,29 @@ import { qk } from "@zhenhang/query-policy-registry";
 
 type ApiWrap<T> = { code: string; message: string; data: T };
 
-export type AcceptanceTemplate = Record<string, unknown>;
-export type AcceptanceRecord = Record<string, unknown>;
+export type AcceptanceTemplate = {
+  id: string;
+  machine_id: string | null;
+  name: string;
+  template_type: string;
+  items: unknown[] | null;
+  created_at: string;
+};
+
+export type AcceptanceRecord = {
+  id: string;
+  equipment_unit_id: string;
+  template_id: string | null;
+  record_no: string;
+  inspector_name: string | null;
+  test_date: string | null;
+  overall_result: string | null;
+  status: string;
+  remarks: string | null;
+  items: unknown[] | null;
+  punch_items: unknown[] | null;
+  created_at: string;
+};
 
 const TEMPLATES = qk("acceptance", "templates");
 const RECORDS = qk("acceptance", "records");
