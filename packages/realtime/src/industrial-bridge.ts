@@ -40,9 +40,14 @@ export function useIndustrialRealtimeBridge(options: {
   // restarts its transport whenever its options object changes, and inline props from the
   // apps would otherwise reconnect the socket on every render.
   const onEventRef = useRef(options.onEvent);
-  onEventRef.current = options.onEvent;
   const onReconnectedRef = useRef(options.onReconnected);
-  onReconnectedRef.current = options.onReconnected;
+
+  // Copied in an effect rather than during render: mutating a ref while rendering is what the React
+  // Compiler flags. The transport reads these only when an event arrives, which is after the commit.
+  useEffect(() => {
+    onEventRef.current = options.onEvent;
+    onReconnectedRef.current = options.onReconnected;
+  }, [options.onEvent, options.onReconnected]);
 
   const [ticket, setTicket] = useState<RealtimeTicket | null>(null);
 

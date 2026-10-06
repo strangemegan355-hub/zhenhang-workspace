@@ -26,7 +26,12 @@ function matchShortcut(e: KeyboardEvent, shortcut: IndustrialShortcut): boolean 
 
 export function useIndustrialShortcuts(shortcuts: IndustrialShortcut[]) {
   const shortcutsRef = useRef(shortcuts);
-  shortcutsRef.current = shortcuts;
+
+  // Updated in an effect rather than during render: writing a ref while rendering is what the React
+  // Compiler flags, and a keydown can only be handled after the commit anyway.
+  useEffect(() => {
+    shortcutsRef.current = shortcuts;
+  }, [shortcuts]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
