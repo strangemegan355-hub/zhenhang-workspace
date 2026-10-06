@@ -325,7 +325,20 @@ export function QuoteWorkbench(props: QuoteWorkbenchProps) {
     {
       id: "log",
       label: "活动日志",
-      content: <ActivityLogPanel />,
+      content: (
+        <ActivityLogPanel
+          entries={approvalRecords.map((record, index) => ({
+            id: `${record.at}-${index}`,
+            at: record.at,
+            actor: record.actor,
+            action: record.action,
+            comment: record.comment,
+            level: /驳回|拒绝|reject/i.test(`${record.action} ${record.comment ?? ""}`)
+              ? ("error" as const)
+              : ("info" as const),
+          }))}
+        />
+      ),
     },
   ];
 
