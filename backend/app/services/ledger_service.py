@@ -7,6 +7,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
+from app.models.accounting_entry import AccountingEntry
 from app.models.user import User
 from app.repositories import accounting_repository as repo
 from app.repositories import customer_repository as customer_repo
@@ -100,9 +102,10 @@ async def list_customer_summaries(
     page_size: int,
     outstanding_only: bool = False,
     q: str | None = None,
+    current_user: User,
 ) -> PageResponse:
     await require_accounting_enabled(db)
-    rows = await repo.customer_ledger_rows(db)
+    rows = await repo.customer_ledger_rows(db, predicate=scope_predicate(AccountingEntry, current_user))
     summaries: list[CustomerLedgerSummaryRead] = []
     for customer, receivables, is_registered in rows:
         summary = _summarize_customer(customer, receivables, is_registered=is_registered)
@@ -121,21 +124,25 @@ async def list_customer_summaries(
     return PageResponse(total=total, page=page, page_size=page_size, items=page_items)
 
 
-async def _ensure_customer_accessible(db: AsyncSession, customer_id: UUID):
+async def _ensure_customer_accessible(db: AsyncSession, customer_id: UUID, current_user: User):
     customer = await customer_repo.get_customer(db, customer_id)
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="客户不存在")
     account = await repo.get_ledger_account(db, customer_id)
     if account is None:
-        _, receivables = await _customer_receivables_only(db, customer_id)
+        _, receivables = await _customer_receivables_only(db, customer_id, current_user)
         if not receivables:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="客户未加入账目明细，请先添加")
     return customer
 
 
-async def _customer_receivables_only(db: AsyncSession, customer_id: UUID) -> tuple[object | None, list]:
+async def _customer_receivables_only(
+    db: AsyncSession, customer_id: UUID, current_user: User
+) -> tuple[object | None, list]:
     customer = await customer_repo.get_customer(db, customer_id)
-    receivables = await repo.list_confirmed_customer_receivables(db, customer_id)
+    receivables = await repo.list_confirmed_customer_receivables(
+        db, customer_id, predicate=scope_predicate(AccountingEntry, current_user)
+    )
     return customer, receivables
 
 
@@ -145,15 +152,18 @@ async def register_customer(db: AsyncSession, customer_id: UUID, current_user: U
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="客户不存在")
     await repo.register_ledger_account(db, customer_id, current_user.id)
-    receivables = await repo.list_confirmed_customer_receivables(db, customer_id)
+    receivables = await repo.list_confirmed_customer_receivables(
+        db, customer_id, predicate=scope_predicate(AccountingEntry, current_user)
+    )
     return _summarize_customer(customer, receivables, is_registered=True)
 
 
-async def get_customer_ledger_detail(db: AsyncSession, customer_id: UUID) -> dict:
+async def get_customer_ledger_detail(db: AsyncSession, customer_id: UUID, current_user: User) -> dict:
     await require_accounting_enabled(db)
-    customer = await _ensure_customer_accessible(db, customer_id)
-    receivables = await repo.list_confirmed_customer_receivables(db, customer_id)
-    receipts = await repo.list_customer_receipts(db, customer_id)
+    customer = await _ensure_customer_accessible(db, customer_id, current_user)
+    scope = scope_predicate(AccountingEntry, current_user)
+    receivables = await repo.list_confirmed_customer_receivables(db, customer_id, predicate=scope)
+    receipts = await repo.list_customer_receipts(db, customer_id, predicate=scope)
 
     receipt_ids = [r.id for r in receipts]
     settlements = await repo.list_settlements_by_receipts(db, receipt_ids)
@@ -261,7 +271,7 @@ async def create_manual_receivable(
         },
     )
     await repo.save_entry(db, entry)
-    loaded = await repo.get_entry(db, entry.id)
+    loaded = await repo.get_entry(db, entry.id, predicate=scope_predicate(AccountingEntry, current_user))
     return AccountingEntryRead.model_validate(loaded or entry)
 
 
@@ -282,7 +292,7 @@ async def create_receipt_with_allocations(
     receivable_ids = [a.receivable_entry_id for a in payload.allocations]
     receivables: dict[UUID, object] = {}
     for rid in receivable_ids:
-        obj = await repo.get_entry(db, rid)
+        obj = await repo.get_entry(db, rid, predicate=scope_predicate(AccountingEntry, current_user))
         if obj is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"应收账目不存在: {rid}")
         if obj.entry_kind != "receivable" or obj.status != "confirmed":

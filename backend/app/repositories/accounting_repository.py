@@ -209,6 +209,7 @@ async def list_entries(
 async def list_confirmed_customer_receivables(
     db: AsyncSession,
     customer_id: UUID,
+    predicate=None,
 ) -> list[AccountingEntry]:
     rows = (
         await db.execute(
@@ -218,6 +219,7 @@ async def list_confirmed_customer_receivables(
                 AccountingEntry.status == "confirmed",
                 AccountingEntry.entry_kind == "receivable",
                 AccountingEntry.customer_id == customer_id,
+                *([predicate] if predicate is not None else []),
             )
             .order_by(AccountingEntry.occurred_on.desc(), AccountingEntry.created_at.desc())
         )
@@ -228,6 +230,7 @@ async def list_confirmed_customer_receivables(
 async def list_customer_receipts(
     db: AsyncSession,
     customer_id: UUID,
+    predicate=None,
 ) -> list[AccountingEntry]:
     rows = (
         await db.execute(
@@ -237,6 +240,7 @@ async def list_customer_receipts(
                 AccountingEntry.status == "confirmed",
                 AccountingEntry.entry_kind == "receipt",
                 AccountingEntry.customer_id == customer_id,
+                *([predicate] if predicate is not None else []),
             )
             .order_by(AccountingEntry.occurred_on.desc(), AccountingEntry.created_at.desc())
         )
@@ -284,7 +288,9 @@ async def create_settlement(db: AsyncSession, data: dict) -> AccountingSettlemen
     return obj
 
 
-async def customer_ledger_rows(db: AsyncSession) -> list[tuple[Customer, list[AccountingEntry], bool]]:
+async def customer_ledger_rows(
+    db: AsyncSession, predicate=None
+) -> list[tuple[Customer, list[AccountingEntry], bool]]:
     """Customers in ledger registry or with confirmed receivable/receipt."""
     registered_ids = list(
         (
@@ -305,6 +311,7 @@ async def customer_ledger_rows(db: AsyncSession) -> list[tuple[Customer, list[Ac
                     AccountingEntry.status == "confirmed",
                     AccountingEntry.entry_kind.in_(("receivable", "receipt")),
                     AccountingEntry.customer_id.is_not(None),
+                    *([predicate] if predicate is not None else []),
                 )
                 .distinct()
             )
@@ -328,6 +335,7 @@ async def customer_ledger_rows(db: AsyncSession) -> list[tuple[Customer, list[Ac
                 AccountingEntry.status == "confirmed",
                 AccountingEntry.entry_kind == "receivable",
                 AccountingEntry.customer_id.in_(customer_ids),
+                *([predicate] if predicate is not None else []),
             )
         )
     ).scalars().all()

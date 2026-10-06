@@ -30,6 +30,10 @@ CALL = re.compile(r"(?:await\s+)?(?:repo|self\.repo|(\w+_repo))\.((?:get|list|fi
 # reader can check the reasoning rather than trusting the list.
 REVIEWED: set[tuple[str, str, str]] = {
     # global or shared rows: scoping these would be wrong
+    # customers and their ledger-registry rows: shared master data, so the ledger's existence checks read them
+    # unscoped, exactly as the supplier ledger does
+    ("app/services/ledger_service.py", "_ensure_customer_accessible", "get_customer"),
+    ("app/services/ledger_service.py", "_ensure_customer_accessible", "get_ledger_account"),
     ("app/domains/config/application/config_application_service.py", "create_config", "get_config_by_key"),
     ("app/domains/quote/application/quote_application_service.py", "create_customer_quote", "get_generic_machine_id"),
     ("app/domains/quote/application/quote_application_service.py", "get_approval_template_detail", "get_approval_template"),

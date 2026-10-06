@@ -272,7 +272,7 @@ async def list_ledger_customers(
     q: str | None = Query(default=None, max_length=80),
 ) -> PageResponse:
     return await ledger_svc.list_customer_summaries(
-        db, page=page, page_size=page_size, outstanding_only=outstanding_only, q=q
+        db, page=page, page_size=page_size, outstanding_only=outstanding_only, q=q, current_user=_
     )
 
 
@@ -282,7 +282,7 @@ async def get_customer_ledger(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
 ) -> dict:
-    return await ledger_svc.get_customer_ledger_detail(db, customer_id)
+    return await ledger_svc.get_customer_ledger_detail(db, customer_id, _)
 
 
 @router.post("/ledger/receipts", response_model=AccountingEntryRead, status_code=status.HTTP_201_CREATED)
