@@ -35,10 +35,13 @@ MODELS_DECLARE_BUT_DB_LACKS: set[str] = set()
 # The eight columns the database has and no model declares, with the reason each is expected:
 # * four are the `tenant_id` columns round 100 found — added by a migration while the models do not map tenants yet,
 #   which is exactly the "多租户准备" state the README records;
-# * four are `deleted_at`/`deleted_by` on `aftersales_service_requests` and `supplier_ledger_accounts` — soft-delete
-#   columns at the database level whose models do not carry `AuditSoftDeleteMixin` (round 180 measured that only `Tenant`
-#   does). **Recorded as a finding, not treated as correct**: either the models should declare the mixin and get the
-#   behaviour, or the columns are leftovers.
+# * four are `deleted_at`/`deleted_by` on `aftersales_service_requests` and `supplier_ledger_accounts`. **Round 193
+#   measured why they are undeclared, and the first explanation was wrong:** both models DO carry
+#   `AuditSoftDeleteMixin`, but that mixin declares **`created_by` and `is_deleted`**, not these two names — and **a grep
+#   over `app/models/*.py` finds `deleted_at`/`deleted_by` exactly zero times.** The columns arrived with the tables
+#   themselves (`0037_add_supplier_ledger_accounts.py`, `0038_add_aftersales_service_requests.py`), so they are **a
+#   soft-delete convention the codebase never adopted: `is_deleted` plus `created_by` is what every model uses.
+#   Recorded as a finding; dropping the columns and mapping them are both the user's call.**
 DB_HAS_BUT_MODELS_LACK = {
     "aftersales_service_requests.deleted_at",
     "aftersales_service_requests.deleted_by",
