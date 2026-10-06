@@ -4,11 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BusinessException
 from app.repositories import workflow_repository as repo
-from app.schemas.common import PageResponse
-
-
-def _page(total: int, page: int, page_size: int, items: list) -> PageResponse:
-    return PageResponse(total=total, page=page, page_size=page_size, items=items)
+from app.schemas.common import PageResponse, page_response as _page
+from app.schemas.workflow import WorkflowStateRead, WorkflowTransitionRead
 
 
 async def create_state(db: AsyncSession, payload: dict, current_user: User):
@@ -26,12 +23,12 @@ async def create_transition(db: AsyncSession, payload: dict, current_user: User)
 
 async def list_states(db: AsyncSession, page: int, page_size: int, q: str | None, entity_type: str | None):
     total, items = await repo.page_states(db, page, page_size, q, entity_type)
-    return _page(total, page, page_size, items)
+    return _page(total, page, page_size, items, WorkflowStateRead)
 
 
 async def list_transitions(db: AsyncSession, page: int, page_size: int, q: str | None, entity_type: str | None):
     total, items = await repo.page_transitions(db, page, page_size, q, entity_type)
-    return _page(total, page, page_size, items)
+    return _page(total, page, page_size, items, WorkflowTransitionRead)
 
 
 async def seed_default_workflows(db: AsyncSession, current_user: User | None = None) -> dict[str, int]:
