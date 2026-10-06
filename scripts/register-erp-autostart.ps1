@@ -2,7 +2,9 @@
 
 $ErrorActionPreference = "Stop"
 
-$Root = "D:\cursorxiangmu\shengtaixitong"
+# Derived from this script's own location, as start-erp.ps1 does: a hardcoded checkout path makes the
+# script unusable anywhere else, and it would fail its own guard with "Missing script".
+$Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $Script = Join-Path $Root "scripts\start-erp.ps1"
 $StartupDir = [Environment]::GetFolderPath("Startup")
 $ShortcutPath = Join-Path $StartupDir "ShengTai ERP.lnk"

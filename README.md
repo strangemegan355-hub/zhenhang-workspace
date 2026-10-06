@@ -252,6 +252,18 @@ pytest integration_tests -q
 MinIO is part of the stack because the storage lifecycle is a real dependency the suite now checks
 against a live server; `INTEGRATION_MINIO_ENDPOINT` overrides its address (default `127.0.0.1:59000`).
 
+## Windows 便捷脚本
+
+```powershell
+# 启动整套（Docker 基础设施 + 本地 API、event worker、web-admin），见脚本文首注释
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-erp.ps1
+
+# 注册开机自启（在当前用户的启动文件夹创建快捷方式，无需管理员）
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\register-erp-autostart.ps1
+```
+
+两个脚本都从自身所在位置推导仓库根目录，因此可以在任意检出路径使用。
+
 ## 生产环境注意
 
 - **必须**设置强随机 `SECRET_KEY`（建议 32+ 字节）。
