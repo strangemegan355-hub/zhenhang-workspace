@@ -5,7 +5,7 @@ it reported 133 of 142 modules with a function no test calls, which counts a *na
 every service invoked **through a route** as uncovered — the same "a name is not the object" wall as rounds 147 and 149.
 Reporting that as a coverage gap would have been a fabricated alarm.
 
-Reachability by **imports** gives a believable answer: 259 of 309 modules under `app/` are reachable from the
+Reachability by **imports** gives a believable answer — measured in round 158, when 259 of the then 309 modules under `app/` are reachable from the
 production entry points, and the tests reach the same 259. Of the rest, about forty-five are one-to-three-line package
 `__init__.py` files, which a package requires and which are therefore not dead.
 

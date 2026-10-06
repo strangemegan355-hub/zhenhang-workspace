@@ -1,6 +1,7 @@
 """The enforcement point of functional authorization — `app/core/deps.py` — had no test of its own.
 
-`require_permissions` is required by **40 endpoints**, and `test_admin_plane.py` proves a 403 is returned somewhere, so
+`require_permissions` guards the endpoint surface — each endpoint that needs a permission declares it in its own
+signature — and `test_admin_plane.py` proves a 403 is returned somewhere, so
 denial is covered behaviourally. What no test covered is **the branches**: the superuser bypass, the `*:*:*` wildcard,
 the inactive-user gate, and — the one that matters most — **an access token offered where a realtime ticket is
 required**, which is the confusion the ticket mechanism exists to prevent.

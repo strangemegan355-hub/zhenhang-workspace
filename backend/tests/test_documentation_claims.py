@@ -40,7 +40,7 @@ NOT_A_CODE_SYMBOL = {
 }
 # Components the docs name that exist and that nothing renders. Reviewed, with the consequence recorded.
 DEFINED_BUT_UNRENDERED = {
-    # 527 lines under packages/quote-builder, plus its only consumer use-undo-redo.ts; see packages/GOVERNANCE.md
+    # quote-workbench.tsx (530 lines, measured in round 167), plus its only consumer use-undo-redo.ts; see packages/GOVERNANCE.md
     # for the correction and the choice between wiring and deleting it
     "QuoteWorkbench",
 }
