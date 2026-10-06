@@ -168,6 +168,39 @@ def _service_files() -> list[Path]:
     return sorted(p for root in roots if root.is_dir() for p in root.rglob("*.py"))
 
 
+def test_the_whole_backend_is_now_covered_by_this_scan():
+    """Rounds 194/195 covered `app/repositories` and `app/services` + `app/domains/*/application`. Round 198 asked the
+    same question of **every other module** — 212 files — and found **four** selects on a known model, each explained:
+
+    * `app/api/v1/endpoints/notifications.py` and `app/notifications/notification_service.py` — notifications are scoped
+      by **`receiver_id`**, a self-scope rather than a department one, and the endpoint's `filters` list carries
+      `is_deleted` (round 194's grep recorded line 31);
+    * `app/realtime/retention.py` and `app/realtime/store.py` — a **retention purge** and the **replay** read behind the
+      websocket. `RealtimeEvent` is not soft-deletable, and the ACL is applied at the subscription point
+      (`filter_subscribed_channels(subscribed, ctx)`, `realtime.py:262`), with 4403 when the context is missing.
+
+    **So there is no third unscoped reachable read**, and widening the roots to the whole tree keeps it that way: a new
+    module that scans a soft-deletable model without the predicate now fails here rather than going unnoticed.
+    """
+    soft = _soft_delete_models()
+    covered = {p.resolve() for p in _repository_files()} | {p.resolve() for p in _service_files()}
+    everything = sorted(
+        p
+        for p in (BACKEND / "app").rglob("*.py")
+        if p.is_file() and "__pycache__" not in p.parts and p.resolve() not in covered
+    )
+    assert len(everything) >= 150, f"only {len(everything)} uncovered backend files were found"
+
+    offenders: list[str] = []
+    for path in everything:
+        offenders.extend(_scans_missing_the_predicate(path, soft))
+    # The four recorded sites are explained above and none of them is on a soft-deletable model, so this is zero.
+    assert offenders == [], (
+        "these modules outside the repository and service layers scan a soft-deletable model without excluding deleted "
+        "rows:\n  " + "\n  ".join(offenders)
+    )
+
+
 def test_service_layer_scans_missing_the_predicate_are_the_reviewed_pair():
     soft = _soft_delete_models()
     found: set[tuple[str, int]] = set()
