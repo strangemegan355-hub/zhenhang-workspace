@@ -1,7 +1,6 @@
 "use client";
 
 import { designTokens } from "../../theme/design-tokens";
-import { interactionTokens } from "../../theme/interaction-tokens";
 
 export function InlineLoadingBar({ active = true }: { active?: boolean }) {
   if (!active) return null;

@@ -7,7 +7,7 @@ export type LineFormulaView = {
   marginPct: number;
 };
 
-export function computeLineFormula(row: QuoteLineRow, marginRate: number): LineFormulaView {
+export function computeLineFormula(row: QuoteLineRow, _marginRate: number): LineFormulaView {
   const lineTotal = row.quantity * row.unit_price;
   const cost = row.quantity * (row.unit_cost ?? row.unit_price * 0.7);
   const margin = lineTotal - cost;

@@ -63,7 +63,7 @@ export function useCreateProjectActualCostMutation() {
 export function useDeleteProjectActualCostMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, projectId }: { id: string; projectId: string }) => {
+    mutationFn: async ({ id }: { id: string; projectId: string }) => {
       const { data } = await apiClient.delete<ApiWrap<ProjectActualCostRow>>(`/api/v1/project-actual-costs/${id}`);
       return data.data;
     },

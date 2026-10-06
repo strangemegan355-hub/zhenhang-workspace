@@ -2,7 +2,6 @@
 
 import { designTokens } from "../../theme/design-tokens";
 import { interactionTokens } from "../../theme/interaction-tokens";
-import { typography } from "../../theme/typography";
 import { StatusBadge } from "../status/status-badge";
 import { cn } from "../../utils/cn";
 

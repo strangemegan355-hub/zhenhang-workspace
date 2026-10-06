@@ -133,6 +133,9 @@ export function useIndustrialRealtimeBridge(options: {
     };
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
+    // The effect must not depend on the `options` object: its identity changes every render and the
+    // file's own comment explains why the transport must not restart with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, options.flushOffline]);
 
   const gatewayOptions = useMemo(

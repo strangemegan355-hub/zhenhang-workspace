@@ -6,7 +6,6 @@ import {
   WorkspaceToolbarButton,
   designTokens,
   exportStatusToInteraction,
-  interactionTokens,
   typography,
 } from "@zhenhang/ui";
 import type { ExportTemplateOption } from "./types";

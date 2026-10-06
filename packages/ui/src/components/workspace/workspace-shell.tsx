@@ -1,7 +1,6 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { interactionTokens } from "../../theme/interaction-tokens";
 import { workspaceTokens } from "../../theme/workspace-tokens";
 import { InlineLoadingBar } from "../loading/inline-loading-bar";
 import { ProcessingOverlay } from "../loading/processing-overlay";

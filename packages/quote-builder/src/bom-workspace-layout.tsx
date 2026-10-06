@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { ErrorBanner, IndustrialPanel, WorkspaceShell, type WorkspaceShellProps } from "@zhenhang/ui";
 
 export type BomWorkspaceLayoutProps = WorkspaceShellProps & {
