@@ -235,9 +235,14 @@ async def request_quote_export(
 async def get_quote_export_task(
     task_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:quote:read"))],
+    current: Annotated[User, Depends(require_permissions("business:quote:read"))],
 ) -> QuoteExportTaskRead:
-    return await app_svc.get_export_task(db, task_id)
+    # get_export_task keeps its signature: the background handler in
+    # app/domains/events/event_handlers/quote_export_handlers.py calls it with no user. The scope check happens
+    # here, on the task's quote, before anything is returned.
+    task = await app_svc.get_export_task(db, task_id)
+    await app_svc.get_quote_detail(db, task.quote_id, current)
+    return task
 
 
 @router.post("/events/replay-dead-letter")

@@ -59,10 +59,11 @@ async def list_files(
 async def preview_file(
     file_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("platform:file:read"))],
+    current: Annotated[User, Depends(require_permissions("platform:file:read"))],
 ) -> dict:
-    file_obj = await app_svc.get_file_or_404(db, file_id)
-    signed = await app_svc.cache_preview_url(db, file_obj.id, getattr(_, "id", None))
+    # The user used to be named `_` and only its id reached the preview cache row, never the lookup.
+    file_obj = await app_svc.get_file_or_404(db, file_id, current)
+    signed = await app_svc.cache_preview_url(db, file_obj.id, current)
     return {
         "preview_url": signed["preview_url"],
         "thumb_url": signed["thumb_url"],
@@ -76,9 +77,9 @@ async def preview_file(
 async def download_file(
     file_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("platform:file:read"))],
+    current: Annotated[User, Depends(require_permissions("platform:file:read"))],
 ) -> Response:
-    data, file_name, mime_type = await app_svc.download_file_content(db, file_id)
+    data, file_name, mime_type = await app_svc.download_file_content(db, file_id, current)
     safe_name = file_name.replace('"', "")
     encoded = quote(file_name)
     return Response(

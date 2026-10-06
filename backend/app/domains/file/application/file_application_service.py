@@ -101,7 +101,7 @@ async def upload_file(
     await db.commit()
     await db.refresh(obj)
     if thumb_object_name:
-        await cache_preview_url(db, obj.id, current_user.id)
+        await cache_preview_url(db, obj.id, current_user)
     return obj
 
 
@@ -136,15 +136,21 @@ async def list_file_objects(db: AsyncSession, *, page: int, page_size: int, q: s
     return PageResponse(total=total, page=page, page_size=page_size, items=items)
 
 
-async def get_file_or_404(db: AsyncSession, file_id: UUID):
+async def get_file_or_404(db: AsyncSession, file_id: UUID, current_user):
     obj = await repo.get_file_object(db, file_id)
     if obj is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    # The domain's own owner convention, as list_file_objects applies it: ALL scope means no restriction,
+    # anything else means the caller may only reach rows they created. 404 rather than 403, so an out-of-scope
+    # file is indistinguishable from a missing one.
+    owner_id = owner_scope_user_id(current_user)
+    if owner_id is not None and obj.created_by != owner_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
     return obj
 
 
-async def cache_preview_url(db: AsyncSession, file_id: UUID, current_user_id: UUID | None) -> dict:
-    file_obj = await get_file_or_404(db, file_id)
+async def cache_preview_url(db: AsyncSession, file_id: UUID, current_user) -> dict:
+    file_obj = await get_file_or_404(db, file_id, current_user)
     cache_key = f"file:preview:{file_obj.id}"
     redis = await get_redis()
     cached = await redis.get(cache_key)
@@ -169,7 +175,7 @@ async def cache_preview_url(db: AsyncSession, file_id: UUID, current_user_id: UU
                 "preview_url": preview_url,
                 "thumb_url": thumb_url,
                 "expires_at": "3600",
-                "created_by": current_user_id,
+                "created_by": current_user.id,
             },
             autocommit=False,
         )
@@ -177,8 +183,8 @@ async def cache_preview_url(db: AsyncSession, file_id: UUID, current_user_id: UU
     return {"preview_url": preview_url, "thumb_url": thumb_url, "cache_hit": False}
 
 
-async def download_file_content(db: AsyncSession, file_id: UUID) -> tuple[bytes, str, str]:
-    file_obj = await get_file_or_404(db, file_id)
+async def download_file_content(db: AsyncSession, file_id: UUID, current_user) -> tuple[bytes, str, str]:
+    file_obj = await get_file_or_404(db, file_id, current_user)
     data = get_object_bytes(bucket=file_obj.bucket, object_name=file_obj.object_name)
     return data, file_obj.file_name, file_obj.mime_type or "application/octet-stream"
 
