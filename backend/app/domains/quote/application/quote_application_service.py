@@ -16,7 +16,7 @@ from app.schemas.quote import ApprovalTemplateRead, QuoteItemRead, QuoteRead, Qu
 from app.realtime.publish import push_quote_export_status, push_quote_updated, push_workflow_transition
 from app.services.business_settings_service import get_business_settings_dict
 from app.services.audit_service import write_audit_log
-from app.services.industrial_copilot import build_industrial_copilot_analysis
+from app.domains.quote.application.industrial_copilot import build_industrial_copilot_analysis
 from app.services.quote_template_engine import list_template_catalog
 from app.services.workflow_service import get_next_state_code
 

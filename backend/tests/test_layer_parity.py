@@ -93,6 +93,7 @@ LEGACY_LAYERS = (APP / "repositories", APP / "services")
 # migration exists to remove these, so the set may shrink — the test only fails when it grows.
 # Pinned: the domain layer using the legacy layer's service surface. May shrink, never grow.
 # Pinned: the domain layer using the legacy layer's service surface. May shrink, never grow.
+# Pinned: the domain layer using the legacy layer's service surface. May shrink, never grow.
 LEGACY_EDGES: set[tuple[str, str]] = {
     ("app/domains/audit/__init__.py", "app.services"),
     ("app/domains/audit/application/__init__.py", "app.services"),
@@ -108,7 +109,6 @@ LEGACY_EDGES: set[tuple[str, str]] = {
     ("app/domains/machine/application/__init__.py", "app.services"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.audit_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.business_settings_service"),
-    ("app/domains/quote/application/quote_application_service.py", "app.services.industrial_copilot"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.product_pricing_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.product_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.quote_template_engine"),
@@ -170,13 +170,13 @@ def test_the_domain_layer_does_not_grow_new_legacy_dependencies():
 # package. The set may only shrink.
 # Pinned: the legacy layer using a domain's published surface. May shrink, never grow.
 # Pinned: the legacy layer using a domain's published surface. May shrink, never grow.
+# Pinned: the legacy layer using a domain's published surface. May shrink, never grow.
 REVERSE_EDGES: set[tuple[str, str]] = {
     ("app/services/approval_hub_service.py", "app.domains.quote.application"),
     ("app/services/approval_hub_service.py", "app.domains.quote.public"),
     ("app/services/business_settings_service.py", "app.domains.config.public"),
     ("app/services/dashboard_service.py", "app.domains.quote.public"),
     ("app/services/dashboard_service.py", "app.domains.quote.public.queries"),
-    ("app/services/industrial_copilot.py", "app.domains.quote.public"),
     ("app/services/quote_receivable_service.py", "app.domains.quote.public"),
 }
 

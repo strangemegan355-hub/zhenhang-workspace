@@ -1,5 +1,11 @@
 """Rule-based industrial copilot (no autonomous agent)."""
 
+# Moved out of the flat service layer in round 45.
+#
+# It was `app/services/industrial_copilot.py`; it needed the quote domain's reads, which forced a
+# legacy->domain import, and the quote application service imported it back. Inside the domain it reads
+# through the domain's own repository.
+
 from __future__ import annotations
 
 from datetime import date
@@ -9,7 +15,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.quote.public import queries as repo
+from app.domains.quote.repositories import quote_repository as repo
 from app.models.customer import Customer
 from app.models.quote import Quote
 
