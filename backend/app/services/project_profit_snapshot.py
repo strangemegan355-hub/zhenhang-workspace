@@ -2,6 +2,7 @@
 
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Literal, TypedDict
+from app.core.money import money as _money
 
 _TWOPLACES = Decimal("0.01")
 
@@ -25,8 +26,6 @@ class ProjectProfitSnapshotData(TypedDict):
     budget_status: BudgetStatus
 
 
-def _money(value: Decimal) -> Decimal:
-    return value.quantize(_TWOPLACES, rounding=ROUND_HALF_UP)
 
 
 def _to_decimal(value: object | None) -> Decimal | None:

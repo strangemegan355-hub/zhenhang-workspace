@@ -23,13 +23,12 @@ from app.schemas.cost_estimate import (
 )
 from app.services.business_settings_service import get_business_settings_dict
 from app.schemas.common import page_response as _page
+from app.core.money import money as _money
 
 T = TypeVar("T", bound=BaseModel)
 
 _TWOPLACES = Decimal("0.01")
 
-def _money(value: Decimal) -> Decimal:
-    return value.quantize(_TWOPLACES, rounding=ROUND_HALF_UP)
 
 def _line_material(row: dict) -> dict:
     qty = Decimal(str(row.get("qty", 1)))

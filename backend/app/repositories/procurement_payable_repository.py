@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.procurement_payable_request import ProcurementPayableRequest
+from app.repositories.base import commit_session
 
 
 async def get_request(db: AsyncSession, request_id: UUID) -> ProcurementPayableRequest | None:
@@ -76,5 +77,3 @@ async def save_request(db: AsyncSession, obj: ProcurementPayableRequest) -> Proc
     return obj
 
 
-async def commit_session(db: AsyncSession) -> None:
-    await db.commit()

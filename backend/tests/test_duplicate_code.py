@@ -39,15 +39,45 @@ DUPLICATE = re.compile(r"\s+")
 # `/health/metrics`) and one in `app/core/monitoring.py`; round 128 showed the second was a dead class — nothing
 # anywhere referenced `RuntimeMetrics` or its `runtime_metrics` singleton, and `main.py` imports that module for
 # `now_perf()` alone — so the class was deleted rather than consolidated.
+# `commit_session` and `_money` were here as two copies each; round 129 moved them to `app/repositories/base.py` and
+# `app/core/money.py` and made the four modules import them, so both entries are gone. `_money` mattered most: two
+# money rounders that agree today are two that can disagree later, and the signature comparison added this round is
+# what makes a silent change to either one fail.
+# `save_request` stays pinned: its three copies differ in the annotated model type and its body performs a
+# **transaction boundary** (`flush`, `commit`, `refresh`) inside a repository, so consolidating it is a decision
+# about who owns the unit of work rather than a move.
 REVIEWED_DUPLICATES: dict[str, tuple[int, str]] = {
     "save_request": (3, "request-number persistence, identical in three repositories"),
-    "commit_session": (2, "session commit wrapper, identical in two repositories"),
-    "_money": (2, "decimal rounder, identical in two services"),
 }
 
 
+def signature_of(node: ast.AST, source: str) -> str:
+    """The `def` line with type annotations removed, parameter names and defaults kept.
+
+    The body alone is not enough: two functions with the same body and **different parameters** would compare equal,
+    and a different default is a real difference — a rounding or pagination helper could disagree that way. Type
+    annotations are stripped precisely because they do not change what runs, which is why `save_request`'s three
+    copies over three model types are still one implementation.
+    """
+    if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        return ""
+    arguments = node.args
+    names = [argument.arg for argument in arguments.posonlyargs + arguments.args + arguments.kwonlyargs]
+    if arguments.vararg:
+        names.append("*" + arguments.vararg.arg)
+    if arguments.kwarg:
+        names.append("**" + arguments.kwarg.arg)
+    defaults = [ast.unparse(default) for default in arguments.defaults]
+    kw_defaults = [
+        f"{argument.arg}={ast.unparse(default)}"
+        for argument, default in zip(arguments.kwonlyargs, arguments.kw_defaults, strict=False)
+        if default is not None
+    ]
+    return f"{node.name}({','.join(names)}) defaults={defaults}{kw_defaults}"
+
+
 def normalise(node: ast.AST, source: str) -> str:
-    """The body as one line, without docstring, comments or whitespace."""
+    """The signature plus the body as one line, without docstring, comments or whitespace."""
     body = list(getattr(node, "body", []))
     if (
         body
@@ -56,12 +86,13 @@ def normalise(node: ast.AST, source: str) -> str:
         and isinstance(body[0].value.value, str)
     ):
         body = body[1:]
+    signature = signature_of(node, source)
     if not body:
-        return ""
+        return signature
     start = min(item.lineno for item in body)
     end = max(getattr(item, "end_lineno", item.lineno) for item in body)
     snippet = "\n".join(source.splitlines()[start - 1 : end])
-    return DUPLICATE.sub(" ", LINE_COMMENT.sub("", snippet)).strip()
+    return f"{signature} => {DUPLICATE.sub(' ', LINE_COMMENT.sub('', snippet)).strip()}"
 
 
 def duplicate_bodies() -> dict[str, set[str]]:
@@ -100,7 +131,7 @@ def test_the_normaliser_separates_the_two_known_cases():
 def test_no_function_is_defined_identically_in_two_files():
     found = duplicate_bodies()
     # A scan that found nothing would make both verdicts meaningless.
-    assert len(found) >= 3, f"only {len(found)} duplicated names were found, which is too few to be real"
+    assert len(found) >= 1, f"only {len(found)} duplicated names were found, which is too few to be real"
 
     new = sorted(name for name in found if name not in REVIEWED_DUPLICATES)
     stale = sorted(name for name in REVIEWED_DUPLICATES if name not in found)
