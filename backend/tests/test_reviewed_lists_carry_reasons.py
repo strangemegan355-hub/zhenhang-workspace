@@ -20,10 +20,17 @@ module, so its value has to be a reason.
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 TESTS = [*(REPO / "backend" / "tests").glob("*.py"), *(REPO / "backend" / "integration_tests").glob("*.py")]
+
+# A backticked token that looks like a path: it has a separator or a source suffix. Model names such as `Quote` and header
+# names such as `X-Frame-Options` are deliberately not path-like, so they are not resolved against the filesystem.
+BACKTICKED = re.compile(r"`([^`]+)`")
+PATH_LIKE = re.compile(r"[/\\]|\.(?:py|ts|tsx|js|mjs|json|md|yml|yaml)$")
+GLOB_CHARS = re.compile(r"[*?\[\]]")
 
 # A value shorter than this is a label rather than a reason. Measured: the shortest real reason in round 209's survey was
 # comfortably above it, and the exemptions above are excluded by key shape before this is consulted.
@@ -76,4 +83,42 @@ def test_every_reviewed_entry_says_why_it_is_correct():
         "these reviewed entries name something without saying why it is correct. **A record that is true but omits its "
         "reason is how rounds 192, 193 and 208 each produced a later misreading** — add the reason, or move the entry to "
         "a data map if its value is a value rather than a justification:\n  " + "\n  ".join(offenders)
+    )
+
+
+def test_every_path_named_inside_a_reason_still_exists():
+    """A reason is prose about a path, and prose can outlive the path.
+
+    `NARROW_ROOTS` says *"globs `app/models/*.py`, a flat directory"*. If that directory became nested, **the reason would
+    be false while both directions of the list's own assertion still passed** — the entry still names a real walker, so
+    `new` and `stale` both stay empty. This resolves every path-like token inside a reviewed reason against the
+    filesystem, so a reason pointing at something gone is reported instead of believed.
+
+    Measured in round 210: **seven reviewed dictionaries, seven path-like tokens, all seven resolving.**
+    """
+    missing: list[str] = []
+    checked = 0
+    for relative, name, entries in _path_keyed_dicts():
+        for key, reason in entries:
+            for token in BACKTICKED.findall(reason):
+                if not PATH_LIKE.search(token):
+                    continue
+                checked += 1
+                candidates = [token]
+                if GLOB_CHARS.search(token):
+                    candidates.append(token.split("*")[0].rstrip("/"))
+                if not any(
+                    (base / candidate.strip().strip("/")).exists()
+                    for candidate in candidates
+                    for base in (REPO, REPO / "backend")
+                ):
+                    missing.append(f"{relative}: {name}[{key!r}] -> {token!r}")
+
+    # A floor from the filesystem's side: the reasons do name paths, and a scan that found none would mean the extraction
+    # broke rather than that nothing is named.
+    assert checked >= 3, f"only {checked} path-like tokens were found in reasons, so the extraction is broken"
+    assert missing == [], (
+        "these reviewed reasons name paths that do not exist, so the reason has outlived what it described:\n  "
+        + "\n  ".join(missing)
+        + "\nUpdate the reason, or the entry, in the same change that moved the path."
     )
