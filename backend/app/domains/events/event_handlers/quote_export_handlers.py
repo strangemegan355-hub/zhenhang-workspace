@@ -11,7 +11,7 @@ from app.domains.file.repositories.file_repository import create_file_object
 from app.domains.quote.repositories.quote_repository import get_export_task, get_quote, update_export_task
 from app.notifications.notification_service import create_notification
 from app.realtime.publish import push_quote_export_status
-from app.services.quote_export_payload import build_export_payload
+from app.domains.quote.application.quote_export_payload import build_export_payload
 from app.services.quote_template_engine import render_document
 
 

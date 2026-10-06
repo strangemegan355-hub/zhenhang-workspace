@@ -91,20 +91,20 @@ LEGACY_LAYERS = (APP / "repositories", APP / "services")
 
 # Every dependency today: the newer domain layer using the older layer's *public* surface. The
 # migration exists to remove these, so the set may shrink — the test only fails when it grows.
+# Pinned: the domain layer using the legacy layer's service surface. May shrink, never grow.
 LEGACY_EDGES: set[tuple[str, str]] = {
-    ("app/domains/audit/__init__.py", "app.services.audit_service"),
-    ("app/domains/audit/application/__init__.py", "app.services.audit_service"),
-    ("app/domains/auth/__init__.py", "app.services.auth_service"),
-    ("app/domains/auth/application/__init__.py", "app.services.auth_service"),
+    ("app/domains/audit/__init__.py", "app.services"),
+    ("app/domains/audit/application/__init__.py", "app.services"),
+    ("app/domains/auth/__init__.py", "app.services"),
+    ("app/domains/auth/application/__init__.py", "app.services"),
     ("app/domains/config/application/config_application_service.py", "app.services.audit_service"),
-    ("app/domains/customer/__init__.py", "app.services.customer_service"),
-    ("app/domains/customer/application/__init__.py", "app.services.customer_service"),
+    ("app/domains/customer/__init__.py", "app.services"),
+    ("app/domains/customer/application/__init__.py", "app.services"),
     ("app/domains/events/event_handlers/audit_event_handlers.py", "app.services.audit_service"),
-    ("app/domains/events/event_handlers/quote_export_handlers.py", "app.services.quote_export_payload"),
     ("app/domains/events/event_handlers/quote_export_handlers.py", "app.services.quote_template_engine"),
     ("app/domains/file/application/file_application_service.py", "app.services.audit_service"),
-    ("app/domains/machine/__init__.py", "app.services.machine_service"),
-    ("app/domains/machine/application/__init__.py", "app.services.machine_service"),
+    ("app/domains/machine/__init__.py", "app.services"),
+    ("app/domains/machine/application/__init__.py", "app.services"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.audit_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.business_settings_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.industrial_copilot"),
@@ -112,8 +112,9 @@ LEGACY_EDGES: set[tuple[str, str]] = {
     ("app/domains/quote/application/quote_application_service.py", "app.services.product_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.quote_template_engine"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.workflow_service"),
-    ("app/domains/workflow/__init__.py", "app.services.workflow_service"),
-    ("app/domains/workflow/application/__init__.py", "app.services.workflow_service"),
+    ("app/domains/quote/application/quote_export_payload.py", "app.services"),
+    ("app/domains/workflow/__init__.py", "app.services"),
+    ("app/domains/workflow/application/__init__.py", "app.services"),
 }
 
 IMPORT_RE = re.compile(r"^\s*(?:from|import)\s+(app\.(?:domains|repositories|services)[\w.]*)")
@@ -148,7 +149,12 @@ def test_the_domain_layer_never_imports_a_repository():
 
 def test_the_domain_layer_does_not_grow_new_legacy_dependencies():
     found = _layer_imports(DOMAIN_LAYER)
-    new_edges = sorted(edge for edge in found if edge[1].startswith("app.services.") and edge not in LEGACY_EDGES)
+    # `from app.services import x` captures the bare module name, which has no trailing dot: checking
+    # only for "app.services." missed exactly that form.
+    legacy_services = [
+        edge for edge in found if edge[1] == "app.services" or edge[1].startswith("app.services.")
+    ]
+    new_edges = sorted(edge for edge in legacy_services if edge not in LEGACY_EDGES)
     assert new_edges == [], (
         "the domain layer gained a dependency on the legacy layer. The migration moves the other way; "
         "if the dependency is deliberate, add it to LEGACY_EDGES with the reason: " + f"{new_edges}"
@@ -160,6 +166,7 @@ def test_the_domain_layer_does_not_grow_new_legacy_dependencies():
 # bidirectional and neither generation can be retired alone. Every remaining edge points at a domain's
 # `public` package — the surface the domain publishes on purpose — or, for one, at its `application`
 # package. The set may only shrink.
+# Pinned: the legacy layer using a domain's published surface. May shrink, never grow.
 REVERSE_EDGES: set[tuple[str, str]] = {
     ("app/services/approval_hub_service.py", "app.domains.quote.application"),
     ("app/services/approval_hub_service.py", "app.domains.quote.public"),
@@ -167,7 +174,6 @@ REVERSE_EDGES: set[tuple[str, str]] = {
     ("app/services/dashboard_service.py", "app.domains.quote.public"),
     ("app/services/dashboard_service.py", "app.domains.quote.public.queries"),
     ("app/services/industrial_copilot.py", "app.domains.quote.public"),
-    ("app/services/quote_export_payload.py", "app.domains.quote.public"),
     ("app/services/quote_option_service.py", "app.domains.quote.public"),
     ("app/services/quote_receivable_service.py", "app.domains.quote.public"),
 }
