@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.domains.quote.application import quote_application_service as app_svc
-from app.services import quote_option_service as opt_svc
+from app.domains.quote.application import quote_option_service as opt_svc
 from app.models.user import User
 from app.schemas.common import PageResponse
 from app.schemas.option_group import QuoteItemOptionsUpdate

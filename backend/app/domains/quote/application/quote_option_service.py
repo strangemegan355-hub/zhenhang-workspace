@@ -1,10 +1,17 @@
+"""Quote item options, moved out of the flat service layer in round 44.
+
+It was `app/services/quote_option_service.py`; inside the domain it reads quotes through the
+domain's repository and reaches option-group data through the legacy service rather than its
+repository, which gate 4 forbids from a domain file.
+"""
+
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.quote.public import queries as repo
-from app.repositories import option_group_repository as opt_repo
+from app.domains.quote.repositories import quote_repository as repo
+from app.services import option_group_service as opt_svc
 
 
 async def update_quote_item_options(
@@ -24,7 +31,7 @@ async def update_quote_item_options(
 
     price_adjustment = Decimal("0")
     if option_item_ids:
-        options = await opt_repo.get_option_items_by_ids(db, option_item_ids)
+        options = await opt_svc.get_option_items_by_ids(db, option_item_ids)
         found_ids = {o.id for o in options}
         for oid in option_item_ids:
             if oid not in found_ids:
