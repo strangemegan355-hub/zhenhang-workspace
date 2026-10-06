@@ -1,0 +1,119 @@
+"""Front-end symbols that nothing references, measured beyond the documents that name them.
+
+Round 121 found `QuoteWorkbench` exported and rendered nowhere, and `test_documentation_claims.py` made that standing —
+**but only for names the documentation mentions**, a scope round 170 recorded deliberately. **A component no document
+names was therefore outside every guard**, which is the "mock page" the objective asks to eliminate.
+
+Round 186 walked `apps/*/src` and `packages/*/src` for exported PascalCase symbols and asked which are referenced
+anywhere else. The first version called all 19 of them "unused" and **that label was wrong** — it measures "not referenced
+from another file", and a symbol can be a package barrel export for a consumer that does not exist yet, or referenced
+inside its own file. Splitting the 19 by that distinction is what makes the result actionable:
+
+* **9 barrel exports with no consumer yet** — `AIChat`, `AIContextInjection`, `AIPanel` and `RetrievalPreview` from
+  `ai-ui`, `AuthApi` from `api-sdk`, `QuoteBuilderShell`, `SchemaFormEngine`, `WorkflowGraph`, `WorkflowSchemaView`. This
+  is the `QuoteWorkbench` class: exported for a consumer nobody wrote.
+* **3 referenced NOWHERE at all**, not even inside their own file — `BOM_IMPORT_TEMPLATE`, `MasterRowActions`,
+  `TableToolbar`.
+* **7 referenced inside their own file**, so not unused at all — the label the first version would have put on them.
+
+**Everything here is recorded, not deleted.** Removing an export is the user's decision, and the pending deletion
+proposal covers the ones already agreed; this test's job is to keep the measurement current and to fail when a new
+zero-reference symbol appears unremarked.
+"""
+
+from __future__ import annotations
+
+import re
+from collections import defaultdict
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+SKIP = {"node_modules", ".git", ".next", "dist", ".venv", "__pycache__", "build", "site-packages"}
+EXPORTED = re.compile(r"^export (?:async )?(?:function|const|class) ([A-Z][A-Za-z0-9_]*)", re.MULTILINE)
+
+# Measured in round 186. A symbol that becomes referenced, or a new one that is not, fails this test in one of its two
+# directions; either way the record has to be updated in the same change.
+BARREL_EXPORTS_WITHOUT_A_CONSUMER = {
+    "AIChat",
+    "AIContextInjection",
+    "AIPanel",
+    "AuthApi",
+    "QuoteBuilderShell",
+    "RetrievalPreview",
+    "SchemaFormEngine",
+    "WorkflowGraph",
+    "WorkflowSchemaView",
+}
+
+REFERENCED_NOWHERE = {
+    "BOM_IMPORT_TEMPLATE",
+    "MasterRowActions",
+    "TableToolbar",
+}
+
+
+def _sources() -> list[Path]:
+    roots = [*(REPO / "apps").glob("*/src"), *(REPO / "packages").glob("*/src")]
+    return sorted(
+        p
+        for root in roots
+        if root.is_dir()
+        for p in root.rglob("*")
+        if p.is_file() and p.suffix in {".ts", ".tsx"} and not any(part in SKIP for part in p.relative_to(REPO).parts)
+    )
+
+
+def _measure() -> tuple[dict[str, list[Path]], dict[str, list[Path]]]:
+    sources = _sources()
+    texts = {p: p.read_text(encoding="utf-8", errors="replace") for p in sources}
+    exports: dict[str, list[Path]] = defaultdict(list)
+    for path, text in texts.items():
+        for name in EXPORTED.findall(text):
+            exports[name].append(path)
+
+    barrels: dict[str, list[Path]] = defaultdict(list)
+    nowhere: dict[str, list[Path]] = defaultdict(list)
+    for name, definers in exports.items():
+        use = re.compile(rf"(?<![A-Za-z0-9_]){re.escape(name)}(?![A-Za-z0-9_])")
+        if any(use.search(text) for path, text in texts.items() if path not in definers):
+            continue
+        for definer in definers:
+            occurrences = len(use.findall(texts[definer]))
+            if occurrences > 1:
+                continue  # referenced inside its own file
+            (barrels if definer.name.startswith("index.") else nowhere)[name].append(definer)
+    return barrels, nowhere
+
+
+def test_the_scan_finds_the_front_end():
+    sources = _sources()
+    # The floor is the filesystem's: two apps and the packages must be present, and this is not a one-file scan.
+    assert len(sources) >= 100, f"only {len(sources)} front-end source files were found"
+    assert (REPO / "apps" / "web-admin" / "src").is_dir(), "apps/web-admin/src is missing from the walk"
+
+
+def test_barrel_exports_without_a_consumer_are_the_recorded_set():
+    barrels, _ = _measure()
+    found = set(barrels)
+    added = sorted(found - BARREL_EXPORTS_WITHOUT_A_CONSUMER)
+    removed = sorted(BARREL_EXPORTS_WITHOUT_A_CONSUMER - found)
+    assert not added and not removed, (
+        "the set of package-barrel exports nothing consumes changed.\n"
+        f"  new:      {added or 'none'}\n"
+        f"  consumed: {removed or 'none'}\n"
+        "A new one is the QuoteWorkbench class round 121 found; a consumed one means the record is stale."
+    )
+
+
+def test_symbols_referenced_nowhere_are_the_recorded_set():
+    _, nowhere = _measure()
+    found = set(nowhere)
+    added = sorted(found - REFERENCED_NOWHERE)
+    removed = sorted(REFERENCED_NOWHERE - found)
+    assert not added and not removed, (
+        "the set of front-end symbols referenced nowhere at all changed.\n"
+        f"  new:      {added or 'none'}\n"
+        f"  now used: {removed or 'none'}\n"
+        "These are declared and used by nothing, not even in their own file. Removing them is the user's decision, "
+        "recorded in the pending deletion proposal; this record has to move with them."
+    )
