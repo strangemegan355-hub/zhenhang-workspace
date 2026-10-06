@@ -163,6 +163,15 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 
 > `docker-compose.yml` 中 `CORS_ORIGINS` 已包含 `http://localhost:3000` 与 `http://127.0.0.1:3000`，供 Next.js 开发服务器跨域访问 API。
 
+两个 Vite 应用（`apps/workshop-terminal`、`apps/mobile-app`）另用 `VITE_API_BASE_URL`，示例见各自的
+`apps/<应用>/.env.example`（默认 `http://localhost:8000`）。三点容易踩：
+
+- 该变量在 **构建时** 被写进产物（`npm run build -w workshop-terminal`）。构建后再改 `.env` 不会生效，必须重新构建。
+- 它由 **运行浏览器的那台机器** 解析。车间平板或手机上的 `localhost` 指的是平板自己，因此车间终端/移动端要填
+  **服务器的局域网地址**（如 `http://192.168.1.20:8000`），而不是 `localhost`。这也是 `CORS_ORIGINS` 需要包含该地址的原因。
+- `vite` 的开发端口是车间终端 `5175`、移动端 `5174`，但 `npm run preview`（预览构建产物）**默认是 4173**，
+  两个应用同时预览会撞端口，需显式传 `--port`，例如 `npm run preview -w workshop-terminal -- --port 4175`。
+
 ### 3. 安装依赖并启动 Web 开发服务器
 
 在仓库根目录（monorepo）：
