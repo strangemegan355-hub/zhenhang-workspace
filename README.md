@@ -241,13 +241,16 @@ python -m workers.event_worker
 {"code":"SUCCESS","message":"OK","data":{...}}
 ```
 
-## 集成测试（真实 PostgreSQL + Redis）
+## 集成测试（真实 PostgreSQL + Redis + MinIO）
 
 ```bash
 cd backend
 docker compose -f integration_tests/docker-compose.integration.yml up -d
 pytest integration_tests -q
 ```
+
+MinIO is part of the stack because the storage lifecycle is a real dependency the suite now checks
+against a live server; `INTEGRATION_MINIO_ENDPOINT` overrides its address (default `127.0.0.1:59000`).
 
 ## 生产环境注意
 
