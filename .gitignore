@@ -18,6 +18,7 @@ coverage/
 # local env files created by the runbook (examples stay tracked)
 apps/*/.env.local
 backend/.env
+backend/.env.local
 
 # local TLS material — generated, must never be committed
 deploy/nginx/certs/*.pem

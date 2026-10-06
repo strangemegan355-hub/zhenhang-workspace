@@ -115,6 +115,20 @@ def test_environment_files_on_disk_are_ignored():
     )
 
 
+def test_conventional_environment_paths_are_ignored_by_rule():
+    """A file that does not exist yet is the one most likely to be committed by accident.
+
+    `test_environment_files_on_disk_are_ignored` can only judge what is already there, so dropping
+    `backend/.env.local` from `.gitignore` would go unnoticed until someone created it and ran
+    `git add -A`. These paths are asked of git directly, as the certificate test above does.
+    """
+    for relative in ("backend/.env.local", "backend/.env", "apps/web-admin/.env.local"):
+        result = _git("check-ignore", "--no-index", relative)
+        assert result.returncode == 0, (
+            f"{relative} is not ignored by any rule, so a real credential could be committed"
+        )
+
+
 def test_gitignore_still_carries_the_certificate_rules():
     """The rule the two tests above depend on, stated where a reader will look for it."""
     patterns = (REPO / ".gitignore").read_text(encoding="utf-8")
