@@ -1,4 +1,3 @@
-from datetime import date
 from typing import Annotated
 from uuid import UUID
 
@@ -120,35 +119,4 @@ async def post_work_order_expense(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:accounting:create"))],
 ):
-    await acct_svc.require_accounting_enabled(db)
-    from app.repositories import accounting_repository as repo, work_order_repository as wo_repo
-    wo = await wo_repo.get_work_order(db, work_order_id)
-    if wo is None:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Work order not found")
-    obj = await repo.create_entry(db, {
-        "entry_no": await repo.generate_entry_no(db, "expense"),
-        "entry_kind": "expense",
-        "status": "confirmed",
-        "party_type": None,
-        "customer_id": wo.customer_id,
-        "supplier_id": None,
-        "project_id": wo.project_id,
-        "amount": float(payload.amount),
-        "settled_amount": 0,
-        "currency": "CNY",
-        "occurred_on": date.today(),
-        "due_date": None,
-        "booked_on": date.today(),
-        "is_backfill": False,
-        "source_type": "work_order",
-        "source_id": work_order_id,
-        "source_no": wo.work_order_no,
-        "approval_status": "none",
-        "title": payload.title.strip(),
-        "remark": payload.remark.strip() if payload.remark else None,
-        "created_by": current.id,
-    })
-    loaded = await repo.get_entry(db, obj.id)
-    from app.schemas.accounting import AccountingEntryRead
-    return AccountingEntryRead.model_validate(loaded or obj)
+    return await acct_svc.post_work_order_expense(db, work_order_id, payload, current)

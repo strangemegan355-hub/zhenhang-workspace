@@ -1,4 +1,3 @@
-from datetime import date
 from typing import Annotated
 from uuid import UUID
 
@@ -87,35 +86,4 @@ async def post_cost_estimate_expense(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:accounting:create"))],
 ):
-    await acct_svc.require_accounting_enabled(db)
-    from app.repositories import accounting_repository as repo, cost_estimate_repository as est_repo
-    est = await est_repo.get_cost_estimate(db, estimate_id)
-    if est is None:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Cost estimate not found")
-    obj = await repo.create_entry(db, {
-        "entry_no": await repo.generate_entry_no(db, "expense"),
-        "entry_kind": "expense",
-        "status": "confirmed",
-        "party_type": None,
-        "customer_id": None,
-        "supplier_id": None,
-        "project_id": None,
-        "amount": float(payload.amount),
-        "settled_amount": 0,
-        "currency": "CNY",
-        "occurred_on": date.today(),
-        "due_date": None,
-        "booked_on": date.today(),
-        "is_backfill": False,
-        "source_type": "cost_estimate",
-        "source_id": estimate_id,
-        "source_no": est.estimate_no,
-        "approval_status": "none",
-        "title": payload.title.strip(),
-        "remark": payload.remark.strip() if payload.remark else None,
-        "created_by": current.id,
-    })
-    loaded = await repo.get_entry(db, obj.id)
-    from app.schemas.accounting import AccountingEntryRead
-    return AccountingEntryRead.model_validate(loaded or obj)
+    return await acct_svc.post_cost_estimate_expense(db, estimate_id, payload, current)

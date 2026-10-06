@@ -16,6 +16,7 @@ from app.schemas.accounting import (
     AccountingEntryRead,
     AccountingFeatureFlags,
     AccountingModuleStatus,
+    PostExpensePayload,
 )
 from app.schemas.common import PageResponse
 from app.services.business_settings_service import get_business_settings_dict
@@ -270,3 +271,101 @@ async def void_entry(db: AsyncSession, entry_id: UUID) -> AccountingEntryRead:
     await repo.save_entry(db, obj)
     loaded = await repo.get_entry(db, entry_id)
     return AccountingEntryRead.model_validate(loaded or obj)
+
+
+async def post_source_expense(
+    db: AsyncSession,
+    *,
+    source_type: str,
+    source_id: UUID,
+    source_no: str,
+    amount: Decimal,
+    title: str,
+    remark: str | None,
+    created_by: UUID,
+    customer_id: UUID | None = None,
+    project_id: UUID | None = None,
+) -> AccountingEntryRead:
+    """Post a confirmed expense entry for a business object.
+
+    This is the single implementation of what two endpoints used to do inline in near-identical
+    copies. `create_entry` is deliberately not reused: it writes a draft, resolves the party from the
+    payload and validates backfill dates, whereas these paths post a confirmed entry straight away.
+    """
+    await require_accounting_enabled(db)
+    obj = await repo.create_entry(
+        db,
+        {
+            "entry_no": await repo.generate_entry_no(db, "expense"),
+            "entry_kind": "expense",
+            "status": "confirmed",
+            "party_type": None,
+            "customer_id": customer_id,
+            "supplier_id": None,
+            "project_id": project_id,
+            "amount": Decimal(str(amount)),
+            "settled_amount": Decimal("0"),
+            "currency": "CNY",
+            "occurred_on": date.today(),
+            "due_date": None,
+            "booked_on": date.today(),
+            "is_backfill": False,
+            "source_type": source_type,
+            "source_id": source_id,
+            "source_no": source_no,
+            "approval_status": "none",
+            "title": title.strip(),
+            "remark": remark.strip() if remark else None,
+            "created_by": created_by,
+        },
+    )
+    loaded = await repo.get_entry(db, obj.id)
+    return AccountingEntryRead.model_validate(loaded or obj)
+
+
+async def post_work_order_expense(
+    db: AsyncSession,
+    work_order_id: UUID,
+    payload: PostExpensePayload,
+    current_user: User,
+) -> AccountingEntryRead:
+    from app.repositories import work_order_repository as wo_repo
+
+    work_order = await wo_repo.get_work_order(db, work_order_id)
+    if work_order is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
+    return await post_source_expense(
+        db,
+        source_type="work_order",
+        source_id=work_order_id,
+        source_no=work_order.work_order_no,
+        customer_id=work_order.customer_id,
+        project_id=work_order.project_id,
+        amount=payload.amount,
+        title=payload.title,
+        remark=payload.remark,
+        created_by=current_user.id,
+    )
+
+
+async def post_cost_estimate_expense(
+    db: AsyncSession,
+    estimate_id: UUID,
+    payload: PostExpensePayload,
+    current_user: User,
+) -> AccountingEntryRead:
+    from app.repositories import cost_estimate_repository as est_repo
+
+    estimate = await est_repo.get_cost_estimate(db, estimate_id)
+    if estimate is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cost estimate not found")
+    return await post_source_expense(
+        db,
+        source_type="cost_estimate",
+        source_id=estimate_id,
+        source_no=estimate.estimate_no,
+        amount=payload.amount,
+        title=payload.title,
+        remark=payload.remark,
+        created_by=current_user.id,
+    )
