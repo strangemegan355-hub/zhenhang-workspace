@@ -24,7 +24,7 @@ async def create_product(
     return await svc.create_product(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[ProductRead])
 async def list_products(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:product:read"))],

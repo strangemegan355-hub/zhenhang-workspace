@@ -23,7 +23,7 @@ async def create_product_category(
     return await svc.create_product_category(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[ProductCategoryRead])
 async def list_product_categories(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:product_category:read"))],

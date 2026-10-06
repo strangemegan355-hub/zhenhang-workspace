@@ -27,7 +27,7 @@ async def create_cost_template(
     return await svc.create_cost_template(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[ProductCostTemplateRead])
 async def list_cost_templates(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:product_cost_template:read"))],

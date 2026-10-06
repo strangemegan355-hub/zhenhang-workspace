@@ -27,7 +27,7 @@ async def create_equipment_unit(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[EquipmentUnitRead])
 async def list_equipment_units(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:equipment_unit:read"))],

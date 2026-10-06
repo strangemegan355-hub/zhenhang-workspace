@@ -8,11 +8,12 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.common import PageResponse
 from app.services import audit_service as svc
+from app.schemas.audit import AuditLogRead
 
 router = APIRouter()
 
 
-@router.get("", response_model=PageResponse, summary="Query audit logs with filters")
+@router.get("", response_model=PageResponse[AuditLogRead], summary="Query audit logs with filters")
 async def list_audit_logs(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("platform:audit:read"))],

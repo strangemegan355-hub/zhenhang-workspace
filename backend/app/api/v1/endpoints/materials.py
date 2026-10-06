@@ -23,7 +23,7 @@ async def create_material(
     return await svc.create_material(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[MaterialRead])
 async def list_materials(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:material:read"))],

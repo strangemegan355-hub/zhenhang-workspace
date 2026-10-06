@@ -14,7 +14,7 @@ from app.services import admin_service as svc
 router = APIRouter()
 
 
-@router.get("", response_model=PageResponse, summary="List tenants")
+@router.get("", response_model=PageResponse[TenantRead], summary="List tenants")
 async def list_tenants(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("system:tenant:read"))],

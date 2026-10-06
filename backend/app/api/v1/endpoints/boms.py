@@ -33,7 +33,7 @@ async def create_machine_bom(
     return await svc.create_machine_bom(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[MachineBomRead])
 async def list_machine_boms(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:bom:read"))],
@@ -64,7 +64,7 @@ async def create_machine_bom_items_batch(
     return [MachineBomItemRead.model_validate(row) for row in rows]
 
 
-@router.get("/items", response_model=PageResponse)
+@router.get("/items", response_model=PageResponse[MachineBomItemRead])
 async def list_machine_bom_items(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:bom_item:read"))],

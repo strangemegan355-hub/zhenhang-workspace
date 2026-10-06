@@ -23,7 +23,7 @@ async def create_supplier(
     return await svc.create_supplier(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[SupplierRead])
 async def list_suppliers(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:supplier:read"))],

@@ -29,7 +29,7 @@ async def create_project(
     return await svc.create_project(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[ProjectRead])
 async def list_projects(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:project:read"))],

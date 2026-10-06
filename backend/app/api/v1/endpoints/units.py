@@ -23,7 +23,7 @@ async def create_unit(
     return await svc.create_unit(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[UnitRead])
 async def list_units(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:standard:read"))],

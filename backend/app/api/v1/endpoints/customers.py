@@ -33,7 +33,7 @@ async def create_customer(
     return await svc.create_customer(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[CustomerRead])
 async def list_customers(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:customer:read"))],
@@ -72,7 +72,7 @@ async def create_customer_contact(
     return await svc.create_customer_contact(db, payload.model_dump(), current)
 
 
-@router.get("/contacts", response_model=PageResponse)
+@router.get("/contacts", response_model=PageResponse[CustomerContactRead])
 async def list_customer_contacts(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:customer_contact:read"))],
@@ -111,7 +111,7 @@ async def create_customer_followup(
     return await svc.create_customer_followup(db, payload.model_dump(), current)
 
 
-@router.get("/followups", response_model=PageResponse)
+@router.get("/followups", response_model=PageResponse[CustomerFollowupRead])
 async def list_customer_followups(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:customer_followup:read"))],

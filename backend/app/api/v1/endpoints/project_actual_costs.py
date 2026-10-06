@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.common import PageResponse
 from app.schemas.project_actual_cost import ProjectActualCostCreate, ProjectActualCostRead
 from app.services import actual_cost_service as svc
+from app.schemas.project_actual_cost import ProjectActualCostRead
 
 router = APIRouter()
 
@@ -23,7 +24,7 @@ async def create_actual_cost(
     return await svc.create_actual_cost(db, payload, current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[ProjectActualCostRead])
 async def list_actual_costs(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:actual_cost:read"))],

@@ -23,7 +23,7 @@ async def create_material_category(
     return await svc.create_material_category(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[MaterialCategoryRead])
 async def list_material_categories(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:standard:read"))],

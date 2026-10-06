@@ -18,6 +18,7 @@ from app.schemas.cost_estimate import (
 )
 from app.services import costing_service as svc
 from app.services import accounting_service as acct_svc
+from app.schemas.cost_estimate import CostEstimateListItem
 
 router = APIRouter()
 
@@ -40,7 +41,7 @@ async def create_cost_estimate(
     return await svc.create_cost_estimate(db, payload, current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[CostEstimateListItem])
 async def list_cost_estimates(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:cost_estimate:read"))],

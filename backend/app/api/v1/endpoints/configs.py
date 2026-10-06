@@ -33,7 +33,7 @@ async def update_system_config(
     return await app_svc.update_config(db, config_id, payload.model_dump(exclude_unset=True), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[SystemConfigRead])
 async def list_system_configs(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("platform:config:read"))],

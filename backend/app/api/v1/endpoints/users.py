@@ -51,7 +51,7 @@ async def rbac_demo(
     return {"allowed": True}
 
 
-@router.get("", response_model=PageResponse, summary="List users")
+@router.get("", response_model=PageResponse[UserAdminRead], summary="List users")
 async def list_users(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("system:user:read"))],

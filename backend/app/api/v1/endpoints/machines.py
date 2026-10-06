@@ -36,7 +36,7 @@ async def create_machine_category(
     return await svc.create_machine_category(db, payload.model_dump(), current)
 
 
-@router.get("/categories", response_model=PageResponse)
+@router.get("/categories", response_model=PageResponse[MachineCategoryRead])
 async def list_machine_categories(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:machine_category:read"))],
@@ -75,7 +75,7 @@ async def create_machine(
     return await svc.create_machine(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[MachineRead])
 async def list_machines(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:machine:read"))],
@@ -125,7 +125,7 @@ async def create_machine_parameter(
     return await svc.create_machine_parameter(db, payload.model_dump(), current)
 
 
-@router.get("/parameters", response_model=PageResponse)
+@router.get("/parameters", response_model=PageResponse[MachineParameterRead])
 async def list_machine_parameters(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:machine_parameter:read"))],
@@ -165,7 +165,7 @@ async def create_machine_image(
     return await svc.create_machine_image(db, payload.model_dump(), current)
 
 
-@router.get("/images", response_model=PageResponse)
+@router.get("/images", response_model=PageResponse[MachineImageRead])
 async def list_machine_images(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:machine_image:read"))],

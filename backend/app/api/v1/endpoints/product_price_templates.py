@@ -27,7 +27,7 @@ async def create_price_template(
     return await svc.create_price_template(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[ProductPriceTemplateRead])
 async def list_price_templates(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:product_price_template:read"))],

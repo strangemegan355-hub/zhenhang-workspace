@@ -36,7 +36,7 @@ async def bind_file_relation(
     return await app_svc.create_file_relation(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[FileObjectRead])
 async def list_files(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("platform:file:read"))],

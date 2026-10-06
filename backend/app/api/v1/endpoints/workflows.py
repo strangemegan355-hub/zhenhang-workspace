@@ -27,7 +27,7 @@ async def create_workflow_state(
     return await svc.create_state(db, payload.model_dump(), current)
 
 
-@router.get("/states", response_model=PageResponse)
+@router.get("/states", response_model=PageResponse[WorkflowStateRead])
 async def list_workflow_states(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:workflow_state:read"))],
@@ -48,7 +48,7 @@ async def create_workflow_transition(
     return await svc.create_transition(db, payload.model_dump(), current)
 
 
-@router.get("/transitions", response_model=PageResponse)
+@router.get("/transitions", response_model=PageResponse[WorkflowTransitionRead])
 async def list_workflow_transitions(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("master:workflow_transition:read"))],

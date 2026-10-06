@@ -8,11 +8,12 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.common import PageResponse
 from app.services import admin_service as svc
+from app.schemas.admin import PermissionRead
 
 router = APIRouter()
 
 
-@router.get("", response_model=PageResponse, summary="List permission codes")
+@router.get("", response_model=PageResponse[PermissionRead], summary="List permission codes")
 async def list_permissions(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("system:permission:read"))],
