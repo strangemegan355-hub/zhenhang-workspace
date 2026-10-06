@@ -161,6 +161,14 @@ def test_the_domain_layer_does_not_grow_new_legacy_dependencies():
         "the domain layer gained a dependency on the legacy layer. The migration moves the other way; "
         "if the dependency is deliberate, add it to LEGACY_EDGES with the reason: " + f"{new_edges}"
     )
+    # Round 201: the reverse difference. Without it the record can only grow, so a legacy dependency that has been
+    # removed keeps being counted — the list would overstate the remaining migration rather than narrow silently, which
+    # is the opposite failure and just as wrong. Every other reviewed list in this suite checks both directions.
+    fixed_edges = sorted(edge for edge in LEGACY_EDGES if edge not in legacy_services)
+    assert fixed_edges == [], (
+        "these edges are recorded as legacy dependencies but no longer exist, so the record overstates the remaining "
+        "migration. Remove them from LEGACY_EDGES in the change that removes the dependency:\n  " + f"{fixed_edges}"
+    )
 
 
 # The reverse direction is real and was found by this gate's first run, not by the one-off script that
@@ -213,4 +221,12 @@ def test_the_legacy_layer_imports_the_domain_layer_only_where_listed():
         "the legacy layer gained a dependency on the domain layer, which is the direction the "
         "migration is meant to remove. If it is deliberate, add it to REVERSE_EDGES with the reason: "
         f"{new_edges}"
+    )
+    # Round 201: the reverse difference, the same asymmetry as above. This list is the one the pending decision about
+    # the remaining reverse edges reads, so a stale entry here is a stale count in that decision.
+    fixed_edges = sorted(REVERSE_EDGES - found)
+    assert fixed_edges == [], (
+        "these edges are recorded as remaining reverse dependencies but no longer exist, so the count this project's "
+        "migration decision reads is too high. Remove them from REVERSE_EDGES in the change that fixes them:\n  "
+        f"{fixed_edges}"
     )
