@@ -29,6 +29,7 @@ import { APP_MENU_GROUPS, APP_MENUS, ROUTE_GROUP_MAP, type MenuGroup, type MenuI
 import { hasPermission } from "@/lib/access";
 import { useBusinessSettingsQuery } from "@zhenhang/query-hooks";
 import { IndustrialRealtimeProvider } from "@/components/industrial-realtime-provider";
+import { ToastCenter } from "@/components/toast-center";
 import { NotificationBell } from "@/components/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthStore } from "@/store/auth-store";
@@ -184,6 +185,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <main className="min-h-0 flex-1 overflow-auto bg-[var(--color-bg)] p-4">{children}</main>
         </div>
       </div>
+      {/* Pages push toasts, and this host is the only thing that reads them — it existed but was
+          never mounted, so every message went into a store that nothing displayed. */}
+      <ToastCenter />
     </IndustrialRealtimeProvider>
   );
 }
