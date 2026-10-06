@@ -156,5 +156,71 @@ async def test_an_all_scope_account_sees_both_departments():
     )
 
 
+async def _one_project_by_id(project_id: str, username: str, env_name: str) -> int:
+    """GET a single project by id as `username`, returning only the status code."""
+    from app.main import app
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://integration") as client:
+        token = await _login(client, username, env_name)
+        response = await client.get(
+            f"/api/v1/projects/{project_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    return response.status_code
+
+
+async def _ids_of_seeded_projects() -> dict[str, str]:
+    from app.db.session import AsyncSessionLocal
+    from app.models.project import Project
+
+    async with AsyncSessionLocal() as session:
+        rows = (
+            await session.execute(
+                select(Project.project_no, Project.id).where(Project.project_no.like(f"{MARKER}-%"))
+            )
+        ).all()
+    return {no: str(identifier) for no, identifier in rows}
+
+
+async def test_a_single_object_of_another_department_is_not_found():
+    """The list being scoped is not the same claim as one object being scoped.
+
+    `test_a_department_scoped_account_sees_only_its_own_department` proves the **list** omits another department's row.
+    Phase 3 also asks for **object-level** authorization, and that is what this proves: asking for the other
+    department's row **by id** must answer **404** — not 403, which would confirm the row exists, and not 200.
+
+    Two directions, so this cannot pass by hiding everything from everyone:
+
+      * `sales01` (department scope) gets **200** for its own department's project and **404** for the other one;
+      * `boss` (all scope) gets **200** for that same "other" project, which proves it exists and is reachable.
+    """
+    await _seed_two_departments()
+    try:
+        identifiers = await _ids_of_seeded_projects()
+        mine = identifiers.get(f"{MARKER}-MINE")
+        theirs = identifiers.get(f"{MARKER}-THEIRS")
+        assert mine and theirs, f"the seed did not produce both projects: {sorted(identifiers)}"
+
+        owner_status = await _one_project_by_id(mine, "sales01", "TRIAL_SALES_PASSWORD")
+        other_status = await _one_project_by_id(theirs, "sales01", "TRIAL_SALES_PASSWORD")
+        all_scope_status = await _one_project_by_id(theirs, "boss", "TRIAL_BOSS_PASSWORD")
+    finally:
+        await _teardown()
+
+    assert owner_status == 200, (
+        f"a department-scoped account was refused its own department's project by id (got {owner_status}); "
+        "object scoping must not lock a caller out of its own rows"
+    )
+    assert other_status == 404, (
+        f"another department's project answered {other_status} instead of 404 by id; 403 would confirm the row "
+        "exists, and 200 would leak it"
+    )
+    assert all_scope_status == 200, (
+        f"the other department's project answered {all_scope_status} to an all-scope account, so it is not "
+        "reachable by anyone and the 404 above proves nothing"
+    )
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
