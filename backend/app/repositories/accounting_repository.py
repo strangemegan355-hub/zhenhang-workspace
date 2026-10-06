@@ -394,7 +394,9 @@ async def register_supplier_ledger_account(db: AsyncSession, supplier_id: UUID, 
     return obj
 
 
-async def supplier_ledger_rows(db: AsyncSession) -> list[tuple[Supplier, list[AccountingEntry], bool]]:
+async def supplier_ledger_rows(
+    db: AsyncSession, predicate=None
+) -> list[tuple[Supplier, list[AccountingEntry], bool]]:
     """Suppliers in ledger registry or with confirmed payable/payment."""
     registered_ids = list(
         (
@@ -415,6 +417,7 @@ async def supplier_ledger_rows(db: AsyncSession) -> list[tuple[Supplier, list[Ac
                     AccountingEntry.status == "confirmed",
                     AccountingEntry.entry_kind.in_(("payable", "payment")),
                     AccountingEntry.supplier_id.is_not(None),
+                    *([predicate] if predicate is not None else []),
                 )
                 .distinct()
             )
@@ -438,6 +441,7 @@ async def supplier_ledger_rows(db: AsyncSession) -> list[tuple[Supplier, list[Ac
                 AccountingEntry.status == "confirmed",
                 AccountingEntry.entry_kind == "payable",
                 AccountingEntry.supplier_id.in_(supplier_ids),
+                *([predicate] if predicate is not None else []),
             )
         )
     ).scalars().all()

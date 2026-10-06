@@ -91,9 +91,10 @@ async def get_supplier_ledger_summaries(
     page_size: int,
     outstanding_only: bool = False,
     q: str | None = None,
+    current_user: User,
 ) -> PageResponse:
     await _require_accounting(db)
-    rows = await repo.supplier_ledger_rows(db)
+    rows = await repo.supplier_ledger_rows(db, predicate=scope_predicate(AccountingEntry, current_user))
     # rows: list of (Supplier, list of confirmed payables, is_registered)
     summaries: list[SupplierLedgerSummaryRead] = []
     for supplier, payables, registered in rows:

@@ -380,6 +380,7 @@ async def list_supplier_ledger(
 ) -> PageResponse:
     return await supp_svc.get_supplier_ledger_summaries(
         db,
+        current_user=_,
         page=page,
         page_size=page_size,
         outstanding_only=outstanding_only,

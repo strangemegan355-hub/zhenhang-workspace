@@ -4,6 +4,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
+from app.core.data_scope import scope_predicate
+from app.models.work_order import WorkOrder
 from app.domains.quote.public.queries import owner_scope_user_id
 from app.models.machine import Machine
 from app.models.quote import Quote, QuoteExportTask
@@ -116,7 +118,9 @@ async def get_workshop_board(db: AsyncSession, current_user) -> dict:
             )
 
     wo_summary = await work_order_svc.get_summary(db, current_user)
-    wo_kanban_raw = await work_order_repo.list_kanban(db, limit_per_column=12)
+    wo_kanban_raw = await work_order_repo.list_kanban(
+        db, limit_per_column=12, predicate=scope_predicate(WorkOrder, current_user)
+    )
     wo_kanban = {
         key: [work_order_svc.serialize_for_board(item) for item in items]
         for key, items in wo_kanban_raw.items()

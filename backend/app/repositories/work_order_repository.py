@@ -115,14 +115,17 @@ async def count_completed_today(db: AsyncSession, today: date, predicate=None) -
     return int((await db.execute(stmt)).scalar_one())
 
 
-async def list_kanban(db: AsyncSession, limit_per_column: int = 20) -> dict[str, list[WorkOrder]]:
+async def list_kanban(
+    db: AsyncSession, limit_per_column: int = 20, predicate=None
+) -> dict[str, list[WorkOrder]]:
     result: dict[str, list[WorkOrder]] = {"todo": [], "doing": [], "done": []}
+    scope = [predicate] if predicate is not None else []
     for status, key in (("todo", "todo"), ("doing", "doing"), ("qacheck", "doing"), ("done", "done")):
         if status == "qacheck":
             continue
         stmt = (
             select(WorkOrder)
-            .where(WorkOrder.is_deleted.is_(False), WorkOrder.status == status)
+            .where(WorkOrder.is_deleted.is_(False), WorkOrder.status == status, *scope)
             .order_by(WorkOrder.plan_end.asc().nullslast(), WorkOrder.updated_at.desc())
             .limit(limit_per_column)
         )
@@ -130,7 +133,7 @@ async def list_kanban(db: AsyncSession, limit_per_column: int = 20) -> dict[str,
         if status == "doing":
             qacheck_stmt = (
                 select(WorkOrder)
-                .where(WorkOrder.is_deleted.is_(False), WorkOrder.status == "qacheck")
+                .where(WorkOrder.is_deleted.is_(False), WorkOrder.status == "qacheck", *scope)
                 .order_by(WorkOrder.plan_end.asc().nullslast(), WorkOrder.updated_at.desc())
                 .limit(limit_per_column)
             )
