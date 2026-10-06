@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.data_scope import scope_predicate
+from app.models.project import Project
 from app.models.user import User
 from app.models.work_order import WorkOrder
 from app.repositories import project_repository as project_repo
@@ -85,22 +86,27 @@ def _to_read(obj) -> WorkOrderRead:
     )
 
 
-async def _ensure_project(db: AsyncSession, project_id: UUID):
-    project = await project_repo.get_project(db, project_id)
+async def _ensure_project(db: AsyncSession, project_id: UUID, current_user):
+    project = await project_repo.get_project(
+        db, project_id, predicate=scope_predicate(Project, current_user)
+    )
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     return project
 
 
-async def _maybe_set_manufacturing(db: AsyncSession, project_id: UUID) -> None:
-    project = await project_repo.get_project(db, project_id)
+async def _maybe_set_manufacturing(db: AsyncSession, project_id: UUID, current_user) -> None:
+    # This mutates the project, so an unscoped lookup here let a caller change another department's stage.
+    project = await project_repo.get_project(
+        db, project_id, predicate=scope_predicate(Project, current_user)
+    )
     if project and project.stage != "manufacturing":
         project.stage = "manufacturing"
         await db.flush()
 
 
 async def create_work_order(db: AsyncSession, payload: WorkOrderCreate, current_user: User) -> WorkOrderRead:
-    await _ensure_project(db, payload.project_id)
+    await _ensure_project(db, payload.project_id, current_user)
     data = payload.model_dump()
     if not data.get("work_order_no"):
         data["work_order_no"] = await repo.generate_work_order_no(db)
@@ -182,7 +188,7 @@ async def advance_work_order_status(db: AsyncSession, object_id: UUID, current_u
     obj.status = _STATUS_FLOW[idx + 1]
     if obj.status == "doing" and obj.actual_start is None:
         obj.actual_start = now
-        await _maybe_set_manufacturing(db, obj.project_id)
+        await _maybe_set_manufacturing(db, obj.project_id, current_user)
     if obj.status == "done":
         obj.actual_end = now
         if not obj.actual_hours:
@@ -204,7 +210,7 @@ async def claim_work_order(db: AsyncSession, object_id: UUID, payload: WorkOrder
     obj.claimed_by = payload.claimed_by
     if obj.actual_start is None:
         obj.actual_start = now
-    await _maybe_set_manufacturing(db, obj.project_id)
+    await _maybe_set_manufacturing(db, obj.project_id, current_user)
     await db.flush()
     await db.commit()
     await db.refresh(obj)
@@ -216,7 +222,7 @@ async def generate_standard_chain(
     payload: WorkOrderGenerateChain,
     current_user: User,
 ) -> WorkOrderChainResult:
-    await _ensure_project(db, payload.project_id)
+    await _ensure_project(db, payload.project_id, current_user)
     start = payload.start_date or date.today()
     step_days = payload.step_days
     cursor = start
@@ -243,7 +249,7 @@ async def generate_standard_chain(
         )
         created.append(_to_read(obj))
         cursor = plan_end + timedelta(days=1)
-    await _maybe_set_manufacturing(db, payload.project_id)
+    await _maybe_set_manufacturing(db, payload.project_id, current_user)
     await db.commit()
     return WorkOrderChainResult(created_count=len(created), items=created)
 

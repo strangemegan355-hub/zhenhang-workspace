@@ -80,10 +80,14 @@ async def soft_delete_entry(db: AsyncSession, obj: ProcurementEntry) -> Procurem
     return obj
 
 
-async def list_arrived_not_transferred(db: AsyncSession) -> list[ProcurementEntry]:
+async def list_arrived_not_transferred(
+    db: AsyncSession, predicate=None
+) -> list[ProcurementEntry]:
     stmt = select(ProcurementEntry).where(
         ProcurementEntry.is_deleted.is_(False),
         ProcurementEntry.status == "arrived",
         ProcurementEntry.transferred_to_actual.is_(False),
     )
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     return list((await db.execute(stmt)).scalars().all())

@@ -168,7 +168,9 @@ async def _transfer_one_entry(db: AsyncSession, entry, current_user: User) -> di
 
 
 async def transfer_arrived_to_actual_cost(db: AsyncSession, current_user: User) -> ProcurementTransferResult:
-    entries = await repo.list_arrived_not_transferred(db)
+    entries = await repo.list_arrived_not_transferred(
+        db, predicate=scope_predicate(ProcurementEntry, current_user)
+    )
     transferred: list[dict] = []
     skipped = 0
     for entry in entries:
