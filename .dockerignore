@@ -14,3 +14,5 @@ volumes
 *.log
 .cursor
 agent-transcripts
+.venv
+venv
