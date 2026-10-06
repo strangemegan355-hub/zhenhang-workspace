@@ -1,11 +1,26 @@
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel, Field
 
+T = TypeVar("T")
 
-class PageResponse(BaseModel):
+
+class PageResponse(BaseModel, Generic[T]):
+    """A page of rows, with the row type as a parameter.
+
+    `items` used to be a bare `list`, so a route declaring `response_model=PageResponse` validated nothing about the
+    rows — the shape rounds 126 and 127 fixed twice in the services, and the reason round 136's front-end envelope had
+    no server-side counterpart to mirror.
+
+    **An unparameterised `PageResponse` keeps working**: pydantic treats the free type variable as `Any`, so the 41
+    routes that already declare it are unchanged until each is given its row type, one at a time, with the tests as
+    the proof at every step.
+    """
+
     total: int
     page: int
     page_size: int
-    items: list
+    items: list[T]
 
 
 class PageParams(BaseModel):
