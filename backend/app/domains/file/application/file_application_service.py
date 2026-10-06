@@ -21,6 +21,8 @@ from app.domains.file.policies.data_scope_policy import owner_scope_user_id
 from app.domains.file.repositories import file_repository as repo
 from app.schemas.common import PageResponse
 from app.services.audit_service import write_audit_log
+from app.schemas.file_center import FileObjectRead
+from app.schemas.common import page_response
 
 
 async def upload_file(
@@ -133,7 +135,7 @@ async def list_file_objects(db: AsyncSession, *, page: int, page_size: int, q: s
         category=category,
         created_by=owner_id,
     )
-    return PageResponse(total=total, page=page, page_size=page_size, items=items)
+    return page_response(total, page, page_size, items, FileObjectRead)
 
 
 async def get_file_or_404(db: AsyncSession, file_id: UUID, current_user):

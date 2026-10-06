@@ -8,6 +8,8 @@ from app.core.data_scope import build_created_by_filter
 from app.models.audit import AuditLog
 from app.repositories.audit_repository import create_audit_log, query_audit_logs
 from app.schemas.common import PageResponse
+from app.schemas.audit import AuditLogRead
+from app.schemas.common import page_response
 
 
 def _json_safe(value: object) -> object:
@@ -74,4 +76,4 @@ async def list_audit_logs(
         resource_type=resource_type,
         base_filter=base_filter,
     )
-    return PageResponse(total=total, page=page, page_size=page_size, items=items)
+    return page_response(total, page, page_size, items, AuditLogRead)
