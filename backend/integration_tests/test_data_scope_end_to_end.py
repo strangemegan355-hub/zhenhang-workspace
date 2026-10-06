@@ -334,5 +334,117 @@ async def test_a_write_to_another_departments_row_is_not_found():
     )
 
 
+async def _set_trial_sales_project_delete(granted: bool) -> None:
+    """Add or remove `business:project:delete` on the `trial_sales` role, directly rather than through the service.
+
+    `admin_service.set_role_permissions` refuses a non-superuser and refuses to widen beyond the caller's own codes, and
+    `trial_sales` is a system role, so the service is not usable as a test fixture. The relationship itself is a plain
+    `secondary=role_permission_association` on `Role.permissions`.
+
+    **`granted=False` must be called in a `finally`**: `trial_sales` is default data rather than test data, so a grant
+    left behind would leak into every later test and make this suite order-dependent.
+    """
+    from sqlalchemy import delete, select
+
+    from app.db.session import AsyncSessionLocal
+    from app.models.permission import Permission
+    from app.models.role import Role, role_permission_association
+
+    async with AsyncSessionLocal() as session:
+        role = (await session.execute(select(Role).where(Role.code == "trial_sales"))).scalar_one_or_none()
+        permission = (
+            await session.execute(select(Permission).where(Permission.code == "business:project:delete"))
+        ).scalar_one_or_none()
+        assert role is not None, "the trial_sales role is missing; the baseline was not seeded"
+        assert permission is not None, "business:project:delete is not in the permission table"
+
+        if granted:
+            await session.execute(
+                role_permission_association.insert().values(role_id=role.id, permission_id=permission.id)
+            )
+        else:
+            await session.execute(
+                delete(role_permission_association).where(
+                    role_permission_association.c.role_id == role.id,
+                    role_permission_association.c.permission_id == permission.id,
+                )
+            )
+        await session.commit()
+
+
+async def _delete_project(project_id: str, username: str, env_name: str) -> int:
+    """DELETE a project as `username`, returning only the status code."""
+    from app.main import app
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://integration") as client:
+        token = await _login(client, username, env_name)
+        response = await client.delete(
+            f"/api/v1/projects/{project_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    return response.status_code
+
+
+async def test_a_delete_of_another_departments_row_is_not_found_and_deletes_nothing():
+    """`PUT` was proven scoped in round 181; **DELETE is a different verb and less reversible**, so it gets its own.
+
+    Four assertions, each of which could fail on its own:
+
+    1. `tech01` deleting the **other** department's project is **404** — the scope decision under test;
+    2. `tech01` deleting **its own department's** is **200** — without this the 404 could be a missing
+       `business:project:delete` permission wearing the wrong status, exactly as `boss` demonstrated for `PUT`;
+    3. **the deleted row is gone** — a 200 that deletes nothing is its own defect, and asserting the status alone would
+       miss it;
+    4. **the refused row survives** — the refusal has to have had no effect. This is checked as `boss`, which holds
+       `business:project:read`, so it cannot pass by the row becoming unreadable for an unrelated reason.
+
+    **The caller is `sales01`, and the test first GRANTS it `business:project:delete`, because the trial role does not
+    ship with it.** The measurements behind that, each of which changed the test:
+
+    * **`trial_sales` holds `create`, `read` and `update` but not `delete`; `trial_tech` holds all four** (from
+      `setup_trial_users.py`). The first version called `sales01` and got **403 on its first assertion** — a permission
+      failure read as a scope result, the same trap round 181's `boss` fell into.
+    * **`tech01` is the account that has the verb, but its password is not this suite's** — `setup_trial_users.py` skips
+      existing users, so an account seeded by an earlier run with a different password cannot be logged into here. It
+      returned **401**.
+    * **`admin` is a superuser**, so it bypasses the data scope entirely and cannot test it.
+
+    So the test grants the permission inside its own seed-and-teardown window rather than depending on a role definition
+    it does not control. **That isolates the question being asked — does the write path scope by department — from the
+    separate question of which trial role happens to include `delete`.**
+    """
+    await _seed_two_departments()
+    try:
+        await _set_trial_sales_project_delete(True)
+        identifiers = await _ids_of_seeded_projects()
+        mine = identifiers.get(f"{MARKER}-MINE")
+        theirs = identifiers.get(f"{MARKER}-THEIRS")
+        assert mine and theirs, f"the seed did not produce both projects: {sorted(identifiers)}"
+
+        refused = await _delete_project(theirs, "sales01", "TRIAL_SALES_PASSWORD")
+        accepted = await _delete_project(mine, "sales01", "TRIAL_SALES_PASSWORD")
+
+        gone = await _one_project_by_id(mine, "sales01", "TRIAL_SALES_PASSWORD")
+        survived = await _one_project_by_id(theirs, "boss", "TRIAL_BOSS_PASSWORD")
+    finally:
+        await _set_trial_sales_project_delete(False)
+        await _teardown()
+
+    assert refused == 404, (
+        f"deleting another department's project answered {refused} instead of 404; a 200 is a scope bypass on the most "
+        "destructive verb"
+    )
+    assert accepted == 200, (
+        f"a department-scoped account could not delete its own department's project (got {accepted}), so the 404 above "
+        "proves nothing about scope"
+    )
+    assert gone == 404, f"the delete answered 200 but the row is still readable (got {gone})"
+    assert survived == 200, (
+        f"the refused deletion removed the other department's project (boss reads it as {survived}); a refusal must have "
+        "no effect"
+    )
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
