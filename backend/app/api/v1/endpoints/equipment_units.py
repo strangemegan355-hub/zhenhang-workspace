@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.common import PageResponse
 from app.schemas.equipment_unit import EquipmentUnitCreate, EquipmentUnitRead, EquipmentUnitUpdate
 from app.services import equipment_unit_service as svc
+from app.schemas.common import page_response
 
 router = APIRouter()
 
@@ -40,7 +41,7 @@ async def list_equipment_units(
     items, total = await svc.list_equipment_units(
         db, page, page_size, q, build_status, machine_id, customer_id
     )
-    return PageResponse(total=total, page=page, page_size=page_size, items=items)
+    return page_response(total, page, page_size, items, EquipmentUnitRead)
 
 
 @router.get("/{unit_id}", response_model=EquipmentUnitRead)

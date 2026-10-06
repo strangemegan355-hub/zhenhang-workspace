@@ -7,6 +7,8 @@ from app.domains.config.repositories import config_repository as repo
 from app.domains.events.application.event_bus import event_bus
 from app.schemas.common import PageResponse
 from app.services.audit_service import write_audit_log
+from app.schemas.config import SystemConfigRead
+from app.schemas.common import page_response
 
 
 async def create_config(db: AsyncSession, payload: dict, current_user):
@@ -71,4 +73,4 @@ async def list_configs(db: AsyncSession, *, page: int, page_size: int, q: str | 
         group=group,
         created_by=owner_id,
     )
-    return PageResponse(total=total, page=page, page_size=page_size, items=items)
+    return page_response(total, page, page_size, items, SystemConfigRead)

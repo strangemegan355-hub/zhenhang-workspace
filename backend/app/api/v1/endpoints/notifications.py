@@ -13,6 +13,7 @@ from app.models.user import User
 from app.notifications import notification_service as notify_svc
 from app.schemas.common import PageResponse
 from app.schemas.notification import NotificationRead, NotificationUnreadCount
+from app.schemas.common import page_response
 
 router = APIRouter()
 
@@ -46,7 +47,7 @@ async def list_notifications(
         .limit(page_size)
     )
     items = list((await db.execute(stmt)).scalars().all())
-    return PageResponse(
+    return page_response(
         total=total,
         page=page,
         page_size=page_size,
