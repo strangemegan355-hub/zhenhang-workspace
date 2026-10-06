@@ -21,21 +21,21 @@ export function FormulaLivePanel({
   discountRate?: number;
 }) {
   const baseCost = lines.reduce((s, l) => s + l.quantity * (l.unit_cost ?? l.unit_price * 0.7), 0);
-  const ctx = {
-    base_cost: baseCost,
-    margin_rate: marginRate,
-    discount_rate: discountRate,
-    qty: Math.max(lines.reduce((s, l) => s + l.quantity, 0), 1),
-  };
+  const totalQty = Math.max(
+    lines.reduce((s, l) => s + l.quantity, 0),
+    1,
+  );
+  // The memo depends on scalars rather than on an object built during render: reading properties off a
+  // fresh object is what stopped the React Compiler from preserving this memoization.
   const formulaResult = React.useMemo(
     () =>
       computePricingViaFormulas(DEFAULT_FORMULAS, {
-        base_cost: ctx.base_cost,
-        margin_rate: ctx.margin_rate,
-        discount_rate: ctx.discount_rate,
-        qty: ctx.qty,
+        base_cost: baseCost,
+        margin_rate: marginRate,
+        discount_rate: discountRate,
+        qty: totalQty,
       }),
-    [ctx.base_cost, ctx.margin_rate, ctx.discount_rate, ctx.qty],
+    [baseCost, marginRate, discountRate, totalQty],
   );
   const classic = computeFields({
     lines: lines.map((l) => ({
