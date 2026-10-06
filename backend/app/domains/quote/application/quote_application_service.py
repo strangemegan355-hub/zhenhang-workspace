@@ -273,9 +273,9 @@ async def create_quote_wizard(db: AsyncSession, payload: dict, current_user):
     quote_payload = {k: v for k, v in payload.items() if k != "initial_items"}
     product_id = quote_payload.get("product_id")
     if product_id and not quote_payload.get("machine_id"):
-        from app.repositories.product_repository import get_product
+        from app.services.product_service import get_product_or_none
 
-        product = await get_product(db, product_id)
+        product = await get_product_or_none(db, product_id)
         if product:
             if product.machine_id and not quote_payload.get("machine_id"):
                 quote_payload["machine_id"] = product.machine_id

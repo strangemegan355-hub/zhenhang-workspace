@@ -93,6 +93,17 @@ async def get_product_or_404(db: AsyncSession, object_id: UUID):
     return ProductRead.model_validate(obj)
 
 
+async def get_product_or_none(db: AsyncSession, object_id: UUID):
+    """The product model, or None when it does not exist.
+
+    `get_product_or_404` cannot serve callers that tolerate absence — the quote creation path seeds
+    machine and BOM defaults only if a product was found — and it returns a validated `ProductRead`
+    where such callers read ORM attributes. This keeps them on the service layer, which is the legacy
+    layer's public surface, instead of reaching into its repository.
+    """
+    return await repo.get_product(db, object_id)
+
+
 async def update_product(db: AsyncSession, object_id: UUID, payload: dict):
     obj = await repo.get_product(db, object_id)
     if obj is None:
