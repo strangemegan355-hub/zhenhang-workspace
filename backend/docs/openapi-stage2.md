@@ -6,6 +6,10 @@ FastAPI 自动生成文档：
 - ReDoc: `/redoc`
 - OpenAPI JSON: `/openapi.json`
 
+> **以上三个地址只在非生产环境可用。** `backend/app/main.py`（`docs_url` / `redoc_url` / `openapi_url`
+> 三行）在 `environment == "production"` 或 `app_env == "prod"` 时把它们全部设为 `None`，生产环境因此
+> 不暴露交互式文档与 schema。这是阶段三加固的一部分；生产环境请以本文档与各模块文档为准。
+
 以下是阶段二新增模块（均为 JWT + RBAC 保护）：
 
 ## 客户系统 `/api/v1/customers`

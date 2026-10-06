@@ -27,6 +27,14 @@ QuoteWorkbench 工业操作体验：BOM 虚拟树、拖拽排序、行内公式�
 
 **Constraints:** 不新增 `runtime-*` / `distributed-*` 包；业务闭环优先于 Runtime OS 扩张。
 
+> **以下三张表描述的是已从本仓库移除的 Runtime OS 方向，不是当前结构。**
+>
+> 表中 15 个包名里只有 `formula-dag` 仍存在于 `packages/`，其余 14 个
+> （`runtime-*`、`distributed-*`、`agent-*`、`consensus-*`）均已删除——删除依据正是上一节那条约束
+> "不新增 `runtime-*` / `distributed-*` 包"。这些名字仍以 **20 个断裂的符号链接** 形式留在本机
+> `node_modules/@zhenhang/` 下（`npm install` 会清理；它们会打断递归文件遍历）。
+> 保留表格是为了记住这个被否决的方向，请勿据此认为这些包存在。
+
 ## Distributed Runtime Correctness
 
 | Package | Role |
