@@ -13,7 +13,10 @@ export type OptionGroup = {
 
 export type OptionItem = {
   id: string;
-  group_id: string;
+  // The backend's `OptionItemRead` declares `option_group_id`; this said `group_id`, which the API never sends.
+  // Nothing reads either name today, so the mismatch was latent rather than a runtime bug — but the type was a lie,
+  // and it was the only field in the whole hook layer that the response model does not provide.
+  option_group_id: string;
   name: string;
   price_adjustment: number;
   sort_order?: number;
