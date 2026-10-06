@@ -13,6 +13,13 @@ invoked by no script:
 (`npm run generate -w @zhenhang/api-sdk`), which is what the test below asserts. **The deletion proposal has to account
 for that — removing the package removes `sdk:generate` with it.**
 
+**And `@zhenhang/query-policy-registry` is not a candidate at all, which round 177 established the other way round from
+the guess it started with.** It has 137 code lines and round 175 noted only that `apps/mobile-app/vite.config.ts`
+references it — but **twenty-eight files under `packages/query-hooks/src/domains/` import `qk` from it**, and
+`query-hooks` is depended on by two apps. **The relationship is the reverse of "live code reachable only through dead
+weight": the dead package is a `@deprecated` re-export of the live one.** My hypothesis was wrong, and measuring it is
+what said so.
+
 **The manifest graph is the reliable layer, and this test pins it.** A first attempt also tried to detect usage by
 scanning every file for the package's specifier; it reported **the same list for all six packages**, which proved the
 detector wrong rather than the packages unused — so that claim is not made here. What the attempt did establish is worth
@@ -36,12 +43,15 @@ SKIP = {"node_modules", ".git", ".venv", "dist", ".next", "build", "__pycache__"
 # `npm run generate -w @zhenhang/api-sdk`, so a script invokes it by name. **That is a fact the deletion proposal has to
 # account for** — removing the package removes `sdk:generate` with it.
 #
-# The sizes below were measured in round 175.
+# The sizes below were measured in round 175; what each package **contains** was measured in round 177.
 UNREFERENCED_PACKAGES: dict[str, str] = {
-    "@zhenhang/file-center": "6 code lines in 2 files; scaffolding from an earlier structure",
-    "@zhenhang/query-governance": "16 code lines in 2 files; scaffolding",
-    "@zhenhang/quote": "7 code lines in 2 files; scaffolding",
-    "@zhenhang/workflow": "1 code line in 2 files; the smallest package in the workspace",
+    "@zhenhang/file-center": "6 code lines in 2 files: a `FileObject` type only, and the backend has FileObjectRead",
+    "@zhenhang/query-governance": (
+        "16 code lines: a `@deprecated` re-export of @zhenhang/query-policy-registry plus a `queryStaleTimePolicy` "
+        "constant that round 176's removal-surface measurement found named nowhere outside this package"
+    ),
+    "@zhenhang/quote": "7 code lines in 2 files: a `QuoteSummary` type only, and the backend has QuoteRead",
+    "@zhenhang/workflow": "1 code line in 2 files: a `WorkflowState` type only",
 }
 
 
