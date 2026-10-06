@@ -59,6 +59,14 @@ REVIEWED: set[tuple[str, str, str]] = {
     ("app/domains/quote/application/quote_application_service.py", "compare_quote_versions", "get_quote_version_by_no"),
     ("app/domains/quote/application/quote_application_service.py", "compare_quote_versions", "list_quote_items_by_version"),
     ("app/domains/quote/application/quote_application_service.py", "get_export_task", "get_export_task"),
+    # round 196: `build_industrial_copilot_analysis` re-reads the quote its caller already fetched through
+    # `summarize_quote_for_copilot`, which passes `predicate=scope_predicate(Quote, current_user)` and answers 404 when
+    # the quote is out of scope. The version and item reads belong to that same verified quote. **These three became
+    # visible to this guard only because the module gained a `scope_predicate` call of its own — for the two "similar"
+    # panels, which were genuinely unscoped and are now filtered.**
+    ("app/domains/quote/application/industrial_copilot.py", "build_industrial_copilot_analysis", "get_quote"),
+    ("app/domains/quote/application/industrial_copilot.py", "build_industrial_copilot_analysis", "get_quote_version_by_no"),
+    ("app/domains/quote/application/industrial_copilot.py", "build_industrial_copilot_analysis", "list_quote_items_by_version"),
 }
 
 

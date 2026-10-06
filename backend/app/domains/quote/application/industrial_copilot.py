@@ -15,9 +15,11 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
 from app.domains.quote.repositories import quote_repository as repo
 from app.models.customer import Customer
 from app.models.quote import Quote
+from app.models.user import User
 
 
 async def build_industrial_copilot_analysis(
@@ -27,6 +29,7 @@ async def build_industrial_copilot_analysis(
     from_version_no: int | None = None,
     to_version_no: int | None = None,
     compare_fn,
+    current_user: User | None = None,
 ) -> dict:
     quote = await repo.get_quote(db, quote_id)
     if quote is None:
@@ -110,8 +113,8 @@ async def build_industrial_copilot_analysis(
     elif quote.workflow_state == "approved":
         approval_suggestions.append("已批准：可发起 PDF 导出并归档")
 
-    similar = await _similar_quotes(db, quote)
-    similar_projects = await _similar_projects(db, quote)
+    similar = await _similar_quotes(db, quote, current_user)
+    similar_projects = await _similar_projects(db, quote, current_user)
     customer_insights = await _customer_insights(db, quote)
     delivery_risks = _delivery_risks(quote, profit_rate, total_amount, bom, quote.workflow_state)
 
@@ -179,16 +182,16 @@ def _delivery_risks(
     return risks[:6]
 
 
-async def _similar_projects(db: AsyncSession, quote: Quote) -> list[dict]:
+async def _similar_projects(db: AsyncSession, quote: Quote, current_user: User | None = None) -> list[dict]:
     if not quote.machine_id:
         return []
+    # Round 196: without the caller's scope this panel disclosed other departments' quote numbers, titles and totals.
+    scoped = [Quote.machine_id == quote.machine_id, Quote.id != quote.id, Quote.is_deleted.is_(False)]
+    if current_user is not None:
+        scoped.append(scope_predicate(Quote, current_user))
     stmt = (
         select(Quote)
-        .where(
-            Quote.machine_id == quote.machine_id,
-            Quote.id != quote.id,
-            Quote.is_deleted.is_(False),
-        )
+        .where(*scoped)
         .order_by(Quote.updated_at.desc())
         .limit(5)
     )
@@ -205,16 +208,16 @@ async def _similar_projects(db: AsyncSession, quote: Quote) -> list[dict]:
     ]
 
 
-async def _similar_quotes(db: AsyncSession, quote: Quote) -> list[dict]:
+async def _similar_quotes(db: AsyncSession, quote: Quote, current_user: User | None = None) -> list[dict]:
     if not quote.customer_id:
         return []
+    # Round 196: see `_similar_projects` — the same panel leaked by customer instead of by machine.
+    scoped = [Quote.customer_id == quote.customer_id, Quote.id != quote.id, Quote.is_deleted.is_(False)]
+    if current_user is not None:
+        scoped.append(scope_predicate(Quote, current_user))
     stmt = (
         select(Quote)
-        .where(
-            Quote.customer_id == quote.customer_id,
-            Quote.id != quote.id,
-            Quote.is_deleted.is_(False),
-        )
+        .where(*scoped)
         .order_by(Quote.updated_at.desc())
         .limit(5)
     )

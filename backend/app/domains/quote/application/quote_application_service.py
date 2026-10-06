@@ -336,6 +336,7 @@ async def summarize_quote_for_copilot(
         from_version_no=from_version_no,
         to_version_no=to_version_no,
         compare_fn=compare_quote_versions,
+        current_user=current_user,
     )
 
 
