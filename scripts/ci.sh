@@ -6,7 +6,7 @@
 # in backend/scripts/audit_authz.py, ESLint for web-admin, the web-admin production build, and the same four
 # TypeScript checks .github/workflows/ci.yml runs (web-admin, tsconfig.packages.json, workshop-terminal,
 # mobile-app).
-# What it does NOT cover: the integration suite in backend/integration_tests (19 tests). Those need real
+# What it does NOT cover: the integration suite in backend/integration_tests. Those need real
 # PostgreSQL, Redis and MinIO, so they are not part of this script and running it before a push does not run
 # them - .github/workflows/ci.yml does, and the README's "集成测试" section gives the command to run them
 # locally.

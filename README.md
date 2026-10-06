@@ -255,8 +255,18 @@ python -m workers.event_worker
 ```bash
 cd backend
 docker compose -f integration_tests/docker-compose.integration.yml up -d
+python -m alembic upgrade head
+python scripts/bootstrap_admin.py
+python scripts/seed_tenant.py
+python scripts/setup_trial_users.py
 pytest integration_tests -q
 ```
+
+The four steps between the stack and the suite are not optional: several tests sign in as the trial accounts, and
+`setup_trial_users.py`'s own docstring gives that order (`bootstrap_admin.py` first, then `seed_tenant.py`). They read
+their passwords from the environment, so set throwaway values before running them — `BOOTSTRAP_ADMIN_PASSWORD` and the
+`TRIAL_*_PASSWORD` variables, exactly as `.github/workflows/ci.yml` does. A failing test prints the same instructions as
+`NEEDS_SEED`, so this is what its message points at.
 
 MinIO is part of the stack because the storage lifecycle is a real dependency the suite now checks
 against a live server; `INTEGRATION_MINIO_ENDPOINT` overrides its address (default `127.0.0.1:59000`).
