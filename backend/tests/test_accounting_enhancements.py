@@ -174,7 +174,7 @@ def test_supplier_ledger_detail(monkeypatch):
         entries=[],
     )
 
-    async def _fake(db, supplier_id):
+    async def _fake(db, supplier_id, current_user=None):
         return fake
 
     monkeypatch.setattr(sls, "get_supplier_ledger_detail", _fake)
@@ -199,10 +199,10 @@ def test_supplier_ledger_register(monkeypatch):
 
     sid = str(uuid4())
 
-    async def _fake_register(db, payload, uid):
+    async def _fake_register(db, payload, uid, current_user=None):
         return SimpleNamespace(supplier_id=sid, created_by=uid)
 
-    async def _fake_detail(db, _sid):
+    async def _fake_detail(db, _sid, current_user=None):
         return SupplierLedgerDetailRead(
             supplier_id=_sid, supplier_name="新供应商", supplier_code=None,
             is_registered=True, payable_total=Decimal("0"),
@@ -226,7 +226,7 @@ def test_supplier_payment(monkeypatch):
     """POST /ledger/payments creates payment."""
     from app.services import supplier_ledger_service as sls
 
-    async def _fake(db, payload, uid):
+    async def _fake(db, payload, uid, current_user=None):
         from app.schemas.accounting import LedgerEntryRead
         from decimal import Decimal
         return LedgerEntryRead(

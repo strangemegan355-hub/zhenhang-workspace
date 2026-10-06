@@ -9,6 +9,8 @@ from app.models.supplier import Supplier
 from app.models.supplier_ledger_account import SupplierLedgerAccount
 from app.models.accounting_entry import AccountingEntry
 from app.models.accounting_settlement import AccountingSettlement
+from app.core.data_scope import scope_predicate
+from app.models.user import User
 from app.repositories import accounting_repository as repo
 from app.schemas.accounting import (
     LedgerEntryRead,
@@ -129,25 +131,20 @@ async def get_supplier_ledger_summaries(
     return PageResponse(total=total, page=page, page_size=page_size, items=summaries[start:end])
 
 
-async def get_supplier_ledger_detail(db: AsyncSession, supplier_id: UUID) -> SupplierLedgerDetailRead:
+async def get_supplier_ledger_detail(
+    db: AsyncSession, supplier_id: UUID, current_user: User
+) -> SupplierLedgerDetailRead:
     await _require_accounting(db)
     supplier = await _ensure_supplier_accessible(db, supplier_id)
     acct = await repo.get_supplier_ledger_account(db, supplier_id)
     is_registered = acct is not None
 
-    from sqlalchemy import select
-    entries = list((
-        await db.execute(
-            select(AccountingEntry)
-            .where(
-                AccountingEntry.is_deleted.is_(False),
-                AccountingEntry.status == "confirmed",
-                AccountingEntry.entry_kind.in_((_PAYABLE, _PAYMENT)),
-                AccountingEntry.supplier_id == supplier_id,
-            )
-            .order_by(AccountingEntry.occurred_on.desc(), AccountingEntry.created_at.desc())
-        )
-    ).scalars().all())
+    entries = await repo.list_supplier_ledger_entries(
+        db,
+        supplier_id,
+        entry_kinds=(_PAYABLE, _PAYMENT),
+        predicate=scope_predicate(AccountingEntry, current_user),
+    )
 
     payable_total = Decimal("0")
     paid_total = Decimal("0")
@@ -175,7 +172,7 @@ async def create_manual_payable(
     db: AsyncSession,
     supplier_id: UUID,
     payload: LedgerPayableCreatePayload,
-    current_user_id: UUID,
+    current_user: User,
 ) -> LedgerEntryRead:
     await _require_accounting(db)
     await _ensure_supplier_accessible(db, supplier_id)
@@ -202,9 +199,10 @@ async def create_manual_payable(
         "approval_status": "none",
         "title": payload.title.strip(),
         "remark": payload.remark.strip() if payload.remark else None,
-        "created_by": current_user_id,
+        "created_by": current_user.id,
     })
-    loaded = await repo.get_entry(db, obj.id)
+    scope = scope_predicate(AccountingEntry, current_user)
+    loaded = await repo.get_entry(db, obj.id, predicate=scope)
     entry = loaded or obj
     return _to_ledger_entry(entry)
 
@@ -212,15 +210,16 @@ async def create_manual_payable(
 async def create_payment_with_allocations(
     db: AsyncSession,
     payload: PaymentCreatePayload,
-    current_user_id: UUID,
+    current_user: User,
 ) -> LedgerEntryRead:
     await _require_accounting(db)
     await _ensure_supplier_accessible(db, payload.supplier_id)
 
     # Validate allocations
+    scope = scope_predicate(AccountingEntry, current_user)
     total_allocated = Decimal("0")
     for alloc in payload.allocations:
-        pay = await repo.get_entry(db, alloc.payable_entry_id)
+        pay = await repo.get_entry(db, alloc.payable_entry_id, predicate=scope)
         if pay is None or pay.entry_kind != _PAYABLE or pay.supplier_id != payload.supplier_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid payable: {alloc.payable_entry_id}")
         if pay.status != "confirmed":
@@ -253,7 +252,7 @@ async def create_payment_with_allocations(
         "approval_status": "none",
         "title": payload.title.strip(),
         "remark": payload.remark.strip() if payload.remark else None,
-        "created_by": current_user_id,
+        "created_by": current_user.id,
     })
 
     # Create settlements and update payable settled amounts
@@ -264,16 +263,16 @@ async def create_payment_with_allocations(
             "amount": alloc.amount,
             "party_type": "supplier",
         })
-        pay = await repo.get_entry(db, alloc.payable_entry_id)
+        pay = await repo.get_entry(db, alloc.payable_entry_id, predicate=scope)
         if pay:
             pay.settled_amount = Decimal(str(pay.settled_amount or 0)) + alloc.amount
             await repo.save_entry(db, pay)
 
-    loaded = await repo.get_entry(db, payment.id)
+    loaded = await repo.get_entry(db, payment.id, predicate=scope)
     entry = loaded or payment
     result = _to_ledger_entry(entry)
     # load allocations for display
-    settlements = await repo.list_settlements_by_receipt(db, payment.id)
+    settlements = await repo.list_settlements_by_receipt(db, payment.id, predicate=scope)
     result.allocations = [
         {"receivable_entry_id": str(s.receivable_entry_id), "amount": str(s.amount)}
         for s in settlements

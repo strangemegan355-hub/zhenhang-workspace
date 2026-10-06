@@ -154,10 +154,19 @@ def _module_sources(module: str) -> list[Path]:
 
 
 def test_shared_data_is_not_scoped_by_creator():
-    """Scoping shared data fragments it; scoping company assets blocks cross-department work."""
+    """Scoping shared data fragments it; scoping company assets blocks cross-department work.
+
+    A file can match a shared entity's glob and still belong to a scoped module:
+    `supplier_ledger_service.py` matches `*supplier*` but scopes `AccountingEntry`, an owned document, exactly as
+    the scoped-module rules require. So the question is which **model** a predicate is built for, not whether the
+    word appears — a file that scopes one of `SCOPED_DOCUMENTS` is judged by those rules instead of this one.
+    """
+    scoped_models = tuple(SCOPED_DOCUMENTS.values())
     for module in sorted(SHARED_REFERENCE_DATA | SHARED_OPERATIONAL_RECORDS):
         for path in _module_sources(module):
             text = path.read_text(encoding="utf-8")
+            if any(f"scope_predicate({model}" in text for model in scoped_models):
+                continue  # belongs to a scoped module; the scoped rules apply to it
             assert "scope_predicate" not in text, (
                 f"{path.relative_to(BACKEND)} scopes {module}, which is declared shared; "
                 "master data and company assets must stay visible across departments"

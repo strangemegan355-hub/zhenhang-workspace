@@ -129,6 +129,36 @@ async def save_entry(db: AsyncSession, obj: AccountingEntry) -> AccountingEntry:
     return obj
 
 
+async def list_supplier_ledger_entries(
+    db: AsyncSession,
+    supplier_id: UUID,
+    *,
+    entry_kinds: tuple[str, ...],
+    predicate=None,
+) -> list[AccountingEntry]:
+    """Confirmed entries of the given kinds for one supplier, within the caller's scope.
+
+    The supplier ledger used to run this select inside the service, without a predicate, and then sum it into
+    `payable_total`/`paid_total`. Round 92's rule: an aggregate carries the same scope as the list it summarises.
+    """
+    filters = [
+        AccountingEntry.is_deleted.is_(False),
+        AccountingEntry.status == "confirmed",
+        AccountingEntry.entry_kind.in_(entry_kinds),
+        AccountingEntry.supplier_id == supplier_id,
+    ]
+    if predicate is not None:
+        filters.append(predicate)
+    rows = (
+        await db.execute(
+            select(AccountingEntry)
+            .where(*filters)
+            .order_by(AccountingEntry.occurred_on.desc(), AccountingEntry.created_at.desc())
+        )
+    ).scalars().all()
+    return list(rows)
+
+
 async def list_entries(
     db: AsyncSession,
     *,
@@ -214,13 +244,16 @@ async def list_customer_receipts(
     return list(rows)
 
 
-async def list_settlements_by_receipt(db: AsyncSession, receipt_entry_id: UUID) -> list[AccountingSettlement]:
+async def list_settlements_by_receipt(
+    db: AsyncSession, receipt_entry_id: UUID, predicate=None
+) -> list[AccountingSettlement]:
     rows = (
         await db.execute(
             select(AccountingSettlement)
             .where(
                 AccountingSettlement.receipt_entry_id == receipt_entry_id,
                 AccountingSettlement.is_deleted.is_(False),
+                *([predicate] if predicate is not None else []),
             )
             .options(selectinload(AccountingSettlement.receivable_entry))
         )

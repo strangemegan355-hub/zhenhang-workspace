@@ -342,8 +342,8 @@ async def register_ledger_supplier(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:accounting:create"))],
 ) -> dict:
-    await supp_svc.register_supplier(db, payload, current.id)
-    detail = await supp_svc.get_supplier_ledger_detail(db, payload.supplier_id)
+    await supp_svc.register_supplier(db, payload, current)
+    detail = await supp_svc.get_supplier_ledger_detail(db, payload.supplier_id, current)
     open_count = len([e for e in detail.entries if e.open_amount > 0])
     return {
         "supplier_id": str(detail.supplier_id),
@@ -365,7 +365,7 @@ async def create_supplier_payable(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:accounting:create"))],
 ) -> dict:
-    entry = await supp_svc.create_manual_payable(db, supplier_id, payload, current.id)
+    entry = await supp_svc.create_manual_payable(db, supplier_id, payload, current)
     return entry.model_dump()
 
 
@@ -393,7 +393,7 @@ async def get_supplier_ledger_detail(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
 ) -> dict:
-    detail = await supp_svc.get_supplier_ledger_detail(db, supplier_id)
+    detail = await supp_svc.get_supplier_ledger_detail(db, supplier_id, _)
     return detail.model_dump()
 
 
@@ -403,5 +403,5 @@ async def create_supplier_payment(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:accounting:confirm"))],
 ) -> dict:
-    entry = await supp_svc.create_payment_with_allocations(db, payload, current.id)
+    entry = await supp_svc.create_payment_with_allocations(db, payload, current)
     return entry.model_dump()
