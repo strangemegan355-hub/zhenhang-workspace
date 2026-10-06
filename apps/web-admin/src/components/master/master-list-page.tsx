@@ -38,7 +38,7 @@ type MasterListPageProps<T extends Record<string, unknown>> = {
   onSearchChange: (value: string) => void;
   query: QueryLike;
   pageSize?: number;
-  rowKey?: (row: T) => string;
+  rowKey: (row: T) => string;
   onRowClick?: (row: T) => void;
   rowActions?: (row: T) => React.ReactNode;
   onBatchDelete?: (selected: T[]) => void | Promise<void>;

@@ -18,7 +18,7 @@ type Props<T extends Record<string, unknown>> = {
   onPageChange: (page: number) => void;
   onExport?: () => void;
   persistenceKey?: string;
-  rowKey?: (row: T, idx: number) => string;
+  rowKey: (row: T, idx: number) => string;
   onBatchAction?: (selected: T[]) => void;
   batchActionLabel?: string;
   hideBatchToolbar?: boolean;
@@ -89,7 +89,7 @@ export function DataGrid<T extends Record<string, unknown>>({
     .map((key) => columns.find((c) => c.key === key))
     .filter((c): c is GridColumn<T> => Boolean(c && c.canView !== false));
 
-  const selected = rows.filter((row, idx) => selectedRows[(rowKey ? rowKey(row, idx) : String(idx))] === true);
+  const selected = rows.filter((row, idx) => selectedRows[rowKey(row, idx)] === true);
 
   React.useEffect(() => {
     setSelectedRows({});
@@ -97,7 +97,7 @@ export function DataGrid<T extends Record<string, unknown>>({
 
   React.useEffect(() => {
     if (!onSelectionChange) return;
-    const next = rows.filter((row, idx) => selectedRows[(rowKey ? rowKey(row, idx) : String(idx))] === true);
+    const next = rows.filter((row, idx) => selectedRows[rowKey(row, idx)] === true);
     onSelectionChange(next);
   }, [selectedRows, rows, rowKey, onSelectionChange]);
 
@@ -182,7 +182,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                       onChange={(e) =>
                         setSelectedRows(
                           e.target.checked
-                            ? Object.fromEntries(rows.map((row, idx) => [rowKey ? rowKey(row, idx) : String(idx), true]))
+                            ? Object.fromEntries(rows.map((row, idx) => [rowKey(row, idx), true]))
                             : {},
                         )
                       }
@@ -214,7 +214,7 @@ export function DataGrid<T extends Record<string, unknown>>({
               </thead>
               <tbody>
                 {rows.map((row, idx) => {
-                  const key = rowKey ? rowKey(row, idx) : String(idx);
+                  const key = rowKey(row, idx);
                   return (
                     <tr
                       key={key}
