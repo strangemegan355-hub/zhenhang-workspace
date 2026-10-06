@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import { MasterCreateForm } from "@/components/master/master-create-form";
 import { apiErrorMessage } from "@/lib/api-error";
 import { MasterListPage } from "@/components/master/master-list-page";
@@ -313,7 +315,7 @@ export default function WorkOrdersPage() {
                                         amount: Number(amt),
                                         title: `工单成本: ${row.taskDesc || row.workOrderNo}`,
                                       })
-                                      .catch((e) => window.alert(apiErrorMessage(e, "入账失败")));
+                                      .catch((e) => notify(apiErrorMessage(e, "入账失败")));
                 }}
               >
                 计入支出
@@ -335,4 +337,8 @@ export default function WorkOrdersPage() {
       />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

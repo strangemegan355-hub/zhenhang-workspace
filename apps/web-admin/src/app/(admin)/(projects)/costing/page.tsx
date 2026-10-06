@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import { apiErrorMessage } from "@/lib/api-error";
 import { MasterListPage } from "@/components/master/master-list-page";
 import {
@@ -457,7 +459,7 @@ export default function CostingPage() {
       await deleteMutation.mutateAsync(id);
       void listQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -758,7 +760,7 @@ export default function CostingPage() {
                                 amount: Number(amt),
                                 title: `成本核算: ${row.productName}`,
                               })
-                              .catch((e) => window.alert(apiErrorMessage(e, "推送失败")));
+                              .catch((e) => notify(apiErrorMessage(e, "推送失败")));
             }}>
               推送至账目
             </button>
@@ -772,4 +774,8 @@ export default function CostingPage() {
       />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

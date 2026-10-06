@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import { MasterListPage } from "@/components/master/master-list-page";
 import {
   useAccountingStatusQuery,
@@ -489,7 +491,7 @@ export default function CustomerQuotePage() {
       await deleteMutation.mutateAsync(id);
       void listQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -893,4 +895,8 @@ export default function CustomerQuotePage() {
       />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

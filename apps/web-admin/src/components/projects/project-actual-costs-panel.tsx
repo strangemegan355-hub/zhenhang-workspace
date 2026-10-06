@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import {
   useCreateProjectActualCostMutation,
   useDeleteProjectActualCostMutation,
@@ -113,7 +115,7 @@ export function ProjectActualCostsPanel({ projectId }: { projectId: string }) {
       await deleteMutation.mutateAsync({ id, projectId });
       void listQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -192,4 +194,8 @@ export function ProjectActualCostsPanel({ projectId }: { projectId: string }) {
       )}
     </IndustrialPanel>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

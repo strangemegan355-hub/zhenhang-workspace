@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import { MasterCreateForm } from "@/components/master/master-create-form";
 import { MasterListPage } from "@/components/master/master-list-page";
 import {
@@ -171,7 +173,7 @@ export default function EquipmentUnitsPage() {
       await advanceMut.mutateAsync({ id: unitId, newStatus });
       void unitsQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "状态变更失败");
+      notify(err instanceof Error ? err.message : "状态变更失败");
     } finally {
       setAdvancing(null);
     }
@@ -310,4 +312,8 @@ export default function EquipmentUnitsPage() {
       />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

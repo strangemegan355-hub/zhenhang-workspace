@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import {
   useCreateOptionGroupMutation,
   useCreateOptionItemMutation,
@@ -174,7 +176,7 @@ export default function OptionGroupsSection({
       }
       reload();
     } catch (err) {
-      window.alert(apiErrorMessage(err, "删除失败"));
+      notify(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -219,7 +221,7 @@ export default function OptionGroupsSection({
       await deleteItemMutation.mutateAsync(id);
       reload();
     } catch (err) {
-      window.alert(apiErrorMessage(err, "删除失败"));
+      notify(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -318,7 +320,7 @@ export default function OptionGroupsSection({
             <MachineSelect value={selectedMachineId} onChange={handleMachineChange} options={machineOptions} />
             <WorkspaceToolbarButton
               onClick={() => {
-                if (!selectedMachineId) { window.alert("请先选择机型"); return; }
+                if (!selectedMachineId) { notify("请先选择机型"); return; }
                 closeAllForms();
                 setGroupForm({ name: "", sort_order: "0" });
                 setShowGroupForm(true);
@@ -376,8 +378,8 @@ export default function OptionGroupsSection({
             <span className="text-xs text-gray-400">点选选配组中的「选项」按钮</span>
             <WorkspaceToolbarButton
               onClick={() => {
-                if (!selectedMachineId) { window.alert("请先选择机型"); return; }
-                if (!selectedGroupId) { window.alert("请先在选配组列表选择一个组"); return; }
+                if (!selectedMachineId) { notify("请先选择机型"); return; }
+                if (!selectedGroupId) { notify("请先在选配组列表选择一个组"); return; }
                 closeAllForms();
                 setItemForm({ name: "", price_adjustment: "0", sort_order: "0" });
                 setShowItemForm(true);
@@ -396,4 +398,8 @@ export default function OptionGroupsSection({
       />
     </>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

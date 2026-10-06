@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import {
   fetchInstallationPlan,
   useCreateInstallationPlanMutation,
@@ -146,7 +148,7 @@ export default function InstallationPage() {
     try {
       await deletePlanMutation.mutateAsync(id);
     } catch (err) {
-      window.alert(apiErrorMessage(err, "删除失败"));
+      notify(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -164,7 +166,7 @@ export default function InstallationPage() {
       await updatePlanMutation.mutateAsync({ planId, payload: updates });
       // No refetch: the mutation invalidates the list and the detail panel.
     } catch (err) {
-      window.alert(apiErrorMessage(err, "操作失败"));
+      notify(apiErrorMessage(err, "操作失败"));
     }
   }
 
@@ -417,7 +419,7 @@ export default function InstallationPage() {
             </select>
             <WorkspaceToolbarButton
               onClick={() => {
-                if (!selectedUnitId) { window.alert("请先选择设备"); return; }
+                if (!selectedUnitId) { notify("请先选择设备"); return; }
                 closeForm();
                 setForm({
                   planned_start_date: "",
@@ -441,4 +443,8 @@ export default function InstallationPage() {
       />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

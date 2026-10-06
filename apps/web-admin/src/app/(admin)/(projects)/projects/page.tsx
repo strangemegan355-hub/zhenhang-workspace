@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import {
   useCreateProjectMutation,
   useCustomersQuery,
@@ -221,7 +223,7 @@ export default function ProjectsPage() {
       if (editId === id) closeForm();
       void query.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -331,4 +333,8 @@ export default function ProjectsPage() {
       />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

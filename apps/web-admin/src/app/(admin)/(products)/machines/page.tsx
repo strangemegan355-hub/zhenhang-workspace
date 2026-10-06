@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import { MasterCreateForm } from "@/components/master/master-create-form";
 import { MasterListPage } from "@/components/master/master-list-page";
 import {
@@ -315,7 +317,7 @@ export default function MachinesPage() {
 
   const openCreateParam = () => {
     if (!selectedMachineId) {
-      window.alert("请先选择机型");
+      notify("请先选择机型");
       return;
     }
     closeAllForms();
@@ -338,7 +340,7 @@ export default function MachinesPage() {
 
   const openCreateImage = () => {
     if (!selectedMachineId) {
-      window.alert("请先选择机型");
+      notify("请先选择机型");
       return;
     }
     closeAllForms();
@@ -386,7 +388,7 @@ export default function MachinesPage() {
       if (catEditId === id) closeAllForms();
       void catsQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -425,7 +427,7 @@ export default function MachinesPage() {
       void machinesQuery.refetch();
       void allMachinesQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -464,7 +466,7 @@ export default function MachinesPage() {
       if (paramEditId === id) closeAllForms();
       void paramsQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -502,7 +504,7 @@ export default function MachinesPage() {
       if (imageEditId === id) closeAllForms();
       void imagesQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -742,4 +744,8 @@ export default function MachinesPage() {
       <OptionGroupsSection machineOptions={machineSelectOptions} />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

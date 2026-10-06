@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import { dangerActionClass, linkActionClass } from "@/lib/form-styles";
 
 export function MasterRowActions({
@@ -32,7 +34,7 @@ export async function confirmAndDeleteSelected(
   deleteFn: (id: string) => Promise<unknown>,
 ): Promise<number> {
   if (items.length === 0) {
-    window.alert("请先勾选要删除的记录");
+    notify("请先勾选要删除的记录");
     return 0;
   }
   const preview = items
@@ -48,7 +50,7 @@ export async function confirmAndDeleteSelected(
       await deleteFn(item.id);
       deleted += 1;
     } catch (err) {
-      window.alert(`删除「${item.label}」失败：${err instanceof Error ? err.message : "未知错误"}`);
+      notify(`删除「${item.label}」失败：${err instanceof Error ? err.message : "未知错误"}`);
       break;
     }
   }
@@ -68,7 +70,7 @@ export async function confirmAndDelete(label: string, deleteFn: () => Promise<un
     await deleteFn();
     return true;
   } catch (err) {
-    window.alert(err instanceof Error ? err.message : "删除失败");
+    notify(err instanceof Error ? err.message : "删除失败");
     return false;
   }
 }
@@ -81,4 +83,8 @@ export async function batchDeleteRows<T extends { id?: string; code?: string; na
   const deleted = await confirmAndDeleteSelected(rowDeleteItems(rows), deleteFn);
   if (deleted > 0) refetch?.();
   return deleted;
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

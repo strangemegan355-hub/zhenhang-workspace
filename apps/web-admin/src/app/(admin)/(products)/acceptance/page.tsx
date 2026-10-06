@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import { apiErrorMessage } from "@/lib/api-error";
 
 import { useState, useMemo } from "react";
@@ -222,7 +224,7 @@ export default function AcceptancePage() {
       await deleteTemplateMutation.mutateAsync(id);
       await loadTemplates(selectedMachineId);
     } catch (err) {
-      window.alert(apiErrorMessage(err, "删除失败"));
+      notify(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -281,7 +283,7 @@ export default function AcceptancePage() {
       await deleteRecordMutation.mutateAsync(id);
       await loadRecords(selectedUnitId);
     } catch (err) {
-      window.alert(apiErrorMessage(err, "删除失败"));
+      notify(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -303,7 +305,7 @@ export default function AcceptancePage() {
       setPunchDesc("");
       setPunchSeverity("minor");
     } catch (err) {
-      window.alert(apiErrorMessage(err, "添加失败"));
+      notify(apiErrorMessage(err, "添加失败"));
     } finally {
       setSubmitting(false);
     }
@@ -318,7 +320,7 @@ export default function AcceptancePage() {
         payload: { status: "resolved", resolution: resolution || undefined },
       });
     } catch (err) {
-      window.alert(apiErrorMessage(err, "操作失败"));
+      notify(apiErrorMessage(err, "操作失败"));
     }
   }
 
@@ -327,7 +329,7 @@ export default function AcceptancePage() {
     try {
       await deletePunchMutation.mutateAsync(itemId);
     } catch (err) {
-      window.alert(apiErrorMessage(err, "删除失败"));
+      notify(apiErrorMessage(err, "删除失败"));
     }
   }
 
@@ -611,7 +613,7 @@ export default function AcceptancePage() {
             </select>
             <WorkspaceToolbarButton
               onClick={() => {
-                if (!selectedMachineId) { window.alert("请先选择机型"); return; }
+                if (!selectedMachineId) { notify("请先选择机型"); return; }
                 closeTplForm();
                 setTplForm({ name: "", template_type: "fat", items_json: sampleItemsJson });
                 setShowTplForm(true);
@@ -694,7 +696,7 @@ export default function AcceptancePage() {
             </select>
             <WorkspaceToolbarButton
               onClick={() => {
-                if (!selectedUnitId) { window.alert("请先选择设备"); return; }
+                if (!selectedUnitId) { notify("请先选择设备"); return; }
                 closeRecForm();
                 setRecForm({
                   template_id: "",
@@ -717,4 +719,8 @@ export default function AcceptancePage() {
       />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useToastStore } from "@zhenhang/realtime";
+
 import {
   useCreateMaterialCategoryMutation,
   useCreateUnitMutation,
@@ -172,7 +174,7 @@ export default function StandardsPage() {
       if (unitEditId === id) closeUnitForm();
       void unitsQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -215,7 +217,7 @@ export default function StandardsPage() {
       if (catEditId === id) closeCatForm();
       void catsQuery.refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "删除失败");
+      notify(err instanceof Error ? err.message : "删除失败");
     }
   };
 
@@ -320,4 +322,8 @@ export default function StandardsPage() {
       />
     </IndustrialPage>
   );
+}
+
+function notify(title: string) {
+  useToastStore.getState().push({ title });
 }

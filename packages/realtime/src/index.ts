@@ -3,15 +3,22 @@ import { create } from "zustand";
 
 export type ToastMessage = { id: string; title: string; description?: string };
 
+/** Callers may supply their own id; one is generated when they do not. */
+export type ToastInput = { id?: string; title: string; description?: string };
+
 type ToastState = {
   messages: ToastMessage[];
-  push: (msg: ToastMessage) => void;
+  push: (msg: ToastInput) => void;
   remove: (id: string) => void;
 };
 
+function makeToastId(): string {
+  return `toast-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export const useToastStore = create<ToastState>((set) => ({
   messages: [],
-  push: (msg) => set((s) => ({ messages: [msg, ...s.messages].slice(0, 5) })),
+  push: (msg) => set((s) => ({ messages: [{ ...msg, id: msg.id ?? makeToastId() }, ...s.messages].slice(0, 5) })),
   remove: (id) => set((s) => ({ messages: s.messages.filter((m) => m.id !== id) })),
 }));
 
