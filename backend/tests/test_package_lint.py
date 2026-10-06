@@ -32,14 +32,17 @@ ROOT_CONFIG = REPO / "eslint.config.mjs"
 # Reviewed problems, keyed by (relative file, rule, line). Each is a decision rather than a defect:
 #   data-grid:76   the effect reads localStorage and sets state once; the code notes that a lazy initializer
 #                  would run during prerender and cause a hydration mismatch, so the effect is deliberate
-#   data-grid:85   resetting column order when `columns` changes is the intended behaviour
-#   data-grid:95   clearing the selection when `rows` changes is the intended behaviour
+#   data-grid:91   resetting column order when `columns` changes is the intended behaviour. The effect now returns
+#                  the previous array when the keys are unchanged, so it no longer writes state on every render —
+#                  `columns` arrives as an inline literal at thirty-three call sites — but the compiler diagnostic
+#                  is about `setState` in an effect at all, so it stays until the component is restructured
+#   data-grid:103  clearing the selection when `rows` changes is the intended behaviour
 #   use-undo-redo:20  seeding the present value from `externalValue` on mount is how the hook starts
 # The last three warnings are library notices and are unavoidable here.
 REVIEWED: set[tuple[str, str, int]] = {
     ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 76),
-    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 85),
-    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 95),
+    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 91),
+    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 103),
     ("packages/quote-builder/src/bom-tree-editor.tsx", "react-hooks/incompatible-library", 89),
     ("packages/quote-builder/src/quote-line-editor.tsx", "react-hooks/incompatible-library", 26),
     ("packages/quote-builder/src/use-undo-redo.ts", "react-hooks/set-state-in-effect", 20),

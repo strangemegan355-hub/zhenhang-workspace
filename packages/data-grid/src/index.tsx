@@ -82,7 +82,15 @@ export function DataGrid<T extends Record<string, unknown>>({
   }, [order, persistenceKey]);
 
   React.useEffect(() => {
-    setOrder(columns.map((c) => c.key));
+    // Keep the previous array when the keys have not changed. `columns` arrives as an inline literal at
+    // thirty-three call sites, so it is a **new array on every render**; setting state unconditionally here
+    // re-runs on every render, which discards the column order the persistence effect below has just restored and
+    // undoes a drag reorder. Returning the previous value makes React bail out, so this now fires only when the
+    // column set really changes — which is the property round 53 called load-bearing.
+    const next = columns.map((c) => c.key);
+    setOrder((previous) =>
+      previous.length === next.length && previous.every((key, index) => key === next[index]) ? previous : next,
+    );
   }, [columns]);
 
   const visible = order
