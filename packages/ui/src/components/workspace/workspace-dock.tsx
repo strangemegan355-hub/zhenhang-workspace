@@ -42,7 +42,10 @@ export function WorkspaceDock({
   const firstId = tabs[0]?.id ?? "";
   const [internalTabId, setInternalTabId] = useState(defaultTabId ?? firstId);
   const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const activeId = controlledTabId ?? internalTabId;
+  const requestedTabId = controlledTabId ?? internalTabId;
+  // Derived rather than synced: if the requested tab is gone from `tabs`, the first one wins, and the
+  // uncontrolled state needs no update because this value already overrides it.
+  const activeId = tabs.some((tab) => tab.id === requestedTabId) ? requestedTabId : firstId;
   const collapsed = controlledCollapsed ?? internalCollapsed;
   const tablistId = useId();
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -63,11 +66,11 @@ export function WorkspaceDock({
     [controlledTabId, onTabChange],
   );
 
+  // Only the notification is an effect — a controlled parent has to learn about the fallback, and
+  // calling that during render would be a side effect in render.
   useEffect(() => {
-    if (!tabs.find((t) => t.id === activeId) && tabs[0]) {
-      setTab(tabs[0].id);
-    }
-  }, [tabs, activeId, setTab]);
+    if (activeId !== requestedTabId) onTabChange?.(activeId);
+  }, [activeId, requestedTabId, onTabChange]);
 
   const shellStyle: CSSProperties = {
     backgroundColor: workspaceTokens.background.dock,

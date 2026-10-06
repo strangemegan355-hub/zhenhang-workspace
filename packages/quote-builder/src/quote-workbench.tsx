@@ -149,19 +149,9 @@ export function QuoteWorkbench(props: QuoteWorkbenchProps) {
   const [dockCollapsed, setDockCollapsed] = React.useState(false);
   const [showExportPicker, setShowExportPicker] = React.useState(workflowState === "approved");
 
-  React.useEffect(() => {
-    if (workflowState === "approved") {
-      setShowExportPicker(true);
-    }
-  }, [workflowState]);
-
   const treeNodes =
     bomNodes ??
     (bomItemsRaw ? flatBomToTree(bomItemsRaw, true) : localBom.length ? localBom : []);
-
-  React.useEffect(() => {
-    if (bomItemsRaw?.length) setLocalBom(flatBomToTree(bomItemsRaw, true));
-  }, [bomItemsRaw]);
 
   const commitLines = React.useCallback(
     (next: QuoteLineRow[]) => {
@@ -418,7 +408,7 @@ export function QuoteWorkbench(props: QuoteWorkbenchProps) {
                 ) : null}
                 <WorkspaceToolbarButton
                   keyboardHint={INDUSTRIAL_SHORTCUT_HINTS.export}
-                  active={showExportPicker}
+                  active={showExportPicker || workflowState === "approved"}
                   loading={exporting}
                   disabled={exporting}
                   onClick={() => setShowExportPicker((v) => !v)}
