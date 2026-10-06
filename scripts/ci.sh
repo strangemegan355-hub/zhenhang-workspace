@@ -68,4 +68,12 @@ echo "=== Frontend: Build ==="
 npm run build -w web-admin 2>&1 | tail -5
 
 echo ""
+echo "=== Dependency analysis (cycles, layer boundaries, forbidden imports) ==="
+# Round 174: `npm run analyze:deps` resolves to `node packages/dependency-analyzer/src/cli.mjs`, and **neither this
+# script nor .github/workflows/ci.yml invoked it** - an architectural invariant checker with no caller, passing
+# unnoticed. Same shape as the route audit round 173 found running only here, and as the packages type-check that CI's
+# own comment records adding in round 47.
+npm run analyze:deps 2>&1 | tail -8
+
+echo ""
 echo "=== All checks passed ==="
