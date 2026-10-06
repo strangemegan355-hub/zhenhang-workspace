@@ -519,3 +519,66 @@ export function useCreateSupplierPaymentMutation() {
     },
   });
 }
+
+
+export function useAccountingEntryQuery(entryId?: string) {
+  return useQuery({
+    queryKey: [...qk("accounting", "detail"), entryId ?? ""],
+    enabled: Boolean(entryId),
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: Record<string, unknown> }>(
+        `/api/v1/accounting/entries/${entryId}`,
+      );
+      return data.data;
+    },
+  });
+}
+
+export function useUpdateAccountingEntryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      entryId,
+      payload,
+    }: {
+      entryId: string;
+      payload: Record<string, unknown>;
+    }) => {
+      const { data } = await apiClient.put<{ data: Record<string, unknown> }>(
+        `/api/v1/accounting/entries/${entryId}`,
+        payload,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk("accounting", "list") });
+      void queryClient.invalidateQueries({ queryKey: qk("accounting", "detail") });
+    },
+  });
+}
+
+export type AccountingExportFilters = {
+  customerId?: string;
+  supplierId?: string;
+  entryKind?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export function useExportAccountingEntriesMutation() {
+  return useMutation({
+    mutationFn: async (filters: AccountingExportFilters) => {
+      const { data } = await apiClient.get<Blob>("/api/v1/accounting/entries/export", {
+        params: {
+          customer_id: filters.customerId || undefined,
+          supplier_id: filters.supplierId || undefined,
+          entry_kind: filters.entryKind || undefined,
+          date_from: filters.dateFrom || undefined,
+          date_to: filters.dateTo || undefined,
+        },
+        responseType: "blob",
+      });
+      return data;
+    },
+  });
+}

@@ -2,11 +2,14 @@
 
 import {
   useAccountingEntriesQuery,
+  useAccountingEntryQuery,
   useAccountingStatusQuery,
   useConfirmAccountingEntryMutation,
   useCreateBackfillEntryMutation,
   useCustomersQuery,
+  useExportAccountingEntriesMutation,
   useSuppliersQuery,
+  useUpdateAccountingEntryMutation,
   useVoidAccountingEntryMutation,
 } from "@zhenhang/query-hooks";
 import {
@@ -15,7 +18,7 @@ import {
   PageHeader,
   WorkspaceToolbarButton,
 } from "@zhenhang/ui";
-import { apiClient } from "@zhenhang/http-client";
+import { apiErrorMessage } from "@/lib/api-error";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -104,18 +107,15 @@ export default function AccountingPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
 
-  const openDetail = async (id: string) => {
-    if (detailId === id) { setDetailId(null); setDetail(null); return; }
-    setDetailId(id);
-    setDetailLoading(true);
-    try {
-      const { data } = await apiClient.get<{ data: Record<string, unknown> }>(`/api/v1/accounting/entries/${id}`);
-      setDetail(data.data);
-    } catch { setDetail(null); }
-    finally { setDetailLoading(false); }
+  // The detail is a query keyed by id, so the panel reads from cache and an edit refreshes it by
+  // invalidation rather than by a hand-rolled fetch with its own loading flag.
+  const detailQuery = useAccountingEntryQuery(detailId ?? undefined);
+  const detail = detailQuery.data ?? null;
+  const detailLoading = detailQuery.isFetching;
+
+  const openDetail = (id: string) => {
+    setDetailId((current) => (current === id ? null : id));
   };
 
   const startEdit = (row: typeof rows[0]) => {
@@ -148,14 +148,14 @@ export default function AccountingPage() {
         title: form.title.trim(),
         remark: form.remark.trim() || null,
       };
-      await apiClient.put(`/api/v1/accounting/entries/${editingId}`, body);
+      await updateMutation.mutateAsync({ entryId: editingId, payload: body });
       setForm(defaultForm);
       setEditingId(null);
       setShowBackfill(false);
-      void entriesQuery.refetch();
-      if (detailId === editingId) openDetail(editingId);
+      // No manual refetch: the mutation invalidates the list and the detail. Calling openDetail here
+      // used to toggle the panel closed whenever the edited row was the one being viewed.
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "编辑失败");
+      setFormError(apiErrorMessage(err, "编辑失败"));
     }
   };
 
@@ -176,6 +176,8 @@ export default function AccountingPage() {
   const backfillMutation = useCreateBackfillEntryMutation();
   const confirmMutation = useConfirmAccountingEntryMutation();
   const voidMutation = useVoidAccountingEntryMutation();
+  const updateMutation = useUpdateAccountingEntryMutation();
+  const exportMutation = useExportAccountingEntriesMutation();
 
   const customerOptions = useMemo(
     () =>
@@ -249,15 +251,15 @@ export default function AccountingPage() {
   };
 
   const handleExport = useCallback(async () => {
-    const params = new URLSearchParams();
-    if (customerFilter) params.set("customer_id", customerFilter);
-    if (supplierFilter) params.set("supplier_id", supplierFilter);
-    if (kindFilter) params.set("entry_kind", kindFilter);
-    if (dateFrom) params.set("date_from", dateFrom);
-    if (dateTo) params.set("date_to", dateTo);
     try {
-      const res = await apiClient.get("/api/v1/accounting/entries/export", { params, responseType: "blob" });
-      const blob = new Blob([res.data as BlobPart], { type: "text/csv" });
+      const data = await exportMutation.mutateAsync({
+        customerId: customerFilter,
+        supplierId: supplierFilter,
+        entryKind: kindFilter,
+        dateFrom,
+        dateTo,
+      });
+      const blob = new Blob([data as BlobPart], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -267,7 +269,7 @@ export default function AccountingPage() {
     } catch (e) {
       console.error("Export failed", e);
     }
-  }, [customerFilter, supplierFilter, kindFilter, dateFrom, dateTo]);
+  }, [customerFilter, supplierFilter, kindFilter, dateFrom, dateTo, exportMutation]);
 
   if (!enabled && !statusQuery.isLoading) {
     return (
@@ -577,7 +579,7 @@ export default function AccountingPage() {
         </div>
 
         {detailId && detail ? (
-          <IndustrialPanel title={`分录详情 · ${String(detail.entry_no ?? "")}`} toolbar={<WorkspaceToolbarButton onClick={() => { setDetailId(null); setDetail(null); }}>关闭</WorkspaceToolbarButton>}>
+          <IndustrialPanel title={`分录详情 · ${String(detail.entry_no ?? "")}`} toolbar={<WorkspaceToolbarButton onClick={() => { setDetailId(null); }}>关闭</WorkspaceToolbarButton>}>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 text-xs">
               <div><span className="text-[var(--color-text-muted)]">类型：</span>{KIND_LABEL[String(detail.entry_kind)] ?? String(detail.entry_kind)}</div>
               <div><span className="text-[var(--color-text-muted)]">状态：</span>{STATUS_LABEL[String(detail.status)] ?? String(detail.status)}</div>
