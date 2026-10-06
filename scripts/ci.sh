@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # Local CI verification — run before pushing.
 # Usage: bash scripts/ci.sh
+#
+# What this covers: the Python syntax check, the unit test suite in backend/tests, ESLint for web-admin and the
+# web-admin production build.
+# What it does NOT cover: the integration suite in backend/integration_tests (19 tests). Those need real
+# PostgreSQL, Redis and MinIO, so they are not part of this script and running it before a push does not run
+# them - .github/workflows/ci.yml does, and the README's "集成测试" section gives the command to run them
+# locally.
 
 set -e
 # Without pipefail, `set -e` looks at the last command of a pipeline. Every check below ends in `| tail`,

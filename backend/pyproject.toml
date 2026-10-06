@@ -7,8 +7,16 @@ requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Unit tests only, deliberately: `pytest` with no arguments collects backend/tests and never
+# backend/integration_tests, which needs PostgreSQL, Redis and MinIO. The integration suite is run explicitly
+# (`pytest integration_tests`) by .github/workflows/ci.yml and is documented in the README. A bare `pytest`
+# passing therefore says nothing about it.
 testpaths = ["tests"]
 
+# Not enforced anywhere yet: ruff is not a dependency, it is installed neither on PATH nor in the venv,
+# and no CI step runs it. Measured when this comment was written: 1044 lines across 392 Python files exceed
+# the 100-character limit below (the longest is 157), so the limit is a target rather than a description of
+# the code. Python has no linter or type checker in this repository; mypy and pytest-cov are absent too.
 [tool.ruff]
 line-length = 100
 target-version = "py311"
