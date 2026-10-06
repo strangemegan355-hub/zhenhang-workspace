@@ -86,6 +86,15 @@ npm run governance:check
 docker compose -f docker-compose.prod.yml --env-file backend/.env.prod config
 ```
 
+`build:web` 成功只说明构建通过，不说明构建产物**能被服务**。生产前端由 `.next/standalone` 下的
+`server.js` 提供（Web 镜像与 `start-erp.ps1` 走的就是它），并且需要把 `.next/static` 与 `public` 复制进
+standalone 目录。漏掉这一步时页面仍返回 200，但每个样式表与 chunk 都会 404，所以用下面的命令验收：
+它会自行启动服务器、检查页面**以及页面引用的每一个静态资源**，然后总是把服务器停掉。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-web-standalone.ps1
+```
+
 全部通过后方可签字交付。
 
 ---

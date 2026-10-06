@@ -267,6 +267,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-erp.ps1
 # 先看会停什么而不真的停，或连基础设施一起停
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-erp.ps1 -DryRun
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-erp.ps1 -IncludeInfrastructure
+
+# 验收生产前端：用构建产物启动 standalone 服务器，检查页面与它引用的每个静态资源，然后自行停掉
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-web-standalone.ps1
 ```
 
 三个脚本都从自身所在位置推导仓库根目录，因此可以在任意检出路径使用。`stop-erp.ps1` 只停止命令行位于本仓库下的进程，不会碰端口上属于别人的服务。
