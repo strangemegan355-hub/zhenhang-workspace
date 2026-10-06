@@ -260,9 +260,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-erp.ps1
 
 # 注册开机自启（在当前用户的启动文件夹创建快捷方式，无需管理员）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\register-erp-autostart.ps1
+
+# 停止 start-erp.ps1 启动的三个进程（API、event worker、web admin），默认不动 Docker 基础设施
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-erp.ps1
+
+# 先看会停什么而不真的停，或连基础设施一起停
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-erp.ps1 -DryRun
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-erp.ps1 -IncludeInfrastructure
 ```
 
-两个脚本都从自身所在位置推导仓库根目录，因此可以在任意检出路径使用。
+三个脚本都从自身所在位置推导仓库根目录，因此可以在任意检出路径使用。`stop-erp.ps1` 只停止命令行位于本仓库下的进程，不会碰端口上属于别人的服务。
 
 ## 生产环境注意
 

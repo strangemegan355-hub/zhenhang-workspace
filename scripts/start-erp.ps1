@@ -47,13 +47,6 @@ function Test-PythonProcess {
     )
 }
 
-function Test-NodeWebServer {
-    return [bool](
-        Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
-            Where-Object { $_.CommandLine -like "*web-admin*" -or $_.CommandLine -like "*next*" }
-    )
-}
-
 function Sync-WebStandaloneAssets {
     $staticSrc = Join-Path $Root "apps\web-admin\.next\static"
     $staticDst = Join-Path $WebStandaloneRoot "apps\web-admin\.next\static"
@@ -183,13 +176,17 @@ Start-BackgroundProcess `
 
 Write-Host "[ERP] Waiting for API health..."
 $apiDeadline = (Get-Date).AddMinutes(5)
+$apiUp = $false
 while ((Get-Date) -lt $apiDeadline) {
     try {
         $resp = Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/v1/health/live" -UseBasicParsing -TimeoutSec 5
-        if ($resp.StatusCode -eq 200) { break }
+        if ($resp.StatusCode -eq 200) { $apiUp = $true; break }
     } catch {
         Start-Sleep -Seconds 5
     }
+}
+if (-not $apiUp) {
+    Write-Warning "[ERP] API did not answer within 5 minutes. Check logs\erp-api.err.log"
 }
 
 Write-Host "[ERP] Waiting for web login page..."
