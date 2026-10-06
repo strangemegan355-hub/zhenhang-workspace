@@ -4,6 +4,8 @@
 
 QuoteWorkbench 工业操作体验：BOM 虚拟树、拖拽排序、行内公式、撤销重做、快速审批快捷键、导出区块预览、AI 分析面板、演示指南 `docs/DEMO_QUOTE.md`。
 
+> **实测更正：上述 `QuoteWorkbench` 目前没有任何地方渲染。** 全仓库对 `QuoteWorkbench` 的引用只有它自身的定义、桶导出（`quote-builder/src/index.tsx`）、本文件的两处描述，以及一处指向它的 `@deprecated` 注释；`apps/**` 与其他包中为 0。`useUndoRedo` 的唯一消费方就是这个未渲染的组件。因此报价页实际使用的是 `BomTreeEditor`、`FormulaLivePanel`、`CostVisualization`、`ExportTemplatePicker` 等已被引用的模块，而不是这个工作台；要么接线，要么删除（530 行的 `quote-workbench.tsx` 与 68 行的 `use-undo-redo.ts`，后者同时占用 packages lint 的 1 个 error 与 1 个 warning）。
+
 ## Vertical Slice Industrialization
 
 **Goal:** Quote → BOM → Workflow → Export → Approval → Notification → AI 全链路可演示、可交付。
@@ -15,7 +17,7 @@ QuoteWorkbench 工业操作体验：BOM 虚拟树、拖拽排序、行内公式�
 | Export Engine | 异步导出 + process-pending + 下载 | 已接通 |
 | Notification | 未读数 + PATCH 已读 + 实时铃铛 | 已接通 |
 | AI Copilot | `/ai/copilot/quote-summary` + 报价页 AI 面板 | 已接通 |
-| Quote Builder | `QuoteWorkbench` — BOM 树、行编辑、公式 LIVE、成本图、审批 UX、导出模板 |
+| Quote Builder | `QuoteWorkbench` — **已导出但无任何渲染方**（见顶部实测更正）；实际接通的是下方各模块 |
 | BOM Tree Editor | `BomTreeEditor` + `useBomItemsQuery` |
 | Formula Live | `FormulaLivePanel` + `formula-engine` |
 | Cost Visualization | `CostVisualization` KPI + 结构条 |

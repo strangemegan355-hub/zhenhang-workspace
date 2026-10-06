@@ -37,7 +37,9 @@ ROOT_CONFIG = REPO / "eslint.config.mjs"
 #                  `columns` arrives as an inline literal at thirty-three call sites — but the compiler diagnostic
 #                  is about `setState` in an effect at all, so it stays until the component is restructured
 #   data-grid:103  clearing the selection when `rows` changes is the intended behaviour
-#   use-undo-redo:20  seeding the present value from `externalValue` on mount is how the hook starts
+#   use-undo-redo:20  seeding the present value from `externalValue` on mount is how the hook starts — and both
+#                     of these live in code nothing renders: `useUndoRedo`'s only consumer is `QuoteWorkbench`,
+#                     which no page, app or package uses (round 121). Deleting the two files clears both.
 # The last three warnings are library notices and are unavoidable here.
 REVIEWED: set[tuple[str, str, int]] = {
     ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 76),

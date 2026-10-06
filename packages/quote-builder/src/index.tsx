@@ -20,6 +20,10 @@ export { CostVisualization } from "./cost-visualization";
 export { ApprovalUxPanel } from "./approval-ux-panel";
 export { ExportTemplatePicker, ExportTemplateBlockPreview, DEFAULT_EXPORT_TEMPLATES } from "./export-template-blocks";
 export { QuoteLineEditor } from "./quote-line-editor";
+// Measured in round 121: nothing renders `QuoteWorkbench`, and `WORKBENCH_EXPORT_TEMPLATES` has no consumer.
+// The templates themselves are exported from `./export-template-blocks` on the line above and are used by the
+// quotes page; this barrel line exists only to re-export the unrendered workbench. Kept until the call is made
+// to wire it or delete it, with `./use-undo-redo` (its only consumer) and this line going together.
 export { QuoteWorkbench, DEFAULT_EXPORT_TEMPLATES as WORKBENCH_EXPORT_TEMPLATES } from "./quote-workbench";
 export type { QuoteWorkbenchProps } from "./quote-workbench";
 export { QuoteDiffPanel } from "./quote-diff-panel";
