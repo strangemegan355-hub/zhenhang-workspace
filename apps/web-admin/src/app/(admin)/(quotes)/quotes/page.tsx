@@ -16,6 +16,7 @@ import {
   useMachinesQuery,
   useProductCostTemplatesQuery,
   useProductPriceTemplatesQuery,
+  useProductQuotePayloadQuery,
   useProductsQuery,
   useQuoteApprovalsQuery,
   useQuoteDetailQuery,
@@ -38,7 +39,6 @@ import {
 import { QuoteProfitPanel } from "@/components/quotes/quote-profit-panel";
 import QuoteItemOptionsPanel from "@/components/quotes/quote-item-options-panel";
 import { useAuthStore } from "@/store/auth-store";
-import { apiClient } from "@zhenhang/http-client";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "草稿",
@@ -438,19 +438,20 @@ function QuotesPageContent() {
     }
   };
 
+  // The domain already exposed this hook while the page called the endpoint by hand. It stays
+  // dormant (enabled: false) until the import button asks for it.
+  const quotePayloadQuery = useProductQuotePayloadQuery(
+    productId || null,
+    quoteCostTemplateId,
+    quotePriceTemplateId,
+    false,
+  );
+
   const importProductToLines = async () => {
     if (!productId) return;
     try {
-      const { data } = await apiClient.get<{ data: Record<string, unknown> }>(
-        `/api/v1/products/${productId}/quote-payload`,
-        {
-          params: {
-            cost_template_id: quoteCostTemplateId,
-            price_template_id: quotePriceTemplateId,
-          },
-        },
-      );
-      const payload = data.data;
+      const { data: payload } = await quotePayloadQuery.refetch();
+      if (!payload) throw new Error("无法加载产品报价数据");
       const payloadLines = (payload.lines as Record<string, unknown>[]) ?? [];
       const imported: QuoteLineRow[] = payloadLines.map((line) => ({
         item_code: String(line.item_code ?? ""),

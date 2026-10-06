@@ -88,10 +88,12 @@ export function useProductQuotePayloadQuery(
   productId: string | null,
   costTemplateId?: string,
   priceTemplateId?: string,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: queryKeys.master.productQuotePayload(productId ?? "", costTemplateId, priceTemplateId),
-    enabled: Boolean(productId),
+    // `enabled: false` lets a caller hold the query dormant and `refetch()` it on demand.
+    enabled: Boolean(productId) && enabled,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiWrap<Record<string, unknown>>>(
         `/api/v1/products/${productId}/quote-payload`,
