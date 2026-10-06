@@ -54,15 +54,13 @@ async def get_dashboard_overview(db: AsyncSession, current_user: User) -> dict:
         (await db.execute(select(func.count()).select_from(Notification).where(*notif_filters))).scalar_one()
     )
 
+    # Export tasks belong to somebody too: the route for one is guarded, so the count must match what the
+    # caller can open.
+    export_filters = [QuoteExportTask.is_deleted.is_(False), QuoteExportTask.status == "pending"]
+    if owner_id is not None:
+        export_filters.append(QuoteExportTask.created_by == owner_id)
     export_pending = int(
-        (
-            await db.execute(
-                select(func.count()).select_from(QuoteExportTask).where(
-                    QuoteExportTask.is_deleted.is_(False),
-                    QuoteExportTask.status == "pending",
-                )
-            )
-        ).scalar_one()
+        (await db.execute(select(func.count()).select_from(QuoteExportTask).where(*export_filters))).scalar_one()
     )
 
     _, recent = await quote_repo.list_quotes(db, page=1, page_size=8, q=None, created_by=owner_id)

@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
+from app.domains.quote.public.queries import owner_scope_user_id
 from app.models.machine import Machine
 from app.models.quote import Quote, QuoteExportTask
 from app.repositories import work_order_repository as work_order_repo
@@ -53,10 +54,19 @@ def _average_mes_oee(mes_oee: dict[str, dict]) -> dict | None:
 
 async def get_workshop_board(db: AsyncSession, current_user) -> dict:
     now = datetime.now(UTC)
+    # Quotes and export tasks belong to somebody, so both reads carry the caller's scope. The rate further down
+    # divides by the rows the caller can see, which is the only denominator that means anything to them.
+    owner_id = owner_scope_user_id(current_user)
+    quote_filters = [Quote.is_deleted.is_(False)]
+    if owner_id is not None:
+        quote_filters.append(Quote.created_by == owner_id)
+    export_filters = [QuoteExportTask.is_deleted.is_(False), QuoteExportTask.status == "pending"]
+    if owner_id is not None:
+        export_filters.append(QuoteExportTask.created_by == owner_id)
     quote_rows = list(
         (
             await db.execute(
-                select(Quote).where(Quote.is_deleted.is_(False)).order_by(Quote.updated_at.desc()).limit(24)
+                select(Quote).where(*quote_filters).order_by(Quote.updated_at.desc()).limit(24)
             )
         ).scalars().all()
     )
@@ -64,14 +74,7 @@ async def get_workshop_board(db: AsyncSession, current_user) -> dict:
         (await db.execute(select(Machine).where(Machine.is_deleted.is_(False)).limit(50))).scalars().all()
     )
     export_pending = int(
-        (
-            await db.execute(
-                select(func.count()).select_from(QuoteExportTask).where(
-                    QuoteExportTask.is_deleted.is_(False),
-                    QuoteExportTask.status == "pending",
-                )
-            )
-        ).scalar_one()
+        (await db.execute(select(func.count()).select_from(QuoteExportTask).where(*export_filters))).scalar_one()
     )
 
     by_state: dict[str, int] = {}

@@ -178,6 +178,8 @@ REVERSE_EDGES: set[tuple[str, str]] = {
     ("app/services/dashboard_service.py", "app.domains.quote.public"),
     ("app/services/dashboard_service.py", "app.domains.quote.public.queries"),
     ("app/services/quote_receivable_service.py", "app.domains.quote.public"),
+    # The board scopes its quote list and its export count, and needs the same helper dashboard_service uses.
+    ("app/services/workshop_board_service.py", "app.domains.quote.public.queries"),
 }
 
 
