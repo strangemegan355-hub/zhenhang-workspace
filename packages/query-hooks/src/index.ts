@@ -28,6 +28,7 @@ export * from "./domains/aftersales";
 export * from "./domains/admin";
 export * from "./domains/audits";
 export * from "./domains/files";
+export * from "./domains/installation";
 
 export {
   getQueryPolicy,

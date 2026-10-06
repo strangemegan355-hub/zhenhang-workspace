@@ -1,9 +1,17 @@
 "use client";
 
+import {
+  fetchInstallationPlan,
+  useCreateInstallationPlanMutation,
+  useDeleteInstallationPlanMutation,
+  useEquipmentUnitsQuery,
+  useInstallationPlanQuery,
+  useInstallationPlansQuery,
+  useUpdateInstallationPlanMutation,
+} from "@zhenhang/query-hooks";
 import { apiErrorMessage } from "@/lib/api-error";
 
-import { useState, useMemo, useEffect } from "react";
-import { apiClient } from "@zhenhang/http-client";
+import { useState, useMemo } from "react";
 import { MasterCreateForm } from "@/components/master/master-create-form";
 import { MasterListPage } from "@/components/master/master-list-page";
 import { IndustrialPage, WorkspaceToolbarButton } from "@zhenhang/ui";
@@ -38,9 +46,22 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function InstallationPage() {
   const [selectedUnitId, setSelectedUnitId] = useState("");
-  const [unitOptions, setUnitOptions] = useState<Array<{ value: string; label: string }>>([]);
-  const [plans, setPlans] = useState<PlanRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Units, plans and the detail all come from queries now, so the page owns only its selections.
+  const unitsQuery = useEquipmentUnitsQuery(1, 200);
+  const unitOptions = useMemo(
+    () =>
+      ((unitsQuery.data as { items?: Array<Record<string, unknown>> } | undefined)?.items ?? []).map(
+        (unit) => ({
+          value: String(unit.id ?? ""),
+          label: `${String(unit.serial_number ?? "")} (${String(unit.machine_name ?? "")}) [${String(unit.build_status ?? "")}]`,
+        }),
+      ),
+    [unitsQuery.data],
+  );
+  const plansQuery = useInstallationPlansQuery(selectedUnitId || undefined);
+  const updatePlanMutation = useUpdateInstallationPlanMutation();
+  const createPlanMutation = useCreateInstallationPlanMutation();
+  const deletePlanMutation = useDeleteInstallationPlanMutation();
 
   // Form
   const [showForm, setShowForm] = useState(false);
@@ -57,49 +78,18 @@ export default function InstallationPage() {
   });
   const [error, setError] = useState<string | null>(null);
 
-  // Detail modal
-  const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
+  // Detail modal: the id drives a query, so the panel refreshes by invalidation after an edit.
+  const [detailPlanId, setDetailPlanId] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const detailQuery = useInstallationPlanQuery(detailPlanId ?? undefined);
+  const detail = detailQuery.data ?? null;
 
   const [submitting, setSubmitting] = useState(false);
 
-  async function loadPlans(unitId: string) {
-    setLoading(true);
-    try {
-      const { data: resp } = await apiClient.get<{ data: Array<Record<string, unknown>> }>(
-        `/api/v1/equipment-units/${unitId}/installation-plans`
-      );
-      setPlans(
-        (resp.data ?? []).map((p: Record<string, unknown>) => {
-          const rawStatus = String(p.status ?? "");
-          return {
-            id: String(p.id ?? ""),
-            unitLabel: String(p.equipment_unit_id ?? "").slice(0, 8),
-            status: rawStatus,
-            statusDisplay: STATUS_LABEL[rawStatus] ?? rawStatus,
-            plannedStart: String(p.planned_start_date ?? "").slice(0, 10),
-            plannedEnd: String(p.planned_end_date ?? "").slice(0, 10),
-            actualStart: String(p.actual_start_date ?? "").slice(0, 10) || "-",
-            actualEnd: String(p.actual_end_date ?? "").slice(0, 10) || "-",
-            customerAccepted: Boolean(p.customer_accepted),
-            customerAcceptedDisplay: Boolean(p.customer_accepted) ? "已验收" : "未验收",
-            installCount: Array.isArray(p.install_items) ? (p.install_items as unknown[]).length : 0,
-            commCount: Array.isArray(p.commissioning_items) ? (p.commissioning_items as unknown[]).length : 0,
-          };
-        })
-      );
-    } catch {
-      setPlans([]);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function handleUnitChange(id: string) {
     setSelectedUnitId(id);
     closeForm();
-    if (id) loadPlans(id);
-    else setPlans([]);
   }
 
   function closeForm() {
@@ -125,19 +115,25 @@ export default function InstallationPage() {
         if (form.status) body.status = form.status;
         if (form.customer_representative) body.customer_representative = form.customer_representative;
         if (form.customer_accepted === "true") body.customer_accepted = true;
-        await apiClient.put(`/api/v1/installation-plans/${editId}`, body);
+        await updatePlanMutation.mutateAsync({ planId: editId, payload: body });
       } else {
-        await apiClient.post(`/api/v1/equipment-units/${selectedUnitId}/installation-plans`, {
-          equipment_unit_id: selectedUnitId,
-          planned_start_date: form.planned_start_date ? new Date(form.planned_start_date).toISOString() : null,
-          planned_end_date: form.planned_end_date ? new Date(form.planned_end_date).toISOString() : null,
-          install_items: installItems,
-          commissioning_items: commItems,
-          remarks: form.remarks || null,
+        await createPlanMutation.mutateAsync({
+          unitId: selectedUnitId,
+          payload: {
+            equipment_unit_id: selectedUnitId,
+            planned_start_date: form.planned_start_date
+              ? new Date(form.planned_start_date).toISOString()
+              : null,
+            planned_end_date: form.planned_end_date
+              ? new Date(form.planned_end_date).toISOString()
+              : null,
+            install_items: installItems,
+            commissioning_items: commItems,
+            remarks: form.remarks || null,
+          },
         });
       }
       closeForm();
-      await loadPlans(selectedUnitId);
     } catch (err) {
       setError(apiErrorMessage(err, "保存失败"));
     } finally {
@@ -148,21 +144,15 @@ export default function InstallationPage() {
   async function handleDelete(id: string) {
     if (!window.confirm("确认删除此安装计划？")) return;
     try {
-      await apiClient.delete(`/api/v1/installation-plans/${id}`);
-      await loadPlans(selectedUnitId);
+      await deletePlanMutation.mutateAsync(id);
     } catch (err) {
       window.alert(apiErrorMessage(err, "删除失败"));
     }
   }
 
-  async function openDetail(planId: string) {
-    try {
-      const { data: resp } = await apiClient.get<{ data: Record<string, unknown> }>(
-        `/api/v1/installation-plans/${planId}`
-      );
-      setDetail(resp.data as Record<string, unknown>);
-      setShowDetail(true);
-    } catch { /* ignore */ }
+  function openDetail(planId: string) {
+    setDetailPlanId(planId);
+    setShowDetail(true);
   }
 
   async function handleQuickAction(action: string, planId: string) {
@@ -171,42 +161,37 @@ export default function InstallationPage() {
     else if (action === "complete") updates.status = "completed";
 
     try {
-      await apiClient.put(`/api/v1/installation-plans/${planId}`, updates);
-      await loadPlans(selectedUnitId);
-      if (showDetail && detail && String(detail.id) === planId) {
-        const { data: resp } = await apiClient.get<{ data: Record<string, unknown> }>(
-          `/api/v1/installation-plans/${planId}`
-        );
-        setDetail(resp.data as Record<string, unknown>);
-      }
+      await updatePlanMutation.mutateAsync({ planId, payload: updates });
+      // No refetch: the mutation invalidates the list and the detail panel.
     } catch (err) {
       window.alert(apiErrorMessage(err, "操作失败"));
     }
   }
 
-  useEffect(() => {
-    let ignore = false;
-    async function init() {
-      try {
-        const { data: resp } = await apiClient.get<{ data: { items: Array<Record<string, unknown>> } }>(
-          "/api/v1/equipment-units?page=1&page_size=200"
-        );
-        if (!ignore) {
-          const items = resp.data?.items ?? [];
-          setUnitOptions(
-            items.map((u: Record<string, unknown>) => ({
-              value: String(u.id ?? ""),
-              label: `${String(u.serial_number ?? "")} (${String(u.machine_name ?? "")}) [${String(u.build_status ?? "")}]`,
-            }))
-          );
-        }
-      } catch { /* ignore */ }
-    }
-    init();
-    return () => { ignore = true; };
-  }, []);
 
-  const planRows = useMemo(() => plans, [plans]);
+  const planRows: PlanRow[] = useMemo(
+    () =>
+      (plansQuery.data ?? []).map((plan) => {
+        const rawStatus = String(plan.status ?? "");
+        return {
+          id: String(plan.id ?? ""),
+          unitLabel: String(plan.equipment_unit_id ?? "").slice(0, 8),
+          status: rawStatus,
+          statusDisplay: STATUS_LABEL[rawStatus] ?? rawStatus,
+          plannedStart: String(plan.planned_start_date ?? "").slice(0, 10),
+          plannedEnd: String(plan.planned_end_date ?? "").slice(0, 10),
+          actualStart: String(plan.actual_start_date ?? "").slice(0, 10) || "-",
+          actualEnd: String(plan.actual_end_date ?? "").slice(0, 10) || "-",
+          customerAccepted: Boolean(plan.customer_accepted),
+          customerAcceptedDisplay: plan.customer_accepted ? "已验收" : "未验收",
+          installCount: Array.isArray(plan.install_items) ? (plan.install_items as unknown[]).length : 0,
+          commCount: Array.isArray(plan.commissioning_items)
+            ? (plan.commissioning_items as unknown[]).length
+            : 0,
+        };
+      }),
+    [plansQuery.data],
+  );
 
   const sampleInstallJson = JSON.stringify([
     { step: "1", description: "开箱检查", completed: false, remark: "" },
@@ -373,10 +358,10 @@ export default function InstallationPage() {
         search=""
         onSearchChange={() => {}}
         query={{
-          isLoading: loading,
-          isError: false,
-          isFetching: loading,
-          refetch: () => { if (selectedUnitId) loadPlans(selectedUnitId); },
+          isLoading: plansQuery.isLoading,
+          isError: plansQuery.isError,
+          isFetching: plansQuery.isFetching,
+          refetch: () => { void plansQuery.refetch(); },
         }}
         rowKey={(row) => row.id}
         rowActions={(row) => (
@@ -397,8 +382,7 @@ export default function InstallationPage() {
             <button type="button" className="text-xs text-blue-400 hover:underline" onClick={() => {
               closeForm();
               setEditId(row.id);
-              apiClient.get(`/api/v1/installation-plans/${row.id}`).then(({ data: resp }) => {
-                const d = resp.data as Record<string, unknown>;
+              void fetchInstallationPlan(row.id).then((d) => {
                 setForm({
                   planned_start_date: String(d.planned_start_date ?? "").slice(0, 10),
                   planned_end_date: String(d.planned_end_date ?? "").slice(0, 10),
