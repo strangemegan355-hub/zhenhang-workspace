@@ -14,6 +14,6 @@ router = APIRouter()
 @router.get("/board")
 async def workshop_board(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:workshop:read"))],
+    current: Annotated[User, Depends(require_permissions("business:workshop:read"))],
 ) -> dict:
-    return await get_workshop_board(db)
+    return await get_workshop_board(db, current)

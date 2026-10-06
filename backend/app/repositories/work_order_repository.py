@@ -80,32 +80,38 @@ async def soft_delete_work_order(db: AsyncSession, obj: WorkOrder) -> WorkOrder:
     return obj
 
 
-async def count_by_status(db: AsyncSession) -> dict[str, int]:
+async def count_by_status(db: AsyncSession, predicate=None) -> dict[str, int]:
     stmt = (
         select(WorkOrder.status, func.count())
         .where(WorkOrder.is_deleted.is_(False))
         .group_by(WorkOrder.status)
     )
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     rows = (await db.execute(stmt)).all()
     return {status: int(count) for status, count in rows}
 
 
-async def count_exceptions(db: AsyncSession) -> int:
+async def count_exceptions(db: AsyncSession, predicate=None) -> int:
     stmt = select(func.count()).select_from(WorkOrder).where(
         WorkOrder.is_deleted.is_(False),
         WorkOrder.exception_type.isnot(None),
         WorkOrder.exception_type != "",
         WorkOrder.status != "done",
     )
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     return int((await db.execute(stmt)).scalar_one())
 
 
-async def count_completed_today(db: AsyncSession, today: date) -> int:
+async def count_completed_today(db: AsyncSession, today: date, predicate=None) -> int:
     stmt = select(func.count()).select_from(WorkOrder).where(
         WorkOrder.is_deleted.is_(False),
         WorkOrder.status == "done",
         func.date(WorkOrder.actual_end) == today,
     )
+    if predicate is not None:
+        stmt = stmt.where(predicate)
     return int((await db.execute(stmt)).scalar_one())
 
 

@@ -68,9 +68,15 @@ def _resolve_party(payload: AccountingEntryCreate) -> tuple[str | None, UUID | N
     return None, payload.customer_id, payload.supplier_id
 
 
-async def get_module_status(db: AsyncSession) -> AccountingModuleStatus:
+async def get_module_status(db: AsyncSession, current_user: User) -> AccountingModuleStatus:
     flags = await get_feature_flags(db)
-    entry_count = await repo.count_entries(db) if flags.accounting_enabled else 0
+    # Every other read in this module is scoped; counting entries across every department here was the one
+    # that was not.
+    entry_count = (
+        await repo.count_entries(db, predicate=scope_predicate(AccountingEntry, current_user))
+        if flags.accounting_enabled
+        else 0
+    )
     return AccountingModuleStatus(flags=flags, entry_count=entry_count)
 
 

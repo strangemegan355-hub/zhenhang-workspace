@@ -51,7 +51,7 @@ def _average_mes_oee(mes_oee: dict[str, dict]) -> dict | None:
     }
 
 
-async def get_workshop_board(db: AsyncSession) -> dict:
+async def get_workshop_board(db: AsyncSession, current_user) -> dict:
     now = datetime.now(UTC)
     quote_rows = list(
         (
@@ -112,7 +112,7 @@ async def get_workshop_board(db: AsyncSession) -> dict:
                 }
             )
 
-    wo_summary = await work_order_svc.get_summary(db)
+    wo_summary = await work_order_svc.get_summary(db, current_user)
     wo_kanban_raw = await work_order_repo.list_kanban(db, limit_per_column=12)
     wo_kanban = {
         key: [work_order_svc.serialize_for_board(item) for item in items]

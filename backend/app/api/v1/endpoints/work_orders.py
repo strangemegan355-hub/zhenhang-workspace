@@ -36,9 +36,9 @@ async def create_work_order(
 @router.get("/summary", response_model=WorkOrderSummary)
 async def get_work_orders_summary(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:work_order:read"))],
+    current: Annotated[User, Depends(require_permissions("business:work_order:read"))],
 ) -> WorkOrderSummary:
-    return await svc.get_summary(db)
+    return await svc.get_summary(db, current)
 
 
 @router.post("/generate-standard-chain", response_model=WorkOrderChainResult)

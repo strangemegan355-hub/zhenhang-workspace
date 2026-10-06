@@ -254,8 +254,11 @@ async def generate_standard_chain(
     return WorkOrderChainResult(created_count=len(created), items=created)
 
 
-async def get_summary(db: AsyncSession) -> WorkOrderSummary:
-    counts = await repo.count_by_status(db)
+async def get_summary(db: AsyncSession, current_user: User) -> WorkOrderSummary:
+    # Every other read in this module is scoped by the work order's predicate; these three counts were the ones
+    # reporting across departments.
+    scope = scope_predicate(WorkOrder, current_user)
+    counts = await repo.count_by_status(db, predicate=scope)
     todo = counts.get("todo", 0)
     doing = counts.get("doing", 0) + counts.get("qacheck", 0)
     done = counts.get("done", 0)
@@ -265,8 +268,8 @@ async def get_summary(db: AsyncSession) -> WorkOrderSummary:
         todo=todo,
         doing=doing,
         done=done,
-        exception_count=await repo.count_exceptions(db),
-        completed_today=await repo.count_completed_today(db, date.today()),
+        exception_count=await repo.count_exceptions(db, predicate=scope),
+        completed_today=await repo.count_completed_today(db, date.today(), predicate=scope),
     )
 
 

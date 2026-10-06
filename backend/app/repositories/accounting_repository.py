@@ -21,10 +21,11 @@ _ENTRY_PREFIX = {
 }
 
 
-async def count_entries(db: AsyncSession) -> int:
-    result = await db.execute(
-        select(func.count()).select_from(AccountingEntry).where(AccountingEntry.is_deleted.is_(False))
-    )
+async def count_entries(db: AsyncSession, predicate=None) -> int:
+    stmt = select(func.count()).select_from(AccountingEntry).where(AccountingEntry.is_deleted.is_(False))
+    if predicate is not None:
+        stmt = stmt.where(predicate)
+    result = await db.execute(stmt)
     return int(result.scalar_one())
 
 

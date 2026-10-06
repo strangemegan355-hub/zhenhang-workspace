@@ -50,9 +50,9 @@ def _can_backfill(user: User) -> bool:
 @router.get("/status", response_model=AccountingModuleStatus)
 async def get_accounting_status(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
+    current: Annotated[User, Depends(require_permissions("business:accounting:read"))],
 ) -> AccountingModuleStatus:
-    return await svc.get_module_status(db)
+    return await svc.get_module_status(db, current)
 
 
 @router.get("/entries", response_model=PageResponse)
