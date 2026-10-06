@@ -78,7 +78,7 @@ async def get_dashboard_overview(db: AsyncSession, current_user: User) -> dict:
         for q in recent
     ]
 
-    profit_agg = await project_svc.aggregate_profit_kpis(db)
+    profit_agg = await project_svc.aggregate_profit_kpis(db, current_user)
 
     return {
         "generated_at": datetime.now(UTC).isoformat(),

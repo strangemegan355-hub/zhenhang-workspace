@@ -131,8 +131,12 @@ def _ledger_totals(items: list[ProjectProfitLedgerItem]) -> ProjectProfitLedgerT
     )
 
 
-async def aggregate_profit_kpis(db: AsyncSession, *, limit: int = 500) -> dict:
-    _, projects = await repo.list_projects(db, 1, limit, None)
+async def aggregate_profit_kpis(db: AsyncSession, current_user: User, *, limit: int = 500) -> dict:
+    # Without the predicate this aggregated every project in the system regardless of the caller's scope, and
+    # it is reached from the dashboard, which is where the profit figures are shown.
+    _, projects = await repo.list_projects(
+        db, 1, limit, None, predicate=scope_predicate(Project, current_user)
+    )
     over_budget: list[dict] = []
     realized_profits: list[Decimal] = []
     variances: list[Decimal] = []

@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.data_scope import scope_predicate
 from app.models.accounting_entry import AccountingEntry
+from app.models.cost_estimate import CostEstimate
 from app.models.user import User
+from app.models.work_order import WorkOrder
 from app.repositories import accounting_repository as repo
 from app.schemas.accounting import (
     CUSTOMER_KINDS,
@@ -331,7 +333,9 @@ async def post_work_order_expense(
 ) -> AccountingEntryRead:
     from app.repositories import work_order_repository as wo_repo
 
-    work_order = await wo_repo.get_work_order(db, work_order_id)
+    work_order = await wo_repo.get_work_order(
+        db, work_order_id, predicate=scope_predicate(WorkOrder, current_user)
+    )
     if work_order is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
     return await post_source_expense(
@@ -356,7 +360,9 @@ async def post_cost_estimate_expense(
 ) -> AccountingEntryRead:
     from app.repositories import cost_estimate_repository as est_repo
 
-    estimate = await est_repo.get_cost_estimate(db, estimate_id)
+    estimate = await est_repo.get_cost_estimate(
+        db, estimate_id, predicate=scope_predicate(CostEstimate, current_user)
+    )
     if estimate is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cost estimate not found")
     return await post_source_expense(

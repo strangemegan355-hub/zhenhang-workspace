@@ -65,7 +65,7 @@ async def test_a_work_order_expense_is_posted_as_confirmed_and_linked(captured):
         work_order_no="WO-2026-001", customer_id=customer_id, project_id=project_id
     )
 
-    async def fake_get_work_order(db, identifier):  # noqa: ANN001, ANN202
+    async def fake_get_work_order(db, identifier, predicate=None):  # noqa: ANN001, ANN202
         assert identifier == work_order_id
         return work_order
 
@@ -111,7 +111,7 @@ async def test_a_cost_estimate_expense_carries_no_customer_or_project(captured):
     from app.repositories import cost_estimate_repository
 
     original = cost_estimate_repository.get_cost_estimate
-    cost_estimate_repository.get_cost_estimate = lambda db, identifier: _return(estimate)
+    cost_estimate_repository.get_cost_estimate = lambda db, identifier, predicate=None: _return(estimate)
     try:
         await svc.post_cost_estimate_expense(
             None,
@@ -139,7 +139,7 @@ async def test_a_missing_work_order_is_a_404(captured):
     from app.repositories import work_order_repository
 
     original = work_order_repository.get_work_order
-    work_order_repository.get_work_order = lambda db, identifier: _return(None)
+    work_order_repository.get_work_order = lambda db, identifier, predicate=None: _return(None)
     try:
         with pytest.raises(HTTPException) as error:
             await svc.post_work_order_expense(
@@ -159,7 +159,7 @@ async def test_a_missing_estimate_is_a_404(captured):
     from app.repositories import cost_estimate_repository
 
     original = cost_estimate_repository.get_cost_estimate
-    cost_estimate_repository.get_cost_estimate = lambda db, identifier: _return(None)
+    cost_estimate_repository.get_cost_estimate = lambda db, identifier, predicate=None: _return(None)
     try:
         with pytest.raises(HTTPException) as error:
             await svc.post_cost_estimate_expense(
