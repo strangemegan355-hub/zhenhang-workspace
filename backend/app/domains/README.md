@@ -50,5 +50,5 @@ Of the forty endpoint modules that own business logic:
 * **0 import both**;
 * 3 import neither, being infrastructure-shaped: `health`, `notifications`, `realtime`.
 
-So the migration has moved **4 of 40 endpoints**, and the number is worth keeping visible: a module being
+So the migration has moved **4 of 40 endpoints** as measured in round 116, and the number is worth keeping visible: a module being
 reachable through `app.domains.<name>` today says nothing about whether anything moved.

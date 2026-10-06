@@ -27,10 +27,25 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 
+# Built by walking the repository rather than enumerated by hand: round 168 listed the roots it knew about, and round 169
+# measured that **twenty-three Markdown files were reachable by neither documentation guard** — `packages/GOVERNANCE.md`,
+# `backend/app/domains/README.md` (which carries a numeric claim), the three app READMEs, the certificate README under
+# `deploy/`, `packages/api-sdk/README.md` and six root-level planning documents. A hand-list cannot promise coverage;
+# a walk can, and a new document is then in scope the moment it exists.
+SKIP_PARTS = {"node_modules", ".venv", ".git", ".next", "dist", "build", "htmlcov", "__pycache__", ".pytest_cache"}
+
+
+def _markdown_files() -> list[Path]:
+    return [
+        path
+        for path in sorted(REPO.rglob("*.md"))
+        if not any(part in SKIP_PARTS for part in path.relative_to(REPO).parts)
+    ]
+
+
 TARGETS = [
     *(REPO / "scripts").glob("*.sh"),
-    REPO / "README.md",
-    *(REPO / "docs").glob("*.md"),
+    *_markdown_files(),
     *(REPO / "backend" / "tests").glob("*.py"),
     REPO / "docker-compose.yml",
     REPO / "docker-compose.prod.yml",
@@ -38,7 +53,10 @@ TARGETS = [
 ]
 
 CLAIM = re.compile(
-    r"\b(\d{1,4})\s+(tests?|test functions?|modules?|routes?|endpoints?|files?|lines?|services?|problems?|errors?|warnings?|packages?|tables?|pages?|blobs?)\b",
+    # `(?<![\w=.])` keeps two kinds of false positive out, both measured when round 169 widened the sweep to every
+    # Markdown file: a **section number** (`### 1.2 Table components` matched "2 Table") and a **sample of command
+    # output** (`created=0 skipped_duplicates=12 errors=0` matched "12 errors"). Neither is a claim about the repository.
+    r"(?<![\w=.])(\d{1,4})\s+(tests?|test functions?|modules?|routes?|endpoints?|files?|lines?|services?|problems?|errors?|warnings?|packages?|tables?|pages?|blobs?)\b",
     re.IGNORECASE,
 )
 ANCHOR = re.compile(r"round \d+|\bmeasured\b|\bas of\b|\b20\d\d-\d\d-\d\d\b", re.IGNORECASE)
