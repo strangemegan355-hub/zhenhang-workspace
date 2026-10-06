@@ -180,8 +180,6 @@ REVERSE_EDGES: set[tuple[str, str]] = {
     ("app/services/quote_receivable_service.py", "app.domains.quote.public"),
 }
 
-INTERNAL_SUFFIXES = (".repositories", ".policies")
-
 
 def test_the_legacy_layer_never_imports_domain_internals():
     """The mirror of the other direction: a domain's repositories and policies are its own business."""
