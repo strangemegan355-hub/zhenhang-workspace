@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@zhenhang/http-client";
+import type { PageData } from "../types";
 
 type ApiWrap<T> = { code: string; message: string; data: T };
-type PageData = { items?: Record<string, unknown>[]; total?: number; page?: number; page_size?: number };
 
 export type AftersalesRequest = {
   id: string;

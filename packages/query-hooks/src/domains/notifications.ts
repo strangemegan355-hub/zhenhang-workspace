@@ -6,9 +6,9 @@ import {
   optimisticWithPolicy,
 } from "@zhenhang/query-policy-registry";
 import { queryKeys } from "../keys";
+import type { PageData } from "../types";
 
 type ApiWrap<T> = { code: string; message: string; data: T };
-type PageData = { items?: Record<string, unknown>[]; total?: number };
 
 export function useNotificationsQuery(params: {
   page: number;

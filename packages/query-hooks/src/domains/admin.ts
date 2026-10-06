@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@zhenhang/http-client";
 import { qk } from "@zhenhang/query-policy-registry";
+import type { PageData } from "../types";
 
 type ApiWrap<T> = { code: string; message: string; data: T };
-type PageData = { items?: Record<string, unknown>[]; total?: number };
 
 const USERS = qk("platform", "users");
 const ROLES = qk("platform", "roles");

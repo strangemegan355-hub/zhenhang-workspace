@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@zhenhang/http-client";
 import { getQueryPolicy, invalidateByDomain } from "@zhenhang/query-policy-registry";
 import { queryKeys } from "../keys";
+import type { PageData } from "../types";
 
 type ApiWrap<T> = { code: string; message: string; data: T };
-type PageData = { items?: Record<string, unknown>[]; total?: number };
 
 export function useQuotesQuery(params: { page: number; keyword?: string; quoteKind?: string }) {
   const policy = getQueryPolicy("quotes");
