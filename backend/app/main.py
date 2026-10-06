@@ -1,16 +1,10 @@
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 import asyncio
 import json
-import logging
 import sys
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-logger = logging.getLogger(__name__)
-
-# How often the background dispatcher drains published domain events.
-DISPATCH_INTERVAL_SECONDS = 5.0
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,42 +19,16 @@ from app.core.enterprise_metrics import enterprise_metrics
 from app.core.monitoring import now_perf
 from app.core.redis_client import close_redis
 from app.core.response import error_response, success_response
-from app.db.session import AsyncSessionLocal, dispose_engine
-from app.domains.events.application import event_bus, register_default_event_handlers
-
-
-async def dispatch_pending_events_forever(interval_seconds: float = DISPATCH_INTERVAL_SECONDS) -> None:
-    """Drain published domain events so their handlers run.
-
-    Registering handlers is not dispatching them. Without this loop a published event stayed `pending`
-    indefinitely unless an operator called the manual endpoint, so nothing its handler does — writing
-    an audit row, for instance — ever happened.
-    """
-    while True:
-        try:
-            async with AsyncSessionLocal() as session:
-                result = await event_bus.process_pending(session, limit=50)
-                # The bus marks events with autocommit=False: the caller owns the transaction.
-                if result["processed"] or result["failed"]:
-                    await session.commit()
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            logger.exception("domain event dispatch failed")
-        await asyncio.sleep(interval_seconds)
+from app.db.session import dispose_engine
+from app.domains.events.application import register_default_event_handlers
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     register_default_event_handlers()
-    dispatcher = asyncio.create_task(dispatch_pending_events_forever())
     try:
         yield
     finally:
-        # Stop dispatching before the engine is disposed, or the loop would use a dead pool.
-        dispatcher.cancel()
-        with suppress(asyncio.CancelledError):
-            await dispatcher
         await close_redis()
         await dispose_engine()
 
