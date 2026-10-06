@@ -19,6 +19,7 @@ export * from "./domains/actual-costs";
 export * from "./domains/procurement";
 export * from "./domains/work-orders";
 export * from "./domains/fieldwork";
+export * from "./domains/acceptance";
 export * from "./domains/accounting";
 export * from "./domains/approval-hub";
 export * from "./domains/workshop";

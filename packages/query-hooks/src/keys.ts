@@ -74,7 +74,8 @@ export const queryKeys = {
   },
   master: {
     customers: (page: number, q?: string) => qk("master", "customers", { page, q }),
-    machines: (page: number, q?: string) => qk("master", "machines", { page, q }),
+    machines: (page: number, q?: string, pageSize?: number) =>
+      qk("master", "machines", { page, q, pageSize }),
     boms: (page: number, q?: string) => qk("master", "boms", { page, q }),
     materials: (page: number, q?: string, categoryId?: string) => qk("master", "materials", { page, q, categoryId }),
     suppliers: (page: number, q?: string) => qk("master", "suppliers", { page, q }),

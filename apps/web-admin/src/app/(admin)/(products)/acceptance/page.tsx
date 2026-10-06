@@ -2,8 +2,25 @@
 
 import { apiErrorMessage } from "@/lib/api-error";
 
-import { useState, useMemo, useEffect } from "react";
-import { apiClient } from "@zhenhang/http-client";
+import { useState, useMemo } from "react";
+import {
+  fetchAcceptanceRecord,
+  fetchAcceptanceTemplate,
+  useAcceptanceRecordQuery,
+  useAcceptanceRecordsQuery,
+  useAcceptanceTemplatesQuery,
+  useCreateAcceptanceRecordMutation,
+  useCreateAcceptanceTemplateMutation,
+  useCreatePunchItemMutation,
+  useDeleteAcceptanceRecordMutation,
+  useDeleteAcceptanceTemplateMutation,
+  useDeletePunchItemMutation,
+  useEquipmentUnitsQuery,
+  useMachinesQuery,
+  useUpdateAcceptanceRecordMutation,
+  useUpdateAcceptanceTemplateMutation,
+  useUpdatePunchItemMutation,
+} from "@zhenhang/query-hooks";
 import { MasterCreateForm } from "@/components/master/master-create-form";
 import { MasterListPage } from "@/components/master/master-list-page";
 import { IndustrialPage, WorkspaceToolbarButton } from "@zhenhang/ui";
@@ -64,20 +81,65 @@ export default function AcceptancePage() {
   // Machine / unit selectors
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [selectedUnitId, setSelectedUnitId] = useState("");
-  const [machineOptions, setMachineOptions] = useState<Array<{ value: string; label: string }>>([]);
-  const [unitOptions, setUnitOptions] = useState<Array<{ value: string; label: string }>>([]);
+  // Options come from the master queries; the effect that fetched them by hand is gone.
+  const machinesQuery = useMachinesQuery(1, undefined, 200);
+  const machineOptions = useMemo(
+    () =>
+      ((machinesQuery.data as { items?: Array<Record<string, unknown>> } | undefined)?.items ?? []).map(
+        (machine) => ({
+          value: String(machine.id ?? ""),
+          label: `${String(machine.machine_code ?? "")} ${String(machine.name ?? "")}`,
+        }),
+      ),
+    [machinesQuery.data],
+  );
+  const unitsQuery = useEquipmentUnitsQuery(1, 200);
+  const unitOptions = useMemo(
+    () =>
+      ((unitsQuery.data as { items?: Array<Record<string, unknown>> } | undefined)?.items ?? []).map(
+        (unit) => ({
+          value: String(unit.id ?? ""),
+          label: `${String(unit.serial_number ?? "")} (${String(unit.machine_name ?? "")})`,
+        }),
+      ),
+    [unitsQuery.data],
+  );
 
   // Templates
-  const [templates, setTemplates] = useState<TemplateRow[]>([]);
-  const [tplLoading, setTplLoading] = useState(false);
+  const templatesQuery = useAcceptanceTemplatesQuery(selectedMachineId || undefined);
+  const templates: TemplateRow[] = useMemo(
+    () =>
+      (templatesQuery.data ?? []).map((template) => ({
+        id: String(template.id ?? ""),
+        name: String(template.name ?? ""),
+        templateType: String(template.template_type ?? ""),
+        machineId: String(template.machine_id ?? ""),
+        itemCount: Array.isArray(template.items) ? (template.items as unknown[]).length : 0,
+      })),
+    [templatesQuery.data],
+  );
+  const tplLoading = templatesQuery.isFetching;
   const [showTplForm, setShowTplForm] = useState(false);
   const [tplEditId, setTplEditId] = useState<string | null>(null);
   const [tplForm, setTplForm] = useState({ name: "", template_type: "fat", items_json: "[]" });
   const [tplError, setTplError] = useState<string | null>(null);
 
   // Records
-  const [records, setRecords] = useState<RecordRow[]>([]);
-  const [recLoading, setRecLoading] = useState(false);
+  const recordsQuery = useAcceptanceRecordsQuery(selectedUnitId || undefined);
+  const records: RecordRow[] = useMemo(
+    () =>
+      (recordsQuery.data ?? []).map((record) => ({
+        id: String(record.id ?? ""),
+        recordNo: String(record.record_no ?? ""),
+        inspectorName: String(record.inspector_name ?? ""),
+        testDate: String(record.test_date ?? "").slice(0, 10),
+        status: STATUS_LABEL[String(record.status ?? "")] ?? String(record.status ?? ""),
+        overallResult: String(record.overall_result ?? "-"),
+        punchCount: Array.isArray(record.punch_items) ? (record.punch_items as unknown[]).length : 0,
+      })),
+    [recordsQuery.data],
+  );
+  const recLoading = recordsQuery.isFetching;
   const [showRecForm, setShowRecForm] = useState(false);
   const [recEditId, setRecEditId] = useState<string | null>(null);
   const [recForm, setRecForm] = useState({
@@ -92,42 +154,38 @@ export default function AcceptancePage() {
   const [recError, setRecError] = useState<string | null>(null);
 
   // Detail modal
-  const [detailRecord, setDetailRecord] = useState<Record<string, unknown> | null>(null);
+  const [detailRecordId, setDetailRecordId] = useState<string | null>(null);
+  const detailQuery = useAcceptanceRecordQuery(detailRecordId ?? undefined);
+  const detailRecord = detailQuery.data ?? null;
   const [showDetail, setShowDetail] = useState(false);
-  const [punchItems, setPunchItems] = useState<PunchItem[]>([]);
+  const punchItems = (
+    Array.isArray(detailRecord?.punch_items) ? detailRecord.punch_items : []
+  ) as PunchItem[];
   const [punchDesc, setPunchDesc] = useState("");
   const [punchSeverity, setPunchSeverity] = useState("minor");
 
   const [submitting, setSubmitting] = useState(false);
 
+  const createTemplateMutation = useCreateAcceptanceTemplateMutation();
+  const updateTemplateMutation = useUpdateAcceptanceTemplateMutation();
+  const deleteTemplateMutation = useDeleteAcceptanceTemplateMutation();
+  const createRecordMutation = useCreateAcceptanceRecordMutation();
+  const updateRecordMutation = useUpdateAcceptanceRecordMutation();
+  const deleteRecordMutation = useDeleteAcceptanceRecordMutation();
+  const createPunchMutation = useCreatePunchItemMutation();
+  const updatePunchMutation = useUpdatePunchItemMutation();
+  const deletePunchMutation = useDeletePunchItemMutation();
+
   // ── Templates ──
 
-  async function loadTemplates(machineId: string) {
-    setTplLoading(true);
-    try {
-      const { data: resp } = await apiClient.get<{ data: Array<Record<string, unknown>> }>(
-        `/api/v1/machines/${machineId}/acceptance-templates`
-      );
-      const rows: TemplateRow[] = (resp.data ?? []).map((t: Record<string, unknown>) => ({
-        id: String(t.id ?? ""),
-        name: String(t.name ?? ""),
-        templateType: String(t.template_type ?? ""),
-        machineId: String(t.machine_id ?? ""),
-        itemCount: Array.isArray(t.items) ? (t.items as unknown[]).length : 0,
-      }));
-      setTemplates(rows);
-    } catch {
-      setTemplates([]);
-    } finally {
-      setTplLoading(false);
-    }
-  }
+  // Nothing to load by hand any more: the query is keyed by machine and the mutations invalidate
+  // it, so the call sites keep their shape and this does nothing.
+  function loadTemplates(_machineId: string) {}
 
   function handleMachineChange(id: string) {
     setSelectedMachineId(id);
     closeTplForm();
     if (id) loadTemplates(id);
-    else setTemplates([]);
   }
 
   function closeTplForm() {
@@ -145,9 +203,9 @@ export default function AcceptancePage() {
     const body = { name: tplForm.name.trim(), template_type: tplForm.template_type, items };
     try {
       if (tplEditId) {
-        await apiClient.put(`/api/v1/acceptance-templates/${tplEditId}`, body);
+        await updateTemplateMutation.mutateAsync({ templateId: tplEditId, payload: body });
       } else {
-        await apiClient.post(`/api/v1/machines/${selectedMachineId}/acceptance-templates`, body);
+        await createTemplateMutation.mutateAsync({ machineId: selectedMachineId, payload: body });
       }
       closeTplForm();
       await loadTemplates(selectedMachineId);
@@ -161,7 +219,7 @@ export default function AcceptancePage() {
   async function handleDeleteTemplate(id: string, label: string) {
     if (!window.confirm(`确认删除模板「${label}」？`)) return;
     try {
-      await apiClient.delete(`/api/v1/acceptance-templates/${id}`);
+      await deleteTemplateMutation.mutateAsync(id);
       await loadTemplates(selectedMachineId);
     } catch (err) {
       window.alert(apiErrorMessage(err, "删除失败"));
@@ -170,34 +228,13 @@ export default function AcceptancePage() {
 
   // ── Records ──
 
-  async function loadRecords(unitId: string) {
-    setRecLoading(true);
-    try {
-      const { data: resp } = await apiClient.get<{ data: Array<Record<string, unknown>> }>(
-        `/api/v1/equipment-units/${unitId}/acceptance-records`
-      );
-      const rows: RecordRow[] = (resp.data ?? []).map((r: Record<string, unknown>) => ({
-        id: String(r.id ?? ""),
-        recordNo: String(r.record_no ?? ""),
-        inspectorName: String(r.inspector_name ?? ""),
-        testDate: String(r.test_date ?? "").slice(0, 10),
-        status: STATUS_LABEL[String(r.status ?? "")] ?? String(r.status ?? ""),
-        overallResult: String(r.overall_result ?? "-"),
-        punchCount: Array.isArray(r.punch_items) ? (r.punch_items as unknown[]).length : 0,
-      }));
-      setRecords(rows);
-    } catch {
-      setRecords([]);
-    } finally {
-      setRecLoading(false);
-    }
-  }
+  // As above: the records query is keyed by unit and invalidated by the mutations.
+  function loadRecords(_unitId: string) {}
 
   function handleUnitChange(id: string) {
     setSelectedUnitId(id);
     closeRecForm();
     if (id) loadRecords(id);
-    else setRecords([]);
   }
 
   function closeRecForm() {
@@ -225,9 +262,9 @@ export default function AcceptancePage() {
         const updateBody: Record<string, unknown> = { items };
         if (recForm.status) updateBody.status = recForm.status;
         if (recForm.overall_result) updateBody.overall_result = recForm.overall_result;
-        await apiClient.put(`/api/v1/acceptance-records/${recEditId}`, updateBody);
+        await updateRecordMutation.mutateAsync({ recordId: recEditId, payload: updateBody });
       } else {
-        await apiClient.post(`/api/v1/equipment-units/${selectedUnitId}/acceptance-records`, body);
+        await createRecordMutation.mutateAsync({ unitId: selectedUnitId, payload: body });
       }
       closeRecForm();
       await loadRecords(selectedUnitId);
@@ -241,7 +278,7 @@ export default function AcceptancePage() {
   async function handleDeleteRecord(id: string, label: string) {
     if (!window.confirm(`确认删除记录「${label}」？`)) return;
     try {
-      await apiClient.delete(`/api/v1/acceptance-records/${id}`);
+      await deleteRecordMutation.mutateAsync(id);
       await loadRecords(selectedUnitId);
     } catch (err) {
       window.alert(apiErrorMessage(err, "删除失败"));
@@ -250,36 +287,21 @@ export default function AcceptancePage() {
 
   // ── Detail modal & punch items ──
 
-  async function openDetail(recordId: string) {
-    try {
-      const { data: resp } = await apiClient.get<{ data: Record<string, unknown> }>(
-        `/api/v1/acceptance-records/${recordId}`
-      );
-      const data = resp.data as Record<string, unknown>;
-      setDetailRecord(data);
-      setPunchItems((Array.isArray(data?.punch_items) ? data.punch_items : []) as PunchItem[]);
-      setShowDetail(true);
-    } catch { /* ignore */ }
+  function openDetail(recordId: string) {
+    setDetailRecordId(recordId);
+    setShowDetail(true);
   }
 
   async function handleAddPunch() {
     if (!punchDesc.trim() || !detailRecord) return;
     setSubmitting(true);
     try {
-      await apiClient.post(`/api/v1/acceptance-records/${detailRecord.id}/punch-items`, {
-        description: punchDesc.trim(),
-        severity: punchSeverity,
+      await createPunchMutation.mutateAsync({
+        recordId: String(detailRecord.id),
+        payload: { description: punchDesc.trim(), severity: punchSeverity },
       });
       setPunchDesc("");
       setPunchSeverity("minor");
-      // Reload
-      const { data: resp } = await apiClient.get<{ data: Record<string, unknown> }>(
-        `/api/v1/acceptance-records/${detailRecord.id}`
-      );
-      const data = resp.data as Record<string, unknown>;
-      setDetailRecord(data);
-      setPunchItems((Array.isArray(data?.punch_items) ? data.punch_items : []) as PunchItem[]);
-      await loadRecords(selectedUnitId);
     } catch (err) {
       window.alert(apiErrorMessage(err, "添加失败"));
     } finally {
@@ -291,12 +313,10 @@ export default function AcceptancePage() {
     const resolution = window.prompt("整改措施/说明：");
     if (resolution === null) return;
     try {
-      await apiClient.put(`/api/v1/punch-items/${itemId}`, {
-        status: "resolved",
-        resolution: resolution || undefined,
+      await updatePunchMutation.mutateAsync({
+        itemId,
+        payload: { status: "resolved", resolution: resolution || undefined },
       });
-      if (detailRecord) await openDetail(String(detailRecord.id));
-      await loadRecords(selectedUnitId);
     } catch (err) {
       window.alert(apiErrorMessage(err, "操作失败"));
     }
@@ -305,9 +325,7 @@ export default function AcceptancePage() {
   async function handleDeletePunch(itemId: string) {
     if (!window.confirm("确认删除此整改项？")) return;
     try {
-      await apiClient.delete(`/api/v1/punch-items/${itemId}`);
-      if (detailRecord) await openDetail(String(detailRecord.id));
-      await loadRecords(selectedUnitId);
+      await deletePunchMutation.mutateAsync(itemId);
     } catch (err) {
       window.alert(apiErrorMessage(err, "删除失败"));
     }
@@ -315,41 +333,6 @@ export default function AcceptancePage() {
 
   // ── Init ──
 
-  useEffect(() => {
-    let ignore = false;
-    async function init() {
-      try {
-        const { data: resp } = await apiClient.get<{ data: { items: Array<Record<string, unknown>> } }>(
-          "/api/v1/machines?page=1&page_size=200"
-        );
-        if (!ignore) {
-          const items = resp.data?.items ?? [];
-          setMachineOptions(
-            items.map((m: Record<string, unknown>) => ({
-              value: String(m.id ?? ""),
-              label: `${String(m.machine_code ?? "")} ${String(m.name ?? "")}`,
-            }))
-          );
-        }
-      } catch { /* ignore */ }
-      try {
-        const { data: resp } = await apiClient.get<{ data: { items: Array<Record<string, unknown>> } }>(
-          "/api/v1/equipment-units?page=1&page_size=200"
-        );
-        if (!ignore) {
-          const items = resp.data?.items ?? [];
-          setUnitOptions(
-            items.map((u: Record<string, unknown>) => ({
-              value: String(u.id ?? ""),
-              label: `${String(u.serial_number ?? "")} (${String(u.machine_name ?? "")})`,
-            }))
-          );
-        }
-      } catch { /* ignore */ }
-    }
-    init();
-    return () => { ignore = true; };
-  }, []);
 
   // ── Data ──
 
@@ -598,8 +581,7 @@ export default function AcceptancePage() {
             <button type="button" className="text-xs text-blue-400 hover:underline" onClick={() => {
               closeTplForm();
               setTplEditId(row.id);
-              apiClient.get(`/api/v1/acceptance-templates/${row.id}`).then(({ data: resp }) => {
-                const d = resp.data as Record<string, unknown>;
+              void fetchAcceptanceTemplate(row.id).then((d) => {
                 setTplForm({
                   name: String(d.name ?? ""),
                   template_type: String(d.template_type ?? "fat"),
@@ -678,8 +660,7 @@ export default function AcceptancePage() {
             <button type="button" className="text-xs text-blue-400 hover:underline" onClick={() => {
               closeRecForm();
               setRecEditId(row.id);
-              apiClient.get(`/api/v1/acceptance-records/${row.id}`).then(({ data: resp }) => {
-                const d = resp.data as Record<string, unknown>;
+              void fetchAcceptanceRecord(row.id).then((d) => {
                 setRecForm({
                   template_id: String(d.template_id ?? ""),
                   inspector_name: String(d.inspector_name ?? ""),

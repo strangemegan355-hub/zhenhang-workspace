@@ -6,12 +6,12 @@ import { queryKeys } from "../keys";
 type ApiWrap<T> = { code: string; message: string; data: T };
 type PageData = { items?: Record<string, unknown>[]; total?: number };
 
-export function useMachinesQuery(page = 1, q?: string) {
+export function useMachinesQuery(page = 1, q?: string, pageSize = 50) {
   return useQuery({
-    queryKey: queryKeys.master.machines(page, q),
+    queryKey: queryKeys.master.machines(page, q, pageSize),
     queryFn: async () => {
       const { data } = await apiClient.get<ApiWrap<PageData>>("/api/v1/machines", {
-        params: { page, page_size: 50, q },
+        params: { page, page_size: pageSize, q },
       });
       return data.data;
     },
