@@ -272,5 +272,67 @@ async def test_the_pagination_total_counts_rows_rather_than_the_page():
     assert sales_page["total"] >= len(sales_page["items"])
 
 
+async def _put_project(project_id: str, username: str, env_name: str, name: str) -> int:
+    """PUT a project's name as `username`, returning only the status code."""
+    from app.main import app
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://integration") as client:
+        token = await _login(client, username, env_name)
+        response = await client.put(
+            f"/api/v1/projects/{project_id}",
+            json={"name": name},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    return response.status_code
+
+
+async def test_a_write_to_another_departments_row_is_not_found():
+    """Reading is scoped in this suite; **writing** was never checked, and it is the half a scope bug hides in.
+
+    Round 152 proved a department-scoped account cannot *read* another department's project by id, and round 162 that
+    the pagination total is scoped too. Neither says anything about `PUT`: a service that builds its scope predicate for
+    the list and the detail path but lets the write through by primary key would pass both and still let a caller modify
+    a row it cannot see.
+
+    **The pair is the proof, and it is the same account and the same verb both times:** `sales01` renames its own
+    department's project (**200**) and fails to rename the other department's (**404**). `own_write == 200` is what makes
+    the 404 a scope decision rather than a permission failure wearing the wrong status.
+
+    **Two accounts were tried as a third control and neither works, which is worth recording rather than hiding:**
+
+    * **`boss` gets 403** — `trial_boss` holds `business:project:read` but **not** `business:project:update`; it approves
+      quotes rather than editing projects. Using it as the floor would have misread a missing permission as a scope
+      result.
+    * **the seed's own "other department" account also gets 403** — round 146 creates it with a department and **no role
+      at all**, so it holds no permissions and cannot write anything.
+
+    **So no seeded account both holds the write permission and can see the other department's row, and the two-sided
+    assertion above is the strongest available without adding roles to a fixture.** Stated plainly: this proves the write
+    path scopes by department for `sales01`; it does not prove it for an all-scope caller, because no account here can
+    write that row at all.
+    """
+    await _seed_two_departments()
+    try:
+        identifiers = await _ids_of_seeded_projects()
+        mine = identifiers.get(f"{MARKER}-MINE")
+        theirs = identifiers.get(f"{MARKER}-THEIRS")
+        assert mine and theirs, f"the seed did not produce both projects: {sorted(identifiers)}"
+
+        own_write = await _put_project(mine, "sales01", "TRIAL_SALES_PASSWORD", "renamed by its own department")
+        other_write = await _put_project(theirs, "sales01", "TRIAL_SALES_PASSWORD", "renamed by a stranger")
+    finally:
+        await _teardown()
+
+    assert own_write == 200, (
+        f"a department-scoped account could not write its own department's project (got {own_write}). Without this the "
+        "404 below proves nothing: it would be a permission failure, not a scope decision"
+    )
+    assert other_write == 404, (
+        f"writing another department's project answered {other_write} instead of 404. A 200 here is a scope bypass on "
+        "the write path; a 403 would confirm the row exists"
+    )
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
