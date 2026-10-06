@@ -245,7 +245,6 @@ async def create_manual_receivable(
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="客户不存在")
 
-    await repo.register_ledger_account(db, customer_id, current_user.id)
     booked_on = _validate_dates(payload.occurred_on, is_backfill=payload.is_backfill)
 
     entry = await repo.add_entry(
@@ -271,6 +270,10 @@ async def create_manual_receivable(
         },
     )
     await repo.save_entry(db, entry)
+    # Registered after the entry so the single commit above covers both: registering first committed the
+    # account before the entry it exists for. The account is a lazily created container, so its moment does
+    # not change the result.
+    await repo.register_ledger_account(db, customer_id, current_user.id)
     loaded = await repo.get_entry(db, entry.id, predicate=scope_predicate(AccountingEntry, current_user))
     return AccountingEntryRead.model_validate(loaded or entry)
 
