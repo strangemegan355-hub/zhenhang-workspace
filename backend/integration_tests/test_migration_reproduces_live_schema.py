@@ -33,11 +33,25 @@ BACKEND = Path(__file__).resolve().parents[1]
 REPO = BACKEND.parent
 PYTHON = sys.executable
 
-HOST = os.getenv("MIGRATION_CHECK_HOST", "127.0.0.1")
-PORT = int(os.getenv("MIGRATION_CHECK_PORT", "55432"))
-USER = os.getenv("MIGRATION_CHECK_USER", "erp")
-PASSWORD = os.getenv("MIGRATION_CHECK_PASSWORD", "erp")
-LIVE_DB = os.getenv("MIGRATION_CHECK_LIVE_DB", "erp_db")
+# No credential literal and no default: the connection details come from the URL the integration suite already
+# sets, and their absence is fatal rather than a skip. The first version of this file gave a password lookup a
+# literal fallback and `test_no_default_credentials.py` caught it, which is exactly the rule that guard enforces —
+# a fallback in a test file is still a credential in the repository. **Describing that mistake rather than quoting
+# it**, because the guard scans text: the comment that quoted the offending call was itself flagged on the next
+# run, which is the same lesson as the secret gate's positive control — a repository scanner finds its own
+# fixtures, so the fixture is what has to change.
+_SOURCE_URL = os.getenv("INTEGRATION_DATABASE_URL") or os.getenv("DATABASE_URL")
+if not _SOURCE_URL:
+    raise RuntimeError(
+        "this test needs INTEGRATION_DATABASE_URL (or DATABASE_URL) to know which PostgreSQL server to use; "
+        "run it through the integration suite's environment rather than skipping it"
+    )
+_PARTS = psycopg.conninfo.conninfo_to_dict(_SOURCE_URL.replace("postgresql+psycopg://", "postgresql://"))
+HOST = _PARTS.get("host", "")
+PORT = int(_PARTS.get("port", "5432"))
+USER = _PARTS.get("user", "")
+PASSWORD = _PARTS.get("password", "")
+LIVE_DB = _PARTS.get("dbname", "")
 SCRATCH_DB = "erp_migration_check"
 
 COLUMNS_SQL = """
