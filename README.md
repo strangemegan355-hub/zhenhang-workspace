@@ -271,6 +271,26 @@ their passwords from the environment, so set throwaway values before running the
 MinIO is part of the stack because the storage lifecycle is a real dependency the suite now checks
 against a live server; `INTEGRATION_MINIO_ENDPOINT` overrides its address (default `127.0.0.1:59000`).
 
+## 数据范围与租户（现状，非目标状态）
+
+**说清楚这一节，是因为"隔离"这两个字最容易被读成比实际更强的东西。**
+
+**部门范围：已实现，四个面都有实测。** 范围谓词建在 service 层（`scope_predicate`、`owner_scope_user_id`），由 repository 施加；**越界一律 404 而不是 403**（403 会确认该行存在）。覆盖面：
+
+| 面 | 证据 |
+|---|---|
+| 列表 | `integration_tests/test_data_scope_end_to_end.py`：两部门对比，且分页 `total` 同样带范围 |
+| 单对象读 | 同上：自己的 **200**、别部门的 **404** |
+| 改（`PUT`） | 同上：自己的 **200**、别部门的 **404** |
+| 删（`DELETE`） | 同上：四条断言 —— 别部门的 **404**、自己的 **200**、被删的行确实消失、**被拒的行完好无损** |
+| 实时通道 | `backend/tests/test_realtime_acl.py`（单元测试，按通道权限与数据范围过滤） |
+
+**租户：未实现隔离，是"准备"。** 约八十张表中**九张带 `tenant_id` 列**，而**只有 `sys_users` 被真正写入租户**——所有业务行的 `tenant_id` 仍为 `NULL`，而实时存储的谓词是
+`tenant_id = :tenant OR tenant_id IS NULL`，因此在当前数据下**它放行一切**。**所以现在跨租户并不隔离，不要按已隔离来部署。** 相关事实来源与守卫：
+
+- `docs/ENTERPRISE_DEPLOYMENT.md` 的「多租户准备」一节；
+- `backend/integration_tests/test_tenant_boundary.py`：**按行**核对上表结论，并断言九张表的集合未变——**若某业务表开始打标，它会在同一次改动里失败，并提示该表的每条读路径必须同时过滤**。
+
 ## Windows 便捷脚本
 
 ```powershell

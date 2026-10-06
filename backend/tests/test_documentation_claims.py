@@ -45,6 +45,10 @@ LINE_COMMENT = re.compile(r"//[^\n]*")
 NOT_A_CODE_SYMBOL = {
     # the request of a migration step in the deployment document, not a component
     "Upgrade",
+    # Round 183's README data-scope section names the SQL keyword and the HTTP verb it is describing, in backticks
+    # because that is how this document quotes code. Neither is a component.
+    "NULL",
+    "DELETE",
 }
 
 # Components the docs name that exist and that nothing renders. Reviewed, with the consequence recorded.
