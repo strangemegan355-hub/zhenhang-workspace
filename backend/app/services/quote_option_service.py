@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.quote.repositories import quote_repository as repo
+from app.domains.quote.public import queries as repo
 from app.repositories import option_group_repository as opt_repo
 
 

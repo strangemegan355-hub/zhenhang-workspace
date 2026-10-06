@@ -9,7 +9,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.quote.repositories import quote_repository as repo
+from app.domains.quote.public import queries as repo
 from app.models.customer import Customer
 from app.models.quote import Quote
 

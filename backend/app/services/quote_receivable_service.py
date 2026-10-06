@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.quote.repositories import quote_repository as quote_repo
+from app.domains.quote.public import queries as quote_repo
 from app.models.permission import Permission
 from app.models.quote import Quote
 from app.models.role import Role

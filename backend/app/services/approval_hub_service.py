@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rbac import collect_permission_codes
 from app.domains.quote.application import quote_application_service as quote_svc
-from app.domains.quote.repositories import quote_repository as quote_repo
+from app.domains.quote.public import queries as quote_repo
 from app.models.user import User
 from app.repositories import procurement_payable_repository as ppr_repo
 from app.repositories import quote_receivable_repository as qrr_repo

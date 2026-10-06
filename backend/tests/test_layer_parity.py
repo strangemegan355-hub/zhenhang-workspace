@@ -156,20 +156,39 @@ def test_the_domain_layer_does_not_grow_new_legacy_dependencies():
 
 
 # The reverse direction is real and was found by this gate's first run, not by the one-off script that
-# preceded it: seven legacy services import from `app.domains.quote.*` or `app.domains.config.*`, so the
-# migration is bidirectional and neither generation can be retired alone. These edges are pinned so the
-# coupling cannot deepen; the set may only shrink.
+# preceded it: seven legacy services import from the quote and config domains, so the migration is
+# bidirectional and neither generation can be retired alone. Every remaining edge points at a domain's
+# `public` package — the surface the domain publishes on purpose — or, for one, at its `application`
+# package. The set may only shrink.
 REVERSE_EDGES: set[tuple[str, str]] = {
     ("app/services/approval_hub_service.py", "app.domains.quote.application"),
-    ("app/services/approval_hub_service.py", "app.domains.quote.repositories"),
-    ("app/services/business_settings_service.py", "app.domains.config.repositories"),
-    ("app/services/dashboard_service.py", "app.domains.quote.policies.data_scope_policy"),
-    ("app/services/dashboard_service.py", "app.domains.quote.repositories"),
-    ("app/services/industrial_copilot.py", "app.domains.quote.repositories"),
-    ("app/services/quote_export_payload.py", "app.domains.quote.repositories"),
-    ("app/services/quote_option_service.py", "app.domains.quote.repositories"),
-    ("app/services/quote_receivable_service.py", "app.domains.quote.repositories"),
+    ("app/services/approval_hub_service.py", "app.domains.quote.public"),
+    ("app/services/business_settings_service.py", "app.domains.config.public"),
+    ("app/services/dashboard_service.py", "app.domains.quote.public"),
+    ("app/services/dashboard_service.py", "app.domains.quote.public.queries"),
+    ("app/services/industrial_copilot.py", "app.domains.quote.public"),
+    ("app/services/quote_export_payload.py", "app.domains.quote.public"),
+    ("app/services/quote_option_service.py", "app.domains.quote.public"),
+    ("app/services/quote_receivable_service.py", "app.domains.quote.public"),
 }
+
+INTERNAL_SUFFIXES = (".repositories", ".policies")
+
+
+def test_the_legacy_layer_never_imports_domain_internals():
+    """The mirror of the other direction: a domain's repositories and policies are its own business."""
+    offenders = []
+    for root in LEGACY_LAYERS:
+        for relative, module in _layer_imports(root):
+            if not module.startswith("app.domains."):
+                continue
+            parts = module[len("app.domains.") :].split(".")
+            if "repositories" in parts or "policies" in parts:
+                offenders.append(f"{relative} imports {module}")
+    assert sorted(offenders) == [], (
+        "a legacy service reached into a domain's internals; import the domain's `public` package "
+        f"instead: {sorted(offenders)}"
+    )
 
 
 def test_the_legacy_layer_imports_the_domain_layer_only_where_listed():

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
-from app.domains.quote.repositories import quote_repository as repo
+from app.domains.quote.public import queries as repo
 from app.models.customer import Customer
 from app.models.machine import Machine
 from app.services import business_settings_service as business_settings_svc

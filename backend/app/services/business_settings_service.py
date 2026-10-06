@@ -5,7 +5,7 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
-from app.domains.config.repositories import config_repository as repo
+from app.domains.config.public import queries as repo
 from app.models.user import User
 from app.schemas.business_settings import BusinessSettingsRead, BusinessSettingsUpdate
 
