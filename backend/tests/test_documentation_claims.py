@@ -20,8 +20,16 @@ import subprocess
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-SKIP_PARTS = {"node_modules", ".next", "dist", ".venv", "site-packages", "__pycache__", ".git", "volumes"}
+SKIP_PARTS = {"node_modules", ".next", "dist", ".venv", "site-packages", "__pycache__", ".git", "volumes", ".pytest_cache"}
 CODE_SUFFIXES = {".ts", ".tsx", ".js", ".jsx", ".mjs"}
+# The documents that describe **what ships**. Round 170 widened this to every Markdown file and measured why that is
+# wrong for *this* guard: eighteen names then reported as undefined came from six planning documents
+# (`UI-Refactor-Plan.md`, `UI-Refactor-Backlog.md`, two UI baseline reviews, `UI-Component-Mapping.md` and the refactor
+# brief), where a backticked PascalCase name is a **proposal**, not a claim that a component exists — `ChevronLeft` is a
+# lucide icon, `PARTIAL` a status word, and `Dashboard`/`Customer`/`Project` are pages a plan intends to build.
+# **The rule is sound for shipping documents and unsound for prospective ones, so the scope stays and the reason is
+# recorded here rather than in a twenty-three entry exemption list.** The numeric-claims guard scans every document
+# because its question — "when was this measured?" — applies to all of them.
 DOC_GLOBS = (
     "packages/GOVERNANCE.md",
     "docs/*.md",
@@ -38,18 +46,35 @@ NOT_A_CODE_SYMBOL = {
     # the request of a migration step in the deployment document, not a component
     "Upgrade",
 }
+
 # Components the docs name that exist and that nothing renders. Reviewed, with the consequence recorded.
 DEFINED_BUT_UNRENDERED = {
     # quote-workbench.tsx (530 lines, measured in round 167), plus its only consumer use-undo-redo.ts; see packages/GOVERNANCE.md
     # for the correction and the choice between wiring and deleting it
     "QuoteWorkbench",
 }
+# Components the docs name that exist and that nothing renders. Reviewed, with the consequence recorded.
+DEFINED_BUT_UNRENDERED = {
+    # quote-workbench.tsx (530 lines, measured in round 167), plus its only consumer use-undo-redo.ts; see packages/GOVERNANCE.md
+    # for the correction and the choice between wiring and deleting it
+    "QuoteWorkbench",
+    # Defined in packages/api-sdk and imported by nothing: that package's README is the only place these appear, and the
+    # package is the one named in the pending deletion proposal. Round 170 found them when the scan reached that README.
+    "LoginRequest",
+    "LoginResponse",
+}
 
 
 def _docs() -> list[Path]:
     found: list[Path] = []
     for pattern in DOC_GLOBS:
-        found.extend(path for path in sorted(REPO.glob(pattern)) if path.is_file())
+        found.extend(
+            path
+            for path in sorted(REPO.glob(pattern))
+            # `SKIP_PARTS` matters now that the glob is `**/*.md`: a tool's own README is not a document of this
+            # repository, and `.pytest_cache` writes one.
+            if path.is_file() and not (SKIP_PARTS & set(path.relative_to(REPO).parts))
+        )
     return found
 
 
@@ -78,8 +103,12 @@ def _named_in_docs() -> set[str]:
 def test_the_scan_finds_the_documents_and_the_names():
     docs = _docs()
     names = _named_in_docs()
-    # Controls: a scan that found nothing would pass both verdicts below.
-    assert len(docs) >= 5, f"only {len(docs)} documents were found, which is too few to be real"
+    # The floor is the filesystem's, not a constant: a first version asserted `len(docs) >= 5`, which the five
+    # hand-listed documents satisfied on their own — so the check could not notice that twenty-two were missing.
+    relative = {path.relative_to(REPO).as_posix() for path in docs}
+    for required in ("README.md", "packages/GOVERNANCE.md", "backend/README.md", "apps/web-admin/README.md"):
+        assert required in relative, f"{required} is not being scanned"
+    assert any(name.startswith("docs/") for name in relative), "the documents under docs/ are not scanned"
     assert len(names) >= 5, f"only {len(names)} PascalCase names were found, which is too few to be real"
     assert "QuoteWorkbench" in names, "the name round 121 found must be among those the docs use"
 
