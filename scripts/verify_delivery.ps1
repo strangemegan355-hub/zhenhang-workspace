@@ -82,6 +82,12 @@ $webResp = Invoke-Http $BaseUrl
 $webOk = $false
 if ($webResp -and $webResp.StatusCode -eq 200) {
     $body = if ($webResp.Content) { [string]$webResp.Content } else { "" }
+    # The 振航 alternative works by a compensating pair of errors, and this note exists so that a well-meant
+    # "fix" does not break it. PowerShell 5.1 reads a BOM-less .ps1 with the ANSI code page, so the literal
+    # below is not that character at runtime; Invoke-WebRequest -UseBasicParsing decodes the response body the
+    # same way, so both sides are mangled identically and the match succeeds. Adding a UTF-8 BOM would make the
+    # literal correct while the body stayed ANSI-decoded, and this test would then fail on a healthy stack.
+    # The ASCII alternatives carry the check when the page has no Chinese, which is why it is not urgent.
     $webOk = $body -match "振航|ERP|__next|next" -or $webResp.Headers["Content-Type"] -match "text/html"
 }
 if (-not $webResp) {
