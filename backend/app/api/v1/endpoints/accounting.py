@@ -36,6 +36,9 @@ from app.services import ledger_service as ledger_svc
 from app.services import procurement_payable_service as ppr_svc
 from app.services import quote_receivable_service as qrr_svc
 from app.services import supplier_ledger_service as supp_svc
+from app.schemas.accounting import AccountingEntryRead
+from app.schemas.accounting import CustomerLedgerSummaryRead
+from app.schemas.accounting import SupplierLedgerSummaryRead
 
 router = APIRouter()
 
@@ -55,7 +58,7 @@ async def get_accounting_status(
     return await svc.get_module_status(db, current)
 
 
-@router.get("/entries", response_model=PageResponse)
+@router.get("/entries", response_model=PageResponse[AccountingEntryRead])
 async def list_accounting_entries(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:accounting:read"))],
@@ -262,7 +265,7 @@ async def create_ledger_receivable(
     )
 
 
-@router.get("/ledger/customers", response_model=PageResponse)
+@router.get("/ledger/customers", response_model=PageResponse[CustomerLedgerSummaryRead])
 async def list_ledger_customers(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
@@ -369,7 +372,7 @@ async def create_supplier_payable(
     return entry.model_dump()
 
 
-@router.get("/ledger/suppliers", response_model=PageResponse)
+@router.get("/ledger/suppliers", response_model=PageResponse[SupplierLedgerSummaryRead])
 async def list_supplier_ledger(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("business:accounting:read"))],
