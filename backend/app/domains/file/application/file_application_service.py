@@ -62,6 +62,29 @@ async def store_generated_file(
     )
 
 
+async def _read_bounded(file: UploadFile, limit: int, chunk_size: int = 1024 * 1024) -> bytes:
+    """Read an upload, refusing anything past `limit` **while reading** rather than after.
+
+    Round 204: `await file.read()` pulled the entire body into memory, so one large upload could exhaust the process.
+    **The count is of bytes as they arrive, not of `Content-Length`** — a client can omit or misstate that header, and the
+    memory has to be bounded either way. Memory therefore never exceeds the limit plus one chunk.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File exceeds the {limit} byte upload limit",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 async def upload_file(
     db: AsyncSession,
     *,
@@ -73,7 +96,7 @@ async def upload_file(
     # created: a `file_lifecycle_policies` row should mean an administrator decided something, and
     # nothing enforces those rows, so silently writing a 365-day default would be a false record.
     apply_lifecycle_policies(settings.minio_bucket)
-    content = await file.read()
+    content = await _read_bounded(file, settings.max_upload_bytes)
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
     suffix = Path(file.filename or "unknown").suffix.lower()

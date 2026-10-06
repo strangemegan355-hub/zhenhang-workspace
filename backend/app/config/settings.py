@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     realtime_replay_retention_days: int = Field(default=3, ge=1, le=30)
     realtime_archive_retention_days: int = Field(default=90, ge=7, le=365)
     realtime_retention_batch_size: int = Field(default=2000, ge=100, le=20000)
+    # Round 204: the upload path read the whole body into memory with no limit. This is the bound, and it is enforced by
+    # counting bytes as they arrive rather than by trusting `Content-Length`, which a client can omit or misstate.
+    max_upload_bytes: int = Field(default=25 * 1024 * 1024, ge=1024)
 
     maintenance_interval_seconds: int = Field(default=300, ge=60, le=86400)
 
