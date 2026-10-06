@@ -24,6 +24,20 @@ def resolve_data_scope(user) -> DataScope:
     return DataScope.SELF
 
 
+def owner_scope_user_id(user) -> UUID | None:
+    """The user id a repository filters on for SELF scope, or None when the scope is ALL.
+
+    This lived as three byte-identical copies under `app/domains/{config,file,quote}/policies/` until round 124.
+    The `scope_predicate` docstring above names that helper as one half of the historical contradiction — two
+    implementations of one enum with contradictory meanings — so a second copy of it is precisely how that
+    contradiction can return: a fix applied in three places is a fix that can diverge three ways.
+    """
+    scope = resolve_data_scope(user)
+    if scope == DataScope.ALL:
+        return None
+    return UUID(str(user.id))
+
+
 def _own_rows(model, user):
     return model.created_by == UUID(str(user.id))
 

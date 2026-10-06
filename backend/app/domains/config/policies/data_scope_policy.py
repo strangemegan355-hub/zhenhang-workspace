@@ -1,10 +1,9 @@
-from uuid import UUID
+"""Re-export of the shared data-scope helper. The implementation lives in `app/core/data_scope.py`.
 
-from app.core.data_scope import DataScope, resolve_data_scope
+This module held a byte-identical copy of `owner_scope_user_id` until round 124; it is kept so that
+`from app.domains.<name>.policies.data_scope_policy import owner_scope_user_id` keeps resolving.
+"""
 
+from app.core.data_scope import owner_scope_user_id
 
-def owner_scope_user_id(user) -> UUID | None:
-    scope = resolve_data_scope(user)
-    if scope == DataScope.ALL:
-        return None
-    return UUID(str(user.id))
+__all__ = ["owner_scope_user_id"]
