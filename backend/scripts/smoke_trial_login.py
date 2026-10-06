@@ -7,7 +7,8 @@ import sys
 import urllib.error
 import urllib.request
 
-BASE = "http://127.0.0.1:8000"
+# A trial runs on a server, not on the machine running this, so the host is overridable.
+BASE = os.getenv("ERP_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 # username, environment variable holding that account's password. These used to be literals,
 # which made this file a credential list; accounts without the variable are reported as skipped.
 ACCOUNTS = [

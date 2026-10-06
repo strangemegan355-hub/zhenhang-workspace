@@ -40,7 +40,13 @@ npm run dev:web
 .\scripts\verify_delivery.ps1
 cd backend
 python scripts/verify_permissions.py
+python scripts/smoke_trial_login.py        # 逐个试用账号登录并读 /users/me，报告权限数
 ```
+
+`smoke_trial_login.py` 读取 `TRIAL_*_PASSWORD` 环境变量（没有默认口令；未设的账号报告为 `[SKIP]`），
+探测的主机可用 `ERP_BASE_URL` 覆盖（默认 `http://127.0.0.1:8000`），因此可以直接对试用服务器跑。
+退出码：`0` 全部通过、`1` 有账号登录失败、**`2` 一个都没检查**——最后一种刻意与成功区分开，避免"什么都没跑"
+被当成通过。它在 `urllib` 默认的代理设置下工作，所以本机探测若被代理拦截，请用 `NO_PROXY` 放行。
 
 ---
 
