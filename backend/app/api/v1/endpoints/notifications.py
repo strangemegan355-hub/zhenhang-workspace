@@ -18,7 +18,7 @@ from app.schemas.common import page_response
 router = APIRouter()
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[NotificationRead])
 async def list_notifications(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("platform:notification:read"))],

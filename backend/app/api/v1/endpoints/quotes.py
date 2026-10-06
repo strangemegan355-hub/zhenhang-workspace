@@ -30,6 +30,8 @@ from app.schemas.quote import (
     CustomerQuoteCreate,
     CustomerQuoteUpdate,
 )
+from app.schemas.quote import ApprovalTemplateRead
+from app.schemas.quote import QuoteRead
 
 router = APIRouter()
 
@@ -43,7 +45,7 @@ async def create_quote(
     return await app_svc.create_quote(db, payload.model_dump(), current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[QuoteRead])
 async def list_quotes(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:quote:read"))],
@@ -130,7 +132,7 @@ async def create_approval_template(
     return await app_svc.create_approval_template(db, payload.model_dump(), current)
 
 
-@router.get("/approval-templates", response_model=PageResponse)
+@router.get("/approval-templates", response_model=PageResponse[ApprovalTemplateRead])
 async def list_approval_templates(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("business:quote:read"))],

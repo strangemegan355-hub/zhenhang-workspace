@@ -10,11 +10,12 @@ from app.models.user import User
 from app.schemas.admin import RoleCreate, RolePermissionUpdate, RoleRead, RoleUpdate
 from app.schemas.common import PageResponse
 from app.services import admin_service as svc
+from app.schemas.admin import RoleRead
 
 router = APIRouter()
 
 
-@router.get("", response_model=PageResponse, summary="List roles")
+@router.get("", response_model=PageResponse[RoleRead], summary="List roles")
 async def list_roles(
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_permissions("system:role:read"))],

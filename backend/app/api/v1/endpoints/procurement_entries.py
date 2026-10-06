@@ -15,6 +15,7 @@ from app.schemas.procurement_entry import (
     ProcurementTransferResult,
 )
 from app.services import procurement_service as svc
+from app.schemas.accounting import AccountingEntryRead
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ async def create_procurement_entry(
     return await svc.create_entry(db, payload, current)
 
 
-@router.get("", response_model=PageResponse)
+@router.get("", response_model=PageResponse[AccountingEntryRead])
 async def list_procurement_entries(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(require_permissions("business:procurement:read"))],
