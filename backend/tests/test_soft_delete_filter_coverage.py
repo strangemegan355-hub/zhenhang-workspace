@@ -143,3 +143,45 @@ def test_every_repository_scan_carries_the_soft_delete_predicate():
         "these repository queries scan a soft-deletable model without excluding deleted rows, so a deleted record "
         "would still be returned:\n  " + "\n  ".join(offenders)
     )
+
+
+# --- The service layer, added in round 195. ---------------------------------------------------------------------------
+# Round 194's instrument pointed at `app/services` and `app/domains/*/application` finds **16** selects on a
+# soft-deletable model, of which **two** lack the predicate, and both are the same shape:
+#
+#     customer = (await db.execute(select(Customer).where(Customer.id == quote.customer_id))).scalar_one_or_none()
+#     machine  = (await db.execute(select(Machine).where(Machine.id == quote.machine_id))).scalar_one_or_none()
+#
+# in `quote_export_payload.build_export_payload`. **The quote itself is fetched through the repository** (line 27), so
+# scope and soft-delete do apply to it; these two lookups only resolve the *names* of entities the quote already
+# references. **A soft-deleted customer's name therefore still appears on an export** — defensible as the historical fact
+# the document records, and a decision rather than an oversight. **Recorded so it is not mistaken for either**, and
+# because deleting the customer does not blank a document that was issued while it existed.
+REVIEWED_HISTORICAL_NAME_LOOKUPS = {
+    ("app/domains/quote/application/quote_export_payload.py", 33),
+    ("app/domains/quote/application/quote_export_payload.py", 38),
+}
+
+
+def _service_files() -> list[Path]:
+    roots = [BACKEND / "app" / "services", *(BACKEND / "app" / "domains").glob("*/application")]
+    return sorted(p for root in roots if root.is_dir() for p in root.rglob("*.py"))
+
+
+def test_service_layer_scans_missing_the_predicate_are_the_reviewed_pair():
+    soft = _soft_delete_models()
+    found: set[tuple[str, int]] = set()
+    for path in _service_files():
+        for entry in _scans_missing_the_predicate(path, soft):
+            relative, _, rest = entry.partition(":")
+            found.add((relative, int(rest.split()[0])))
+
+    added = sorted(found - REVIEWED_HISTORICAL_NAME_LOOKUPS)
+    removed = sorted(REVIEWED_HISTORICAL_NAME_LOOKUPS - found)
+    assert not added and not removed, (
+        "the set of service-layer scans of a soft-deletable model without the predicate changed.\n"
+        f"  new:     {added or 'none'}\n"
+        f"  fixed:   {removed or 'none'}\n"
+        "A new one means a service returns rows it should exclude; if it is a historical lookup like the recorded pair, "
+        "record the reason here rather than widening the predicate silently."
+    )
