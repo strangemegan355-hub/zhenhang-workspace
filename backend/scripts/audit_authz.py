@@ -198,6 +198,26 @@ def main() -> int:
     auth_only = [r for r in unprotected if r["auth_required"]]
 
     forbidden = extract_policy_forbidden(backend)
+
+    # The front-end menu is a third source of permission codes: a menu entry is gated on one, and a code no role
+    # can hold hides that entry from everyone. Read inline rather than through a helper so this stays additive.
+    menu_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "..",
+        "apps",
+        "web-admin",
+        "src",
+        "lib",
+        "menu.ts",
+    )
+    menu_codes: set[str] = set()
+    if os.path.exists(menu_path):
+        with open(menu_path, encoding="utf-8", errors="replace") as handle:
+            menu_codes = set(re.findall(r'permission:\s*"([^"]+)"', handle.read()))
+    menu_unreachable_defect = {
+        code for code in menu_codes if code not in seeded and code not in forbidden
+    }
+    menu_unreachable_by_policy = {code for code in menu_codes if code in forbidden}
     missing: dict[str, list[str]] = defaultdict(list)
     for route in routes:
         for code in route["all_of"] + route["any_of"]:
@@ -222,6 +242,10 @@ def main() -> int:
         "codes_unreachable_by_policy": {code: sorted(targets) for code, targets in sorted(missing_by_policy.items())},
         "codes_unreachable_defect": {code: sorted(targets) for code, targets in sorted(missing_defects.items())},
         "seeded_codes_never_required": sorted(set(seeded) - used),
+        "menu_code_count": len(menu_codes),
+        "menu_codes_unreachable_by_policy": sorted(menu_unreachable_by_policy),
+        "menu_codes_unreachable_defect": sorted(menu_unreachable_defect),
+        "seeded_codes_used_by_no_route_and_no_menu": sorted((set(seeded) - used) - menu_codes),
     }
 
     out = args.out or os.path.join(os.path.dirname(os.path.abspath(__file__)), "authz-audit.json")
@@ -268,6 +292,17 @@ def main() -> int:
         print(f"   {code}")
     print()
 
+    print(f"== front-end menu codes: {len(menu_codes)} ==")
+    if menu_unreachable_by_policy:
+        print(f"   gated on a policy-reserved code, so shown only to the superuser: {sorted(menu_unreachable_by_policy)}")
+    if menu_unreachable_defect:
+        print("   ACTIONABLE — gated on a code no seeder can grant and policy does not reserve:")
+        for code in sorted(menu_unreachable_defect):
+            print(f"      {code}")
+    unused = sorted((set(seeded) - used) - menu_codes)
+    print(f"   seeded codes used by no route and no menu: {unused if unused else 'none'}")
+    print()
+
     by_module: Counter[str] = Counter(r["module"].replace("app.api.v1.endpoints.", "") for r in routes)
     print("== routes per module ==")
     for module, count in sorted(by_module.items(), key=lambda kv: (-kv[1], kv[0])):
@@ -279,7 +314,16 @@ def main() -> int:
     if missing_defects:
         print(f"RESULT: FAIL — {len(missing_defects)} permission code(s) unreachable by every provisioned role")
         return 1
-    print("RESULT: PASS — every code a route requires is either granted to a role or forbidden by policy")
+    if menu_unreachable_defect:
+        print(
+            f"RESULT: FAIL — {len(menu_unreachable_defect)} menu code(s) no seeder can grant and policy does not "
+            "reserve, so those menu entries are invisible to every role"
+        )
+        return 1
+    print(
+        "RESULT: PASS — every code a route requires is either granted to a role or forbidden by policy, and every "
+        "menu code is either grantable or reserved for the superuser"
+    )
     return 0
 
 
