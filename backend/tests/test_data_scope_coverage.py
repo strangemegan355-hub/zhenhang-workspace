@@ -178,3 +178,79 @@ def test_project_actual_costs_follow_their_project():
     text = (BACKEND / "app/services/actual_cost_service.py").read_text(encoding="utf-8")
     assert "scope_predicate_via_parent" in text
     assert "ProjectActualCost.project_id" in text
+
+
+# Direct queries of a scoped model inside a service, listed one by one. There is deliberately **no heuristic**
+# here: a first attempt skipped any function that mentioned a scope helper anywhere, and `void_entry` mentions one
+# — it enters through `repo.get_entry(..., predicate=scope_predicate(AccountingEntry, current_user))` — so the rule
+# skipped the whole function and found **nothing**, which its own vacuity guard caught. "The function mentions
+# scope" is not "this select is scoped", so every site is read and recorded instead.
+#
+# Each entry says why it is correct where it is:
+#   accounting_service.void_entry        the entry the caller acts on is scope-checked at the door; these are the
+#                                        documents it came from, reached as downstream effects of an owned entry
+#   *get_dashboard_overview              builds `quote_filters` from `owner_scope_user_id(current_user)` and
+#   *get_workshop_board                  passes them to every Quote aggregate it runs (round 111)
+REVIEWED_DIRECT_QUERIES: set[tuple[str, str, str]] = {
+    ("app/services/accounting_service.py", "void_entry", "FieldworkRecord"),
+    ("app/services/accounting_service.py", "void_entry", "ProcurementEntry"),
+    ("app/services/accounting_service.py", "void_entry", "Quote"),
+    ("app/services/dashboard_service.py", "get_dashboard_overview", "Quote"),
+    ("app/services/workshop_board_service.py", "get_workshop_board", "Quote"),
+}
+
+
+def direct_scoped_selects() -> set[tuple[str, str, str]]:
+    """(file, enclosing function, model) for every raw select of a scoped model in `app/services`.
+
+    Round 111's three defects hid here: `test_scope_coverage` watches repository calls that omit `predicate=`, and
+    a service that skips the repository entirely is invisible to it. This lists the sites that do query directly,
+    so a new one has to be looked at.
+    """
+    import ast
+
+    scoped_models = tuple(SCOPED_DOCUMENTS.values())
+    found: set[tuple[str, str, str]] = set()
+    for path in sorted((APP / "services").glob("*.py")):
+        source = path.read_text(encoding="utf-8")
+        for node in ast.walk(ast.parse(source)):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for inner in ast.walk(node):
+                if not isinstance(inner, ast.Call):
+                    continue
+                called = inner.func
+                name = (
+                    called.attr
+                    if isinstance(called, ast.Attribute)
+                    else (called.id if isinstance(called, ast.Name) else "")
+                )
+                if name not in {"execute", "scalar"}:
+                    continue
+                segment = ast.get_source_segment(source, inner) or ""
+                for model in scoped_models:
+                    if re.search(rf"select(_from)?\(\s*{model}\b", segment):
+                        found.add((path.relative_to(BACKEND).as_posix(), node.name, model))
+    return found
+
+
+def test_every_direct_query_of_a_scoped_model_is_reviewed():
+    """A service that queries a scoped model itself has to be read and recorded."""
+    found = direct_scoped_selects()
+    # A detector that finds nothing would pass silently, so it has to reach the reviewed list. The first version of
+    # this rule skipped any function mentioning a scope helper and found **zero**, which this line caught.
+    assert len(found) >= len(REVIEWED_DIRECT_QUERIES), (
+        f"the detector found {len(found)} direct queries of a scoped model, fewer than the {len(REVIEWED_DIRECT_QUERIES)} "
+        "recorded, so it is probably broken rather than the code being clean"
+    )
+
+    new = sorted(found - REVIEWED_DIRECT_QUERIES)
+    stale = sorted(REVIEWED_DIRECT_QUERIES - found)
+    assert not new, (
+        "these services query a scoped model directly and are not recorded. Apply a scope, or add the entry with "
+        "the reason it is correct:\n" + "\n".join(f"    {entry!r}," for entry in new)
+    )
+    assert not stale, (
+        "these recorded direct queries no longer exist, so the record is out of date:\n"
+        + "\n".join(f"    {entry!r}," for entry in stale)
+    )
