@@ -59,11 +59,19 @@ def _git_available() -> bool:
 pytestmark = pytest.mark.skipif(not _git_available(), reason="not a git checkout")
 
 
+# Composed at runtime, never written literally: a real header in this file would (correctly) make
+# test_no_tracked_file_contains_private_key_material fail, since the detector cannot tell a fixture
+# from a leaked key and should not try.
+SAMPLE_KEY_HEADER = "-----BEGIN " + "RSA " + "PRIVATE KEY-----" + "\nMIIE..."
+SAMPLE_OPENSSH_HEADER = "-----BEGIN " + "OPENSSH " + "PRIVATE KEY-----"
+SAMPLE_CERTIFICATE_HEADER = "-----BEGIN " + "CERTIFICATE-----"
+
+
 def test_the_detector_recognises_a_private_key():
     """Positive control: without this the file could pass by matching nothing at all."""
-    assert PRIVATE_KEY_HEADER.search("-----BEGIN RSA PRIVATE KEY-----\nMIIE...")
-    assert PRIVATE_KEY_HEADER.search("-----BEGIN OPENSSH PRIVATE KEY-----")
-    assert not PRIVATE_KEY_HEADER.search("-----BEGIN CERTIFICATE-----")
+    assert PRIVATE_KEY_HEADER.search(SAMPLE_KEY_HEADER)
+    assert PRIVATE_KEY_HEADER.search(SAMPLE_OPENSSH_HEADER)
+    assert not PRIVATE_KEY_HEADER.search(SAMPLE_CERTIFICATE_HEADER)
 
 
 def test_no_tracked_file_contains_private_key_material():
