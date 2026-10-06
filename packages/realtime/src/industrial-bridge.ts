@@ -49,14 +49,18 @@ export function useIndustrialRealtimeBridge(options: {
     onReconnectedRef.current = options.onReconnected;
   }, [options.onEvent, options.onReconnected]);
 
-  const [ticket, setTicket] = useState<RealtimeTicket | null>(null);
+  const [ticketState, setTicketState] = useState<{ token: string; ticket: RealtimeTicket } | null>(
+    null,
+  );
+  // Derived rather than cleared by the effect: a ticket issued for a different access token must not be
+  // used, and clearing state synchronously inside an effect is what the React Compiler flags.
+  const ticket = ticketState && ticketState.token === options.accessToken ? ticketState.ticket : null;
 
   // A URL cannot carry the access token safely, so the transport credential is a short-lived
   // ticket that is re-issued before it expires. Refreshing it changes the URL below, which is
   // what makes the gateway reconnect with a fresh, valid credential instead of a stale one.
   useEffect(() => {
     if (!enabled || !options.accessToken) {
-      setTicket(null);
       return;
     }
     let cancelled = false;
@@ -67,7 +71,7 @@ export function useIndustrialRealtimeBridge(options: {
       try {
         const next = await fetchRealtimeTicket(options.apiBase, options.accessToken as string, ctrl.signal);
         if (cancelled) return;
-        setTicket(next);
+        setTicketState({ token: options.accessToken as string, ticket: next });
         const refreshIn = Math.max(TICKET_MIN_REFRESH_MS, (next.expiresIn - 30) * 1000);
         timer = window.setTimeout(() => void load(), refreshIn);
       } catch {
