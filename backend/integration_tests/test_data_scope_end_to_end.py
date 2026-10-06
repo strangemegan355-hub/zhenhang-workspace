@@ -225,5 +225,52 @@ async def test_a_single_object_of_another_department_is_not_found():
     )
 
 
+async def _project_page(username: str, env_name: str, page_size: int) -> dict:
+    """The whole `data` body of `/api/v1/projects` for one account."""
+    from app.main import app
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://integration") as client:
+        token = await _login(client, username, env_name)
+        response = await client.get(
+            "/api/v1/projects",
+            params={"page": 1, "page_size": page_size},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert response.status_code == 200, response.text[:400]
+    body = response.json()
+    return body.get("data", body)
+
+
+async def test_the_pagination_total_counts_rows_rather_than_the_page():
+    """`total` is what a pager displays, and nothing asserted it against a real count.
+
+    Every other assertion on `total` in the suite is against a **stub**: `test_admin_plane.py` monkeypatches a lister
+    returning `total=0`, and `test_accounting_enhancements.py` returns `total=5` from a fake. So "total is a count, and
+    it is scoped like the rows" was never checked. Asking for **one row of a two-row page** separates the two:
+    `len(items) == 1` while `total >= 2` can only happen if `total` is the full count.
+    """
+    await _seed_two_departments()
+    try:
+        boss_page = await _project_page("boss", "TRIAL_BOSS_PASSWORD", 1)
+        sales_page = await _project_page("sales01", "TRIAL_SALES_PASSWORD", 1)
+    finally:
+        await _teardown()
+
+    assert len(boss_page["items"]) == 1, f"page_size=1 returned {len(boss_page['items'])} rows"
+    assert boss_page["total"] >= 2, (
+        f"an all-scope account sees both seeded projects but reports total={boss_page['total']}; a total equal to the "
+        "page length is the bug this asserts against"
+    )
+    assert boss_page["page"] == 1 and boss_page["page_size"] == 1
+
+    # `sales01` is department-scoped, and its own department holds one of the two projects.
+    assert sales_page["total"] < boss_page["total"], (
+        f"a department-scoped account reports total={sales_page['total']} and an all-scope one {boss_page['total']}; "
+        "if the count ignores the data scope it discloses how many rows exist outside the caller's reach"
+    )
+    assert sales_page["total"] >= len(sales_page["items"])
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
