@@ -17,3 +17,21 @@ services:
     image: redis:7-alpine
     ports:
       - "56379:6379"
+
+  # Object storage is a first-class dependency of the file centre, and until now nothing in the suite
+  # could reach it — the lifecycle call against a real server had never been made. It lives on its own
+  # ports, like the rest of this stack, and uses the same healthcheck as the production compose.
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "59000:9000"
+      - "59001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20

@@ -84,12 +84,17 @@ def build_lifecycle_config():
 
     Exactly one rule: abort incomplete multipart uploads. It is the only one that cannot lose data.
     """
+    from minio.commonconfig import Filter
     from minio.lifecycleconfig import AbortIncompleteMultipartUpload, LifecycleConfig, Rule
 
     return LifecycleConfig(
         [
             Rule(
                 status="Enabled",
+                # S3 requires every rule to carry a filter; without one MinIO rejects the whole request
+                # with InvalidArgument. An empty prefix means "every object", which is what aborting
+                # incomplete multipart uploads is meant to cover.
+                rule_filter=Filter(prefix=""),
                 rule_id="abort-incomplete-multipart-upload",
                 abort_incomplete_multipart_upload=AbortIncompleteMultipartUpload(
                     days_after_initiation=ABORT_INCOMPLETE_MULTIPART_DAYS
