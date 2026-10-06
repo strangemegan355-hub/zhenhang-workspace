@@ -3,6 +3,9 @@
 # Usage: bash scripts/ci.sh
 
 set -e
+# Without pipefail, `set -e` looks at the last command of a pipeline. Every check below ends in `| tail`,
+# so a failing test, lint or build would be reported as "All checks passed".
+set -o pipefail
 cd "$(dirname "$0")/.."
 
 echo "=== Backend: Python syntax check ==="
@@ -11,7 +14,9 @@ import sys
 from pathlib import Path
 errors = []
 for f in Path('backend').rglob('*.py'):
-    if 'node_modules' in str(f) or '__pycache__' in str(f):
+    # .venv/site-packages: the virtualenv is not the project, and compiling it buries this
+    # check in third-party SyntaxWarnings (passlib ships some).
+    if any(part in str(f) for part in ('node_modules', '__pycache__', '.venv', 'site-packages')):
         continue
     try:
         compile(f.read_text(encoding='utf-8'), str(f), 'exec')
