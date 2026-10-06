@@ -69,3 +69,21 @@ CMD ["uvicorn", "app.main:app"]
     copied = _copied_sources(pre_fix)
     assert "workers" not in copied, "the positive control must model the pre-fix Dockerfile"
     assert "app" in copied and "scripts" in copied, "the control should still find the copies that were there"
+
+
+def test_every_script_a_container_runs_exists():
+    """The api container runs `python scripts/<file>.py` before serving.
+
+    Copying the `scripts` directory is not enough: a rename or a delete would leave the directory in place
+    and the container dead on startup, and nothing else here would notice.
+    """
+    compose = (REPO / "docker-compose.prod.yml").read_text(encoding="utf-8")
+    referenced = sorted(set(SCRIPT_COMMAND.findall(compose)))
+    assert referenced, "the compose should still run at least one script"
+
+    missing = [relative for relative in referenced if not (BACKEND / relative).exists()]
+    assert missing == [], (
+        f"docker-compose.prod.yml runs {missing}, which do not exist under backend/; the container "
+        "would exit before it ever serves a request"
+    )
+
