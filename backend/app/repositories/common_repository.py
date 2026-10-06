@@ -47,11 +47,3 @@ async def get_by_id(db: AsyncSession, model: Any, object_id: UUID, predicate=Non
         stmt = stmt.where(predicate)
     return (await db.execute(stmt)).scalar_one_or_none()
 
-
-async def soft_delete_by_id(db: AsyncSession, model: Any, object_id: UUID) -> bool:
-    obj = await get_by_id(db, model, object_id)
-    if obj is None:
-        return False
-    obj.is_deleted = True
-    await db.commit()
-    return True

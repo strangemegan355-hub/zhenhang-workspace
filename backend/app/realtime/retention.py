@@ -24,10 +24,6 @@ def hot_cutoff() -> datetime:
     return datetime.now(UTC) - timedelta(days=settings.realtime_hot_retention_days)
 
 
-def replay_cutoff() -> datetime:
-    return datetime.now(UTC) - timedelta(days=settings.realtime_replay_retention_days)
-
-
 def archive_purge_cutoff() -> datetime:
     return datetime.now(UTC) - timedelta(days=settings.realtime_archive_retention_days)
 

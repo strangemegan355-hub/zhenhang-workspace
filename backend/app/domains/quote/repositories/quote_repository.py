@@ -217,11 +217,6 @@ async def update_quote_state(db: AsyncSession, quote: Quote, new_state: str) -> 
     return quote
 
 
-async def get_quote_version(db: AsyncSession, quote_version_id: UUID) -> QuoteVersion | None:
-    stmt = select(QuoteVersion).where(QuoteVersion.id == quote_version_id, QuoteVersion.is_deleted.is_(False))
-    return (await db.execute(stmt)).scalar_one_or_none()
-
-
 async def get_quote_version_by_no(db: AsyncSession, quote_id: UUID, version_no: int) -> QuoteVersion | None:
     stmt = select(QuoteVersion).where(
         QuoteVersion.quote_id == quote_id,

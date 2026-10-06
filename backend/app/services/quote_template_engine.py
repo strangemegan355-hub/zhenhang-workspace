@@ -369,14 +369,3 @@ def render_quote_excel_cost(payload: dict) -> bytes:
     wb.save(buffer)
     return buffer.getvalue()
 
-
-def render_jinja_text_preview(template_id: str, payload: dict) -> str:
-    env = Environment(
-        loader=FileSystemLoader(str(_TEMPLATES_ROOT / "pdf")),
-        autoescape=select_autoescape(["html", "xml"]),
-    )
-    try:
-        tpl = env.get_template("default_quote.j2")
-        return tpl.render(**payload)
-    except Exception:
-        return f"Quote {payload.get('quote_no', '')}"
