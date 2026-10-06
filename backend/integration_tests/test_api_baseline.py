@@ -19,9 +19,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 NEEDS_SEED = (
-    "run the baseline first, which migrates, bootstraps the admin, seeds the trial accounts and "
-    "exports a throwaway password for them: "
-    "powershell -NoProfile -ExecutionPolicy Bypass -File <workspace>\\phase2\\phase2_baseline.ps1"
+    "run the baseline first, from the repository root: "
+    "cd backend && python -m alembic upgrade head && python scripts/bootstrap_admin.py "
+    "&& python scripts/seed_tenant.py && python scripts/setup_trial_users.py "
+    "— with BOOTSTRAP_ADMIN_PASSWORD and the TRIAL_*_PASSWORD variables set to throwaway values, which is exactly "
+    "what .github/workflows/ci.yml does before the integration suite. That order is the one "
+    "scripts/setup_trial_users.py documents in its own docstring."
 )
 
 

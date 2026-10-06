@@ -29,9 +29,12 @@ from sqlalchemy import delete, select
 
 MARKER = "it-scope"
 NEEDS_SEED = (
-    "run the baseline first, which migrates, seeds the trial accounts and exports throwaway "
-    "passwords for them: powershell -NoProfile -ExecutionPolicy Bypass -File "
-    "<workspace>\\phase2\\phase2_baseline.ps1"
+    "run the baseline first, from the repository root: "
+    "cd backend && python -m alembic upgrade head && python scripts/bootstrap_admin.py "
+    "&& python scripts/seed_tenant.py && python scripts/setup_trial_users.py "
+    "— with BOOTSTRAP_ADMIN_PASSWORD and the TRIAL_*_PASSWORD variables set to throwaway values, which is exactly "
+    "what .github/workflows/ci.yml does before the integration suite. That order is the one "
+    "scripts/setup_trial_users.py documents in its own docstring."
 )
 
 
