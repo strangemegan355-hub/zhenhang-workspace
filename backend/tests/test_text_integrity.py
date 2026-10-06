@@ -10,7 +10,7 @@ Only three things are damage:
 3. a literal **`?` sandwiched between two CJK characters** — which cannot be TypeScript.
 
 The third definition is narrow on purpose. A first attempt also flagged any string or template literal holding CJK
-and a run of question marks, and that reported **91 false positives across 43 files**: `??` (nullish coalescing),
+and a run of question marks, and the detector's first version, in round 84, reported **91 false positives across 43 files**: `??` (nullish coalescing),
 `?.` (optional chaining) and template-literal boundaries are all legal beside Chinese. The file round 84 named now
 holds 136 CJK characters and 51 question marks, **none of them damage**.
 

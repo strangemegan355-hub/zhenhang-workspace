@@ -1,6 +1,6 @@
 """A module with content must be imported by something, or be recorded as inert.
 
-Found by measuring reachability instead of counting names in test files. **The first sweep was the wrong instrument**:
+Found by measuring reachability instead of counting names in test files, in round 158. **Its first sweep was the wrong instrument**:
 it reported 133 of 142 modules with a function no test calls, which counts a *name in a test file* and therefore marks
 every service invoked **through a route** as uncovered — the same "a name is not the object" wall as rounds 147 and 149.
 Reporting that as a coverage gap would have been a fabricated alarm.
@@ -9,7 +9,7 @@ Reachability by **imports** gives a believable answer — measured in round 158,
 production entry points, and the tests reach the same 259. Of the rest, about forty-five are one-to-three-line package
 `__init__.py` files, which a package requires and which are therefore not dead.
 
-**What is left, and what this guard pins, is the handful of files with real content that nothing imports at all:**
+**What round 158 left, and what this guard pins, is the handful of files with real content that nothing imports at all:**
 
 * `app/commands/quote_commands.py` (28 lines) — a `CreateQuoteCommand` dataclass;
 * `app/queries/quote_queries.py` (16 lines) — the matching `ListQuotesQuery` and `CompareQuoteVersionsQuery`;

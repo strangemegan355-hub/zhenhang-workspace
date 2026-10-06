@@ -4,8 +4,8 @@ Round 156 pinned **who may receive** an envelope (`acl.py`). Measured next: **al
 `publish.py` are called by no test**, and that module opens its **own** `AsyncSessionLocal`, so it belongs in the
 integration suite. **The two layers underneath it are pure or in-process and were equally untested:**
 
-* `envelope.py` (51 lines) builds the messages the two Vite apps' realtime bridge consumes;
-* `hub.py` (67 lines) is the in-process fan-out — **and getting the fan-out wrong means delivering one user's event to
+* `envelope.py` (51 lines when measured in round 157) builds the messages the two Vite apps' realtime bridge consumes;
+* `hub.py` (67 lines when measured in round 157) is the in-process fan-out — **and getting the fan-out wrong means delivering one user's event to
   another**, which is why this is not merely a convenience test.
 
 Two behaviours are **asserted as documented rather than blessed**:
