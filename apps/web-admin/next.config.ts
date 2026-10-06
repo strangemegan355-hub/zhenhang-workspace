@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     "@zhenhang/ui",
     "@zhenhang/auth",
-    "@zhenhang/api-sdk",
     "@zhenhang/http-client",
     "@zhenhang/query-hooks",
     "@zhenhang/data-grid",
