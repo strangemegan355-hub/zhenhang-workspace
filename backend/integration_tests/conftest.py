@@ -26,7 +26,20 @@ INTEGRATION_DATABASE_URL = os.getenv(
     "INTEGRATION_DATABASE_URL",
     "postgresql+psycopg://erp:erp@localhost:55432/erp_db",
 )
-INTEGRATION_REDIS_URL = os.getenv("INTEGRATION_REDIS_URL", "redis://localhost:56379/0")
+# localhost costs ~21 s on Windows: the name resolves to 127.0.0.1 and ::1 and the client spends
+# the timeout across both. Normalise once here so the fixture and the application both get it.
+INTEGRATION_REDIS_URL = (
+    os.getenv("INTEGRATION_REDIS_URL", "redis://localhost:56379/0")
+    .replace("localhost", "127.0.0.1")
+)
+INTEGRATION_MINIO_ENDPOINT = os.getenv("INTEGRATION_MINIO_ENDPOINT", "127.0.0.1:59000")
+
+# The application reads its own REDIS_URL and MINIO_ENDPOINT, so defining the integration values
+# alone left these tests talking to whatever was on the development ports. Export them, rewriting
+# `localhost` to 127.0.0.1 the way `_script_utils.database_url()` already does for the database:
+# on Windows the name resolves to both families and each client spends ~21 s across them.
+os.environ.setdefault("REDIS_URL", INTEGRATION_REDIS_URL.replace("localhost", "127.0.0.1"))
+os.environ.setdefault("MINIO_ENDPOINT", INTEGRATION_MINIO_ENDPOINT.replace("localhost", "127.0.0.1"))
 
 
 @pytest.fixture
@@ -52,4 +65,5 @@ def integration_help_text() -> str:
     return (
         "Start services first: "
         "docker compose -f integration_tests/docker-compose.integration.yml up -d"
-    )
+    )
+

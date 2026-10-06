@@ -30,8 +30,11 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://erp:erp@127.0.0.1:5432/erp_db",
     )
 
-    redis_url: RedisDsn = Field(default="redis://localhost:6379/0")
-    minio_endpoint: str = "localhost:9000"
+    # 127.0.0.1 rather than localhost: on Windows the name resolves to both 127.0.0.1 and ::1, and
+    # redis-py and minio-py each spend ~21 s across the two families before connecting. Measured:
+    # localhost took 21.07 s and 127.0.0.1 0.00 s. The deployment supplies a service name instead.
+    redis_url: RedisDsn = Field(default="redis://127.0.0.1:6379/0")
+    minio_endpoint: str = "127.0.0.1:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
     minio_secure: bool = False
