@@ -92,8 +92,9 @@ def seed() -> None:
     with SessionLocal() as db:
         admin = db.execute(select(User).where(User.username == "admin")).scalar_one_or_none()
         if admin is None:
-            print("ERROR: admin user not found. Run bootstrap_admin.py first.")
-            return
+            # Exit 1 rather than printing and returning: a seed that did nothing must not report success to the
+            # shell, a CI job or an operator's wrapper script.
+            raise SystemExit("ERROR: admin user not found. Run bootstrap_admin.py first.")
 
         admin_role = db.execute(select(Role).where(Role.code == "admin")).scalar_one_or_none()
         if admin_role is not None:
