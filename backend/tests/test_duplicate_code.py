@@ -32,8 +32,10 @@ DUPLICATE = re.compile(r"\s+")
 
 # (function name, number of files, what the copies are). The body hash is deliberately not pinned: a change to one
 # copy must fail this test rather than rotate a hash quietly.
+#
+# `_page` was here as ten identical copies plus a diverged eleventh in `admin_service`; round 125 moved the
+# implementation to `app/schemas/common.py` and made all eleven services import it as `_page`, so the entry is gone.
 REVIEWED_DUPLICATES: dict[str, tuple[int, str]] = {
-    "_page": (10, "pagination helper, identical in ten services; belongs in one shared module"),
     "save_request": (3, "request-number persistence, identical in three repositories"),
     "commit_session": (2, "session commit wrapper, identical in two repositories"),
     "_money": (2, "decimal rounder, identical in two services"),
@@ -95,7 +97,7 @@ def test_the_normaliser_separates_the_two_known_cases():
 def test_no_function_is_defined_identically_in_two_files():
     found = duplicate_bodies()
     # A scan that found nothing would make both verdicts meaningless.
-    assert len(found) >= 5, f"only {len(found)} duplicated names were found, which is too few to be real"
+    assert len(found) >= 4, f"only {len(found)} duplicated names were found, which is too few to be real"
 
     new = sorted(name for name in found if name not in REVIEWED_DUPLICATES)
     stale = sorted(name for name in REVIEWED_DUPLICATES if name not in found)

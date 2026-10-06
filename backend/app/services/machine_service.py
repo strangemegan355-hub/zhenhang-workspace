@@ -19,18 +19,9 @@ from app.schemas.machine import (
 )
 from app.services.audit_service import write_audit_log
 from app.services.workflow_service import get_next_state_code
+from app.schemas.common import page_response as _page
 
 T = TypeVar("T", bound=BaseModel)
-
-
-def _page(total: int, page: int, page_size: int, items: list, schema: type[T]) -> PageResponse:
-    return PageResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=[schema.model_validate(i) for i in items],
-    )
-
 
 async def _get_or_404(getter, db: AsyncSession, object_id, label: str):
     obj = await getter(db, object_id)
@@ -38,26 +29,21 @@ async def _get_or_404(getter, db: AsyncSession, object_id, label: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{label} not found")
     return obj
 
-
 async def create_machine_category(db: AsyncSession, payload: dict, current_user: User):
     payload["created_by"] = current_user.id
     return await repo.create_machine_category(db, payload)
-
 
 async def list_machine_categories(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, items = await repo.list_machine_categories(db, page, page_size, q)
     return _page(total, page, page_size, items, MachineCategoryRead)
 
-
 async def update_machine_category(db: AsyncSession, object_id, payload: dict):
     obj = await _get_or_404(repo.get_machine_category, db, object_id, "Machine category")
     return await repo.update_machine_category(db, obj, payload)
 
-
 async def delete_machine_category(db: AsyncSession, object_id):
     obj = await _get_or_404(repo.get_machine_category, db, object_id, "Machine category")
     return await repo.soft_delete_machine_category(db, obj)
-
 
 async def create_machine(db: AsyncSession, payload: dict, current_user: User):
     if await repo.exists_machine_name(db, payload["name"]):
@@ -66,11 +52,9 @@ async def create_machine(db: AsyncSession, payload: dict, current_user: User):
     payload["machine_code"] = await _generate_machine_code(db, payload.get("code", "MACHINE"))
     return await repo.create_machine(db, payload)
 
-
 async def list_machines(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, items = await repo.list_machines(db, page, page_size, q)
     return _page(total, page, page_size, items, MachineRead)
-
 
 async def update_machine(db: AsyncSession, object_id, payload: dict):
     obj = await _get_or_404(repo.get_machine, db, object_id, "Machine")
@@ -82,16 +66,13 @@ async def update_machine(db: AsyncSession, object_id, payload: dict):
             raise UniqueViolationException("machine.name", payload["name"])
     return await repo.update_machine(db, obj, payload)
 
-
 async def delete_machine(db: AsyncSession, object_id):
     obj = await _get_or_404(repo.get_machine, db, object_id, "Machine")
     return await repo.soft_delete_machine(db, obj)
 
-
 async def create_machine_parameter(db: AsyncSession, payload: dict, current_user: User):
     payload["created_by"] = current_user.id
     return await repo.create_machine_parameter(db, payload)
-
 
 async def list_machine_parameters(
     db: AsyncSession, page: int, page_size: int, q: str | None, *, machine_id=None
@@ -99,21 +80,17 @@ async def list_machine_parameters(
     total, items = await repo.list_machine_parameters(db, page, page_size, q, machine_id=machine_id)
     return _page(total, page, page_size, items, MachineParameterRead)
 
-
 async def update_machine_parameter(db: AsyncSession, object_id, payload: dict):
     obj = await _get_or_404(repo.get_machine_parameter, db, object_id, "Machine parameter")
     return await repo.update_machine_parameter(db, obj, payload)
-
 
 async def delete_machine_parameter(db: AsyncSession, object_id):
     obj = await _get_or_404(repo.get_machine_parameter, db, object_id, "Machine parameter")
     return await repo.soft_delete_machine_parameter(db, obj)
 
-
 async def create_machine_image(db: AsyncSession, payload: dict, current_user: User):
     payload["created_by"] = current_user.id
     return await repo.create_machine_image(db, payload)
-
 
 async def list_machine_images(
     db: AsyncSession, page: int, page_size: int, q: str | None, *, machine_id=None
@@ -121,16 +98,13 @@ async def list_machine_images(
     total, items = await repo.list_machine_images(db, page, page_size, q, machine_id=machine_id)
     return _page(total, page, page_size, items, MachineImageRead)
 
-
 async def update_machine_image(db: AsyncSession, object_id, payload: dict):
     obj = await _get_or_404(repo.get_machine_image, db, object_id, "Machine image")
     return await repo.update_machine_image(db, obj, payload)
 
-
 async def delete_machine_image(db: AsyncSession, object_id):
     obj = await _get_or_404(repo.get_machine_image, db, object_id, "Machine image")
     return await repo.soft_delete_machine_image(db, obj)
-
 
 async def create_machine_bom(db: AsyncSession, payload: dict, current_user: User):
     if await repo.exists_bom_version(db, payload["machine_id"], payload["version"]):
@@ -145,15 +119,12 @@ async def create_machine_bom(db: AsyncSession, payload: dict, current_user: User
         await db.refresh(created)
     return created
 
-
 async def get_machine_bom(db: AsyncSession, bom_id):
     return await _get_or_404(repo.get_machine_bom, db, bom_id, "Machine BOM")
-
 
 async def list_machine_boms(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, items = await repo.list_machine_boms(db, page, page_size, q)
     return _page(total, page, page_size, items, MachineBomRead)
-
 
 async def update_machine_bom(db: AsyncSession, object_id, payload: dict):
     obj = await _get_or_404(repo.get_machine_bom, db, object_id, "Machine BOM")
@@ -175,14 +146,12 @@ async def update_machine_bom(db: AsyncSession, object_id, payload: dict):
     await db.refresh(updated)
     return updated
 
-
 async def delete_machine_bom(db: AsyncSession, object_id):
     obj = await _get_or_404(repo.get_machine_bom, db, object_id, "Machine BOM")
     deleted = await repo.soft_delete_machine_bom(db, obj)
     await repo.recalculate_bom_total_cost(db, obj.id)
     await db.commit()
     return deleted
-
 
 async def create_machine_bom_item(db: AsyncSession, payload: dict, current_user: User):
     payload["created_by"] = current_user.id
@@ -201,7 +170,6 @@ async def create_machine_bom_item(db: AsyncSession, payload: dict, current_user:
     await db.refresh(obj)
     return obj
 
-
 async def list_machine_bom_items(
     db: AsyncSession,
     page: int,
@@ -213,7 +181,6 @@ async def list_machine_bom_items(
     total, items = await repo.list_machine_bom_items(db, page, page_size, q, bom_id=bom_id)
     return _page(total, page, page_size, items, MachineBomItemRead)
 
-
 async def update_machine_bom_item(db: AsyncSession, object_id, payload: dict):
     obj = await _get_or_404(repo.get_machine_bom_item, db, object_id, "Machine BOM item")
     updated = await repo.update_machine_bom_item(db, obj, payload)
@@ -222,14 +189,12 @@ async def update_machine_bom_item(db: AsyncSession, object_id, payload: dict):
     await db.refresh(updated)
     return updated
 
-
 async def delete_machine_bom_item(db: AsyncSession, object_id):
     obj = await _get_or_404(repo.get_machine_bom_item, db, object_id, "Machine BOM item")
     deleted = await repo.soft_delete_machine_bom_item(db, obj)
     await repo.recalculate_bom_total_cost(db, obj.bom_id)
     await db.commit()
     return deleted
-
 
 async def create_bom_items_batch(db: AsyncSession, items: list[dict], current_user: User):
     created = []
@@ -253,7 +218,6 @@ async def create_bom_items_batch(db: AsyncSession, items: list[dict], current_us
         await db.refresh(row)
     return created
 
-
 async def delete_machine_boms_batch(db: AsyncSession, ids: list, current_user: User):
     boms = await repo.get_machine_boms_by_ids(db, ids)
     for bom in boms:
@@ -269,7 +233,6 @@ async def delete_machine_boms_batch(db: AsyncSession, ids: list, current_user: U
     )
     await db.commit()
     return {"deleted_count": len(boms)}
-
 
 async def transition_bom_status(db: AsyncSession, bom_id, action_code: str, current_user: User):
     bom = await _get_or_404(repo.get_machine_bom, db, bom_id, "Machine BOM")
@@ -294,7 +257,6 @@ async def transition_bom_status(db: AsyncSession, bom_id, action_code: str, curr
     await db.commit()
     await db.refresh(updated)
     return updated
-
 
 async def _generate_machine_code(db: AsyncSession, base_code: str) -> str:
     today = date.today().strftime("%Y%m%d")

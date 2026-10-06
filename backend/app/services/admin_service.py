@@ -15,6 +15,7 @@ from app.schemas.admin import DepartmentRead, PermissionRead, RoleRead, TenantRe
 from app.schemas.common import PageResponse
 from app.schemas.user import UserAdminRead
 from app.services.audit_service import write_audit_log
+from app.schemas.common import page_response as _page
 
 # The admin plane is the only place that changes who may do what, so every mutation here is
 # audited, and the two association-writing operations carry their own escalation guards. The
@@ -24,39 +25,23 @@ from app.services.audit_service import write_audit_log
 
 SYSTEM_ROLE_CODES = frozenset({"admin"})
 
-
 def _is_superuser(user: User | None) -> bool:
     return bool(user is not None and getattr(user, "is_superuser", False))
-
 
 def _effective_codes(user: User) -> set[str]:
     return collect_permission_codes(user)
 
-
 def _forbid(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
-
 
 def _conflict(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
 
-
 def _bad_request(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
-
 def _not_found(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
-
-
-def _page(total: int, page: int, page_size: int, items: list, schema) -> PageResponse:
-    return PageResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=[schema.model_validate(item) for item in items],
-    )
-
 
 async def _audit(
     db: AsyncSession,
@@ -80,9 +65,7 @@ async def _audit(
         autocommit=True,
     )
 
-
 # ------------------------------------------------------------------------------- roles
-
 
 async def list_roles(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, roles = await repo.list_roles(db, page, page_size, q)
@@ -93,13 +76,11 @@ async def list_roles(db: AsyncSession, page: int, page_size: int, q: str | None)
         items=[RoleRead.from_role(role) for role in roles],
     )
 
-
 async def get_role_or_404(db: AsyncSession, role_id: UUID) -> RoleRead:
     role = await repo.get_role(db, role_id)
     if role is None:
         raise _not_found("Role not found")
     return RoleRead.from_role(role)
-
 
 async def create_role(db: AsyncSession, payload: dict, current_user: User) -> RoleRead:
     code = payload["code"]
@@ -125,7 +106,6 @@ async def create_role(db: AsyncSession, payload: dict, current_user: User) -> Ro
     )
     return RoleRead.from_role(role)
 
-
 async def update_role(db: AsyncSession, role_id: UUID, payload: dict, current_user: User) -> RoleRead:
     role = await repo.get_role(db, role_id)
     if role is None:
@@ -148,7 +128,6 @@ async def update_role(db: AsyncSession, role_id: UUID, payload: dict, current_us
         payload=changed,
     )
     return RoleRead.from_role(role)
-
 
 async def set_role_permissions(
     db: AsyncSession, role_id: UUID, permission_codes: list[str], current_user: User
@@ -187,22 +166,17 @@ async def set_role_permissions(
     )
     return RoleRead.from_role(role)
 
-
 # ------------------------------------------------------------------------- permissions
-
 
 async def list_permissions(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, permissions = await repo.list_permissions(db, page, page_size, q)
     return _page(total, page, page_size, permissions, PermissionRead)
 
-
 # ------------------------------------------------------------------------- departments
-
 
 async def list_departments(db: AsyncSession) -> list[DepartmentRead]:
     departments = await repo.list_departments(db)
     return [DepartmentRead.model_validate(item) for item in departments]
-
 
 async def create_department(db: AsyncSession, payload: dict, current_user: User) -> DepartmentRead:
     code = payload["code"]
@@ -229,7 +203,6 @@ async def create_department(db: AsyncSession, payload: dict, current_user: User)
         payload={"code": code, "parent_id": str(parent_id) if parent_id else None},
     )
     return DepartmentRead.model_validate(department)
-
 
 async def update_department(
     db: AsyncSession, department_id: UUID, payload: dict, current_user: User
@@ -275,21 +248,17 @@ async def update_department(
     )
     return DepartmentRead.model_validate(department)
 
-
 # ----------------------------------------------------------------------------- tenants
-
 
 async def list_tenants(db: AsyncSession, page: int, page_size: int, q: str | None) -> PageResponse:
     total, tenants = await repo.list_tenants(db, page, page_size, q)
     return _page(total, page, page_size, tenants, TenantRead)
-
 
 async def get_tenant_or_404(db: AsyncSession, tenant_id: UUID) -> TenantRead:
     tenant = await repo.get_tenant(db, tenant_id)
     if tenant is None:
         raise _not_found("Tenant not found")
     return TenantRead.model_validate(tenant)
-
 
 async def create_tenant(db: AsyncSession, payload: dict, current_user: User) -> TenantRead:
     code = payload["code"]
@@ -307,7 +276,6 @@ async def create_tenant(db: AsyncSession, payload: dict, current_user: User) -> 
         payload={"code": code},
     )
     return TenantRead.model_validate(tenant)
-
 
 async def update_tenant(db: AsyncSession, tenant_id: UUID, payload: dict, current_user: User) -> TenantRead:
     tenant = await repo.get_tenant(db, tenant_id)
@@ -330,9 +298,7 @@ async def update_tenant(db: AsyncSession, tenant_id: UUID, payload: dict, curren
     )
     return TenantRead.model_validate(tenant)
 
-
 # ------------------------------------------------------------------------------- users
-
 
 async def list_users(
     db: AsyncSession,
@@ -351,7 +317,6 @@ async def list_users(
     total, users = await repo.list_users(db, page, page_size, q, department_id)
     return _page(total, page, page_size, users, UserAdminRead)
 
-
 async def get_user_or_404(db: AsyncSession, user_id: UUID, current_user: User) -> UserAdminRead:
     user = await repo.get_user(db, user_id)
     if user is None:
@@ -360,7 +325,6 @@ async def get_user_or_404(db: AsyncSession, user_id: UUID, current_user: User) -
         if user.id != current_user.id and user.department_id != current_user.department_id:
             raise _forbid("You may only read users of your own department")
     return UserAdminRead.from_user(user)
-
 
 async def _resolve_roles(db: AsyncSession, role_codes: list[str], current_user: User) -> list[Role]:
     wanted = sorted(set(role_codes))
@@ -379,7 +343,6 @@ async def _resolve_roles(db: AsyncSession, role_codes: list[str], current_user: 
     if escalating:
         raise _forbid({"missing_permissions": escalating})
     return roles
-
 
 async def create_user(db: AsyncSession, payload: dict, current_user: User) -> UserAdminRead:
     username = payload["username"]
@@ -427,7 +390,6 @@ async def create_user(db: AsyncSession, payload: dict, current_user: User) -> Us
     )
     return UserAdminRead.from_user(user)
 
-
 async def update_user(
     db: AsyncSession, user_id: UUID, payload: dict, current_user: User
 ) -> UserAdminRead:
@@ -472,7 +434,6 @@ async def update_user(
         payload=changed,
     )
     return UserAdminRead.from_user(user)
-
 
 async def set_user_roles(
     db: AsyncSession, user_id: UUID, role_codes: list[str], current_user: User

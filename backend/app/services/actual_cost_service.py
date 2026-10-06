@@ -13,18 +13,9 @@ from app.repositories import project_actual_cost_repository as repo
 from app.repositories import project_repository as project_repo
 from app.schemas.common import PageResponse
 from app.schemas.project_actual_cost import ProjectActualCostCreate, ProjectActualCostRead
+from app.schemas.common import page_response as _page
 
 T = TypeVar("T", bound=BaseModel)
-
-
-def _page(total: int, page: int, page_size: int, items: list, schema: type[T]) -> PageResponse:
-    return PageResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=[schema.model_validate(i) for i in items],
-    )
-
 
 async def create_actual_cost(db: AsyncSession, payload: ProjectActualCostCreate, current_user: User) -> ProjectActualCostRead:
     # A write needs the same check as a read: nobody adds a cost to a project they cannot see.
@@ -37,7 +28,6 @@ async def create_actual_cost(db: AsyncSession, payload: ProjectActualCostCreate,
     data["created_by"] = current_user.id
     obj = await repo.create_actual_cost(db, data)
     return ProjectActualCostRead.model_validate(obj)
-
 
 async def list_actual_costs(
     db: AsyncSession,
@@ -61,7 +51,6 @@ async def list_actual_costs(
     )
     return _page(total, page, page_size, items, ProjectActualCostRead)
 
-
 async def get_actual_cost_or_404(
     db: AsyncSession, object_id: UUID, current_user: User
 ) -> ProjectActualCostRead:
@@ -75,7 +64,6 @@ async def get_actual_cost_or_404(
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Actual cost entry not found")
     return ProjectActualCostRead.model_validate(obj)
-
 
 async def delete_actual_cost(
     db: AsyncSession, object_id: UUID, current_user: User

@@ -22,15 +22,14 @@ from app.schemas.cost_estimate import (
     CostEstimateUpdate,
 )
 from app.services.business_settings_service import get_business_settings_dict
+from app.schemas.common import page_response as _page
 
 T = TypeVar("T", bound=BaseModel)
 
 _TWOPLACES = Decimal("0.01")
 
-
 def _money(value: Decimal) -> Decimal:
     return value.quantize(_TWOPLACES, rounding=ROUND_HALF_UP)
-
 
 def _line_material(row: dict) -> dict:
     qty = Decimal(str(row.get("qty", 1)))
@@ -38,20 +37,17 @@ def _line_material(row: dict) -> dict:
     line_total = _money(qty * unit_price)
     return {**row, "qty": qty, "unit_price": unit_price, "line_total": line_total}
 
-
 def _line_machine(row: dict) -> dict:
     qty = Decimal(str(row.get("qty", 1)))
     unit_price = Decimal(str(row.get("unit_price", 0)))
     line_total = _money(qty * unit_price)
     return {**row, "qty": qty, "unit_price": unit_price, "line_total": line_total}
 
-
 def _line_process(row: dict) -> dict:
     hours = Decimal(str(row.get("hours", 0)))
     rate = Decimal(str(row.get("rate", 0)))
     line_total = _money(hours * rate)
     return {**row, "hours": hours, "rate": rate, "line_total": line_total}
-
 
 def _resolve_rates(payload: dict, defaults: dict) -> dict:
     return {
@@ -72,7 +68,6 @@ def _resolve_rates(payload: dict, defaults: dict) -> dict:
             str(payload.get("tax_rate") if payload.get("tax_rate") is not None else defaults.get("default_tax_rate", 13))
         ),
     }
-
 
 def calculate_cost_estimate(payload: dict, *, defaults: dict | None = None) -> dict:
     defaults = defaults or {}
@@ -120,16 +115,6 @@ def calculate_cost_estimate(payload: dict, *, defaults: dict | None = None) -> d
         "process_lines": process_lines,
     }
 
-
-def _page(total: int, page: int, page_size: int, items: list, schema: type[T]) -> PageResponse:
-    return PageResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=[schema.model_validate(i) for i in items],
-    )
-
-
 def _to_read(obj) -> CostEstimateRead:
     base = CostEstimateRead.model_validate(obj)
     return base.model_copy(
@@ -152,12 +137,10 @@ def _to_read(obj) -> CostEstimateRead:
         }
     )
 
-
 async def preview_cost_estimate(db: AsyncSession, payload: CostEstimateCreate) -> CostEstimatePreviewResponse:
     defaults = await get_business_settings_dict(db)
     calc = calculate_cost_estimate(payload.model_dump(), defaults=defaults)
     return CostEstimatePreviewResponse.model_validate(calc)
-
 
 async def create_cost_estimate(db: AsyncSession, payload: CostEstimateCreate, current_user: User) -> CostEstimateRead:
     defaults = await get_business_settings_dict(db)
@@ -193,7 +176,6 @@ async def create_cost_estimate(db: AsyncSession, payload: CostEstimateCreate, cu
     obj = await repo.create_cost_estimate(db, save_payload)
     return _to_read(obj)
 
-
 async def list_cost_estimates(
     db: AsyncSession, page: int, page_size: int, q: str | None, current_user: User
 ) -> PageResponse:
@@ -201,7 +183,6 @@ async def list_cost_estimates(
         db, page, page_size, q, predicate=scope_predicate(CostEstimate, current_user)
     )
     return _page(total, page, page_size, items, CostEstimateListItem)
-
 
 async def get_cost_estimate_or_404(
     db: AsyncSession, object_id: UUID, current_user: User
@@ -212,7 +193,6 @@ async def get_cost_estimate_or_404(
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cost estimate not found")
     return _to_read(obj)
-
 
 async def update_cost_estimate(
     db: AsyncSession, object_id: UUID, payload: CostEstimateUpdate, current_user: User
@@ -308,7 +288,6 @@ async def update_cost_estimate(
 
     updated = await repo.update_cost_estimate(db, obj, save_payload)
     return _to_read(updated)
-
 
 async def delete_cost_estimate(
     db: AsyncSession, object_id: UUID, current_user: User

@@ -23,18 +23,9 @@ from app.schemas.project import (
     ProjectSummaryRead,
 )
 from app.services.project_profit_snapshot import build_project_profit_snapshot
+from app.schemas.common import page_response as _page
 
 T = TypeVar("T", bound=BaseModel)
-
-
-def _page(total: int, page: int, page_size: int, items: list, schema: type[T]) -> PageResponse:
-    return PageResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=[schema.model_validate(i) for i in items],
-    )
-
 
 async def _build_project_profit_context(db: AsyncSession, project) -> dict:
     linked_quote = await repo.find_linked_quote(db, project)
@@ -64,14 +55,12 @@ async def _build_project_profit_context(db: AsyncSession, project) -> dict:
         "actual_count": actual_count,
     }
 
-
 async def create_project(db: AsyncSession, payload: dict, current_user: User) -> ProjectRead:
     if not payload.get("project_no"):
         payload["project_no"] = await repo.generate_project_no(db)
     payload["created_by"] = current_user.id
     obj = await repo.create_project(db, payload)
     return ProjectRead.model_validate(obj)
-
 
 async def list_projects(
     db: AsyncSession, page: int, page_size: int, q: str | None, current_user: User
@@ -81,7 +70,6 @@ async def list_projects(
     )
     return _page(total, page, page_size, items, ProjectRead)
 
-
 async def get_project_or_404(
     db: AsyncSession, object_id: UUID, current_user: User
 ) -> ProjectRead:
@@ -89,7 +77,6 @@ async def get_project_or_404(
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     return ProjectRead.model_validate(obj)
-
 
 async def get_project_summary(
     db: AsyncSession, object_id: UUID, current_user: User
@@ -111,13 +98,11 @@ async def get_project_summary(
         }
     )
 
-
 def _sum_optional(values: list[Decimal | None]) -> Decimal | None:
     present = [v for v in values if v is not None]
     if not present:
         return None
     return sum(present, Decimal("0"))
-
 
 def _ledger_totals(items: list[ProjectProfitLedgerItem]) -> ProjectProfitLedgerTotals:
     snapshots = [item.profit_snapshot for item in items]
@@ -129,7 +114,6 @@ def _ledger_totals(items: list[ProjectProfitLedgerItem]) -> ProjectProfitLedgerT
         realized_profit_total=_sum_optional([s.realized_profit for s in snapshots]),
         over_budget_count=over_budget_count,
     )
-
 
 async def aggregate_profit_kpis(db: AsyncSession, current_user: User, *, limit: int = 500) -> dict:
     # Without the predicate this aggregated every project in the system regardless of the caller's scope, and
@@ -170,7 +154,6 @@ async def aggregate_profit_kpis(db: AsyncSession, current_user: User, *, limit: 
         "total_variance": str(total_variance) if total_variance is not None else None,
         "over_budget_top3": over_budget[:3],
     }
-
 
 async def list_profit_ledger(
     db: AsyncSession,
@@ -226,7 +209,6 @@ async def list_profit_ledger(
         totals=_ledger_totals(page_items),
     )
 
-
 async def update_project(
     db: AsyncSession, object_id: UUID, payload: dict, current_user: User
 ) -> ProjectRead:
@@ -235,7 +217,6 @@ async def update_project(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     updated = await repo.update_project(db, obj, payload)
     return ProjectRead.model_validate(updated)
-
 
 async def delete_project(db: AsyncSession, object_id: UUID, current_user: User) -> ProjectRead:
     obj = await repo.get_project(db, object_id, predicate=scope_predicate(Project, current_user))
