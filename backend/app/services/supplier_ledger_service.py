@@ -234,7 +234,7 @@ async def create_payment_with_allocations(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="分配金额合计与付款金额不一致")
 
     # Create payment entry
-    payment = await repo.create_entry(db, {
+    payment = await repo.add_entry(db, {
         "entry_no": await repo.generate_entry_no(db, _PAYMENT),
         "entry_kind": _PAYMENT,
         "status": "confirmed",
@@ -267,8 +267,11 @@ async def create_payment_with_allocations(
         pay = await repo.get_entry(db, alloc.payable_entry_id, predicate=scope)
         if pay:
             pay.settled_amount = Decimal(str(pay.settled_amount or 0)) + alloc.amount
-            await repo.save_entry(db, pay)
+            await db.flush()
 
+    # One commit for the payment and every allocation: before this the commit sat inside the loop, so an
+    # N-allocation payment was N+1 transactions and a failure left a partially allocated payment.
+    await db.commit()
     loaded = await repo.get_entry(db, payment.id, predicate=scope)
     entry = loaded or payment
     result = _to_ledger_entry(entry)
