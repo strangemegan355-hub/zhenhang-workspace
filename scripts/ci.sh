@@ -2,8 +2,9 @@
 # Local CI verification — run before pushing.
 # Usage: bash scripts/ci.sh
 #
-# What this covers: the Python syntax check, the unit test suite in backend/tests, ESLint for web-admin and the
-# web-admin production build.
+# What this covers: the Python syntax check, the unit test suite in backend/tests, ESLint for web-admin, the
+# web-admin production build, and the same four TypeScript checks .github/workflows/ci.yml runs (web-admin,
+# tsconfig.packages.json, workshop-terminal, mobile-app).
 # What it does NOT cover: the integration suite in backend/integration_tests (19 tests). Those need real
 # PostgreSQL, Redis and MinIO, so they are not part of this script and running it before a push does not run
 # them - .github/workflows/ci.yml does, and the README's "集成测试" section gives the command to run them
@@ -14,6 +15,7 @@ set -e
 # so a failing test, lint or build would be reported as "All checks passed".
 set -o pipefail
 cd "$(dirname "$0")/.."
+ROOT="$(pwd)"
 
 echo "=== Backend: Python syntax check ==="
 python -c "
@@ -44,6 +46,13 @@ cd ..
 echo ""
 echo "=== Frontend: ESLint ==="
 npm run lint -w web-admin 2>&1 | tail -3
+
+echo ""
+echo "=== Frontend: Type checks ==="
+"$ROOT/node_modules/.bin/tsc" -p apps/web-admin/tsconfig.json --noEmit 2>&1 | tail -3
+"$ROOT/node_modules/.bin/tsc" -p tsconfig.packages.json 2>&1 | tail -3
+"$ROOT/node_modules/.bin/tsc" -p apps/workshop-terminal/tsconfig.json --noEmit 2>&1 | tail -3
+"$ROOT/node_modules/.bin/tsc" -p apps/mobile-app/tsconfig.json --noEmit 2>&1 | tail -3
 
 echo ""
 echo "=== Frontend: Build ==="
