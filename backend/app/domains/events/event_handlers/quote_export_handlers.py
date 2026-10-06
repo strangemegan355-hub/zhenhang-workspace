@@ -6,9 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enterprise_metrics import enterprise_metrics
 
-from app.domains.file.infrastructure.minio_client import ensure_bucket, upload_object
-from app.domains.file.repositories.file_repository import create_file_object
-from app.domains.quote.repositories.quote_repository import get_export_task, get_quote, update_export_task
 from app.notifications.notification_service import create_notification
 from app.realtime.publish import push_quote_export_status
 from app.domains.quote.application.quote_export_payload import build_export_payload
@@ -16,6 +13,12 @@ from app.services.quote_template_engine import render_document
 
 
 async def handle_quote_export_requested(db: AsyncSession, payload: dict) -> None:
+    from app.domains.file.application.file_application_service import store_generated_file
+    from app.domains.quote.application.quote_application_service import (
+        complete_export_task,
+        get_export_task,
+    )
+
     task_id = UUID(str(payload["task_id"]))
     task = await get_export_task(db, task_id)
     if task is None:
@@ -31,39 +34,27 @@ async def handle_quote_export_requested(db: AsyncSession, payload: dict) -> None
         template_id=str(template_id) if template_id else None,
     )
     data, ext = render_document(doc_payload, template_id=doc_payload.get("template_id"))
-    ensure_bucket("erp-files")
     object_name = f"exports/quotes/{task.quote_id}-{task.id}.{ext}"
-    upload_object(
-        bucket="erp-files",
-        object_name=object_name,
-        data=data,
-        content_type="application/pdf"
+    mime_type = (
+        "application/pdf"
         if ext == "pdf"
-        else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    file_obj = await create_file_object(
+    file_obj = await store_generated_file(
         db,
-        {
-            "bucket": "erp-files",
-            "object_name": object_name,
-            "file_name": f"{doc_payload.get('quote_no', task.quote_id)}.{ext}",
-            "file_ext": ext,
-            "mime_type": "application/pdf"
-            if ext == "pdf"
-            else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "size_bytes": len(data),
-            "category": "quote_export",
-            "preview_url": None,
-            "checksum": None,
-            "created_by": UUID(str(payload["created_by"])) if payload.get("created_by") else None,
-        },
-        autocommit=False,
+        object_name=object_name,
+        file_name=f"{doc_payload.get('quote_no', task.quote_id)}.{ext}",
+        file_ext=ext,
+        mime_type=mime_type,
+        data=data,
+        created_by=UUID(str(payload["created_by"])) if payload.get("created_by") else None,
     )
-    await update_export_task(db, task, status="completed", file_id=file_obj.id, autocommit=False)
+    await complete_export_task(db, task, file_id=file_obj.id)
     task.completed_at = datetime.now(UTC)
     enterprise_metrics.record_export(duration_ms=(perf_counter() - export_started) * 1000, failed=False)
-    quote = await get_quote(db, task.quote_id)
-    quote_no = quote.quote_no if quote else str(task.quote_id)
+    # No quote read here: `build_export_payload` already returned the quote number, and reading the quote again
+    # would be a second unscoped read of a scoped row for a notification string.
+    quote_no = str(doc_payload.get("quote_no") or task.quote_id)
     receiver_id = UUID(str(payload["created_by"])) if payload.get("created_by") else task.created_by
     if receiver_id:
         await create_notification(

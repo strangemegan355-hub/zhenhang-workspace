@@ -589,6 +589,15 @@ async def create_export_task(
     return task
 
 
+async def complete_export_task(db: AsyncSession, task, *, file_id) -> None:
+    """Mark an export task completed and point it at its file, without committing.
+
+    `autocommit=False` is deliberate and matches what the event handler did itself: the file row and this update are
+    meant to become durable together.
+    """
+    await repo.update_export_task(db, task, status="completed", file_id=file_id, autocommit=False)
+
+
 async def get_export_task(db: AsyncSession, task_id: UUID):
     task = await repo.get_export_task(db, task_id)
     if task is None:

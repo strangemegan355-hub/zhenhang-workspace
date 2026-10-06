@@ -25,6 +25,43 @@ from app.schemas.file_center import FileObjectRead
 from app.schemas.common import page_response
 
 
+async def store_generated_file(
+    db: AsyncSession,
+    *,
+    object_name: str,
+    file_name: str,
+    file_ext: str,
+    mime_type: str,
+    data: bytes,
+    created_by,
+) -> object:
+    """Store bytes this application generated, and return the file row.
+
+    The event handler that renders quote exports used to reach into this domain's infrastructure and repository to do
+    exactly this. The calls and their order are unchanged — bucket, upload, row with `autocommit=False` — so the
+    handler's behaviour and transaction shape are preserved, but the storage adapter stays inside the domain that owns
+    it. `created_by` is passed through because the row records who triggered the export.
+    """
+    ensure_bucket("erp-files")
+    upload_object(bucket="erp-files", object_name=object_name, data=data, content_type=mime_type)
+    return await repo.create_file_object(
+        db,
+        {
+            "bucket": "erp-files",
+            "object_name": object_name,
+            "file_name": file_name,
+            "file_ext": file_ext,
+            "mime_type": mime_type,
+            "size_bytes": len(data),
+            "category": "quote_export",
+            "preview_url": None,
+            "checksum": None,
+            "created_by": created_by,
+        },
+        autocommit=False,
+    )
+
+
 async def upload_file(
     db: AsyncSession,
     *,
