@@ -330,21 +330,36 @@ def _resolve_password(env_var: str) -> tuple[str, bool]:
     return secrets.token_urlsafe(15), True
 
 
-def _account_guide(resolved: dict[str, tuple[str, bool]]) -> str:
+def _account_guide(resolved: dict[str, tuple[str | None, bool]]) -> str:
+    """Describe only what this run actually did.
+
+    A password is generated solely for an account that is being created or reset, so every entry here
+    corresponds to something that happened; an existing account whose password was left alone says so.
+    """
     lines = [
         "=" * 80,
         "  内部试运行账号（口令不再有默认值）",
         "=" * 80,
         "  用户名        角色            口令来源",
     ]
+    generated_any = False
     for username, env_var, _full_name, _email, role_code in TRIAL_USERS:
-        password, generated = resolved[username]
-        source = f"本次生成: {password}" if generated else f"环境变量 {env_var}"
+        password, generated = resolved.get(username, (None, False))
+        if password is None:
+            source = "口令未更改（账号已存在）"
+        elif generated:
+            source = f"本次生成: {password}"
+            generated_any = True
+        else:
+            source = f"环境变量 {env_var}"
         lines.append(f"  {username:<14}{role_code:<16}{source}")
+    lines.append("=" * 80)
+    if generated_any:
+        lines.append("  标注“本次生成”的账号使用本次生成的口令，只显示这一次。")
+    else:
+        lines.append("  本次没有创建账号，也没有重置口令。")
     lines.extend(
         [
-            "=" * 80,
-            "  未设置 TRIAL_*_PASSWORD 的账号使用本次生成的随机口令，只显示这一次。",
             "  首次登录后必须修改口令；详见 docs/INTERNAL_TRIAL_GUIDE.md。",
             "=" * 80,
         ]
@@ -396,12 +411,10 @@ def setup(*, dry_run: bool, reset_passwords: bool) -> None:
                     existing_ids.add(perm.id)
             roles_by_code[role_code] = role
 
-        resolved_passwords = {
-            username: _resolve_password(password_env)
-            for username, password_env, *_rest in TRIAL_USERS
-        }
+        # Generated lazily, per account, and only where a password will actually be written: resolving all
+        # of them up front is what let a re-run print passwords it never applied.
+        resolved_passwords: dict[str, tuple[str | None, bool]] = {}
         for username, password_env, full_name, email, role_code in TRIAL_USERS:
-            password, _generated = resolved_passwords[username]
             user = (
                 db.execute(
                     select(User).where(User.username == username).options(selectinload(User.roles))
@@ -412,6 +425,8 @@ def setup(*, dry_run: bool, reset_passwords: bool) -> None:
                 if dry_run:
                     print(f"[dry-run] would create user {username} -> {role_code}")
                     continue
+                password, generated = _resolve_password(password_env)
+                resolved_passwords[username] = (password, generated)
                 user = User(
                     username=username,
                     email=email,
@@ -427,9 +442,12 @@ def setup(*, dry_run: bool, reset_passwords: bool) -> None:
                 print(f"+ user {username} ({full_name})")
             else:
                 if reset_passwords and not dry_run:
+                    password, generated = _resolve_password(password_env)
+                    resolved_passwords[username] = (password, generated)
                     user.hashed_password = get_password_hash(password)
                     print(f"~ reset password {username}")
                 else:
+                    resolved_passwords[username] = (None, False)
                     print(f"~ user exists {username}")
                 if not dry_run:
                     user.email = email
@@ -448,7 +466,11 @@ def setup(*, dry_run: bool, reset_passwords: bool) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Setup internal trial users and roles")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--reset-passwords", action="store_true", help="reset trial user passwords to defaults")
+    parser.add_argument(
+        "--reset-passwords",
+        action="store_true",
+        help="give existing trial accounts the password from TRIAL_*_PASSWORD, or a fresh generated one",
+    )
     args = parser.parse_args()
     setup(dry_run=args.dry_run, reset_passwords=args.reset_passwords)
 
