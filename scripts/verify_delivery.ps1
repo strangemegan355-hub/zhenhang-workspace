@@ -59,6 +59,10 @@ function Invoke-Http {
         if ($_.Exception.Response) {
             return $_.Exception.Response
         }
+        # A timeout or a refused connection carries no Response object. Name the reason here, because the
+        # callers below would otherwise report "Stack not reachable" even when the stack answered another
+        # request a moment earlier - as /health/ready did, exceeding the 15 s limit applied to it below.
+        Write-Host "       ($Url : $($_.Exception.Message))" -ForegroundColor DarkGray
         return $null
     }
 }
