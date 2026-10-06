@@ -1,0 +1,34 @@
+# Line endings: the index already stores LF (verified with `git ls-files --eol`: 721 of 721 tracked
+# files), while `core.autocrlf=true` checked the working tree out as CRLF for 507 of them and left six
+# files with mixed endings — those six were exactly the files edited by append-style patches in recent
+# rounds, and each one produced a whole-file diff that had to be normalised by hand before committing.
+#
+# `eol=lf` keeps the working tree consistent with the index on every platform, so a small edit stays a
+# small diff. Nothing about the stored content changes; only the checkout.
+* text=auto eol=lf
+
+# Windows shells want CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binaries and generated artefacts must never be converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.xlsx binary
+*.docx binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.7z binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pem binary
+*.key binary
+*.p12 binary
