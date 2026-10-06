@@ -322,11 +322,12 @@ async def create_quote_wizard(db: AsyncSession, payload: dict, current_user):
 async def summarize_quote_for_copilot(
     db: AsyncSession,
     quote_id: UUID,
+    current_user,
     *,
     from_version_no: int | None = None,
     to_version_no: int | None = None,
 ) -> dict:
-    quote = await repo.get_quote(db, quote_id)
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
     return await build_industrial_copilot_analysis(
@@ -339,7 +340,9 @@ async def summarize_quote_for_copilot(
 
 
 async def transition_quote_state(db: AsyncSession, quote_id: UUID, action_code: str, comment: str | None, current_user):
-    quote = await repo.get_quote(db, quote_id)
+    # Scoped like get_quote_detail above. Who may act on a node is a separate policy question and is not
+    # decided here; this only stops an out-of-scope quote from being transitioned at all.
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
     old_state = quote.workflow_state

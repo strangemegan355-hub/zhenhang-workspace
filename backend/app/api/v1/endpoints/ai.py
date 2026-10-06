@@ -15,11 +15,13 @@ router = APIRouter()
 @router.get("/copilot/quote-summary")
 async def copilot_quote_summary(
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:quote:read"))],
+    current: Annotated[User, Depends(require_permissions("business:quote:read"))],
     quote_id: UUID = Query(...),
     from_version_no: int | None = Query(default=None, ge=1),
     to_version_no: int | None = Query(default=None, ge=1),
 ) -> dict:
+    # The user is passed through, not discarded: the quote lookup below is data-scope filtered, so a quote
+    # outside the caller's scope answers 404 rather than leaking its cost and profit analysis.
     return await quote_svc.summarize_quote_for_copilot(
-        db, quote_id, from_version_no=from_version_no, to_version_no=to_version_no
+        db, quote_id, current, from_version_no=from_version_no, to_version_no=to_version_no
     )

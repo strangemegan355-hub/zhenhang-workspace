@@ -193,12 +193,14 @@ async def get_approval_template(
 async def quote_copilot_summary(
     quote_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:quote:read"))],
+    current: Annotated[User, Depends(require_permissions("business:quote:read"))],
     from_version_no: int | None = Query(default=None, ge=1),
     to_version_no: int | None = Query(default=None, ge=1),
 ) -> dict:
+    # Passed through, not discarded: the service applies the caller's data scope, so a quote outside it
+    # answers 404 instead of exposing its cost and profit analysis.
     return await app_svc.summarize_quote_for_copilot(
-        db, quote_id, from_version_no=from_version_no, to_version_no=to_version_no
+        db, quote_id, current, from_version_no=from_version_no, to_version_no=to_version_no
     )
 
 
