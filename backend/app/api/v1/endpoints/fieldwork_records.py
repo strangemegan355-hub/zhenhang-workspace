@@ -94,9 +94,9 @@ async def delete_fieldwork_record(
 async def advance_fieldwork_status(
     record_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:fieldwork:update"))],
+    current: Annotated[User, Depends(require_permissions("business:fieldwork:update"))],
 ) -> FieldworkRecordRead:
-    return await svc.advance_record_status(db, record_id)
+    return await svc.advance_record_status(db, record_id, current)
 
 
 @router.post("/{record_id}/post-receivable", response_model=AccountingEntryRead)

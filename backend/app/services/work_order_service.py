@@ -167,8 +167,8 @@ async def delete_work_order(
     return _to_read(deleted)
 
 
-async def advance_work_order_status(db: AsyncSession, object_id: UUID) -> WorkOrderRead:
-    obj = await repo.get_work_order(db, object_id)
+async def advance_work_order_status(db: AsyncSession, object_id: UUID, current_user) -> WorkOrderRead:
+    obj = await repo.get_work_order(db, object_id, predicate=scope_predicate(WorkOrder, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
     status_value = "doing" if obj.status == "qacheck" else obj.status
@@ -193,8 +193,8 @@ async def advance_work_order_status(db: AsyncSession, object_id: UUID) -> WorkOr
     return _to_read(obj)
 
 
-async def claim_work_order(db: AsyncSession, object_id: UUID, payload: WorkOrderClaim) -> WorkOrderRead:
-    obj = await repo.get_work_order(db, object_id)
+async def claim_work_order(db: AsyncSession, object_id: UUID, payload: WorkOrderClaim, current_user) -> WorkOrderRead:
+    obj = await repo.get_work_order(db, object_id, predicate=scope_predicate(WorkOrder, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
     if obj.status not in ("todo", "qacheck"):

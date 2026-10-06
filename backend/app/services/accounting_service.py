@@ -179,9 +179,9 @@ async def update_entry(
     return AccountingEntryRead.model_validate(loaded or obj)
 
 
-async def confirm_entry(db: AsyncSession, entry_id: UUID) -> AccountingEntryRead:
+async def confirm_entry(db: AsyncSession, entry_id: UUID, current_user) -> AccountingEntryRead:
     await require_accounting_enabled(db)
-    obj = await repo.get_entry(db, entry_id)
+    obj = await repo.get_entry(db, entry_id, predicate=scope_predicate(AccountingEntry, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Accounting entry not found")
     if obj.status != "draft":
@@ -192,9 +192,9 @@ async def confirm_entry(db: AsyncSession, entry_id: UUID) -> AccountingEntryRead
     return AccountingEntryRead.model_validate(loaded or obj)
 
 
-async def void_entry(db: AsyncSession, entry_id: UUID) -> AccountingEntryRead:
+async def void_entry(db: AsyncSession, entry_id: UUID, current_user) -> AccountingEntryRead:
     await require_accounting_enabled(db)
-    obj = await repo.get_entry(db, entry_id)
+    obj = await repo.get_entry(db, entry_id, predicate=scope_predicate(AccountingEntry, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Accounting entry not found")
     if obj.status == "void":

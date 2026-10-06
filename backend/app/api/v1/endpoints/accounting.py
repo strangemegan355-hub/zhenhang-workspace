@@ -159,18 +159,18 @@ async def update_accounting_entry(
 async def confirm_accounting_entry(
     entry_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:accounting:confirm"))],
+    current: Annotated[User, Depends(require_permissions("business:accounting:confirm"))],
 ) -> AccountingEntryRead:
-    return await svc.confirm_entry(db, entry_id)
+    return await svc.confirm_entry(db, entry_id, current)
 
 
 @router.post("/entries/{entry_id}/void", response_model=AccountingEntryRead)
 async def void_accounting_entry(
     entry_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:accounting:confirm"))],
+    current: Annotated[User, Depends(require_permissions("business:accounting:confirm"))],
 ) -> AccountingEntryRead:
-    return await svc.void_entry(db, entry_id)
+    return await svc.void_entry(db, entry_id, current)
 
 
 @router.post("/quote-receivable-requests/from-quote/{quote_id}", response_model=QuoteReceivableRequestRead, status_code=status.HTTP_201_CREATED)

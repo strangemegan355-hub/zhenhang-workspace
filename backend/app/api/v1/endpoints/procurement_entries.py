@@ -83,6 +83,6 @@ async def delete_procurement_entry(
 async def advance_procurement_status(
     entry_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:procurement:update"))],
+    current: Annotated[User, Depends(require_permissions("business:procurement:update"))],
 ) -> ProcurementEntryRead:
-    return await svc.advance_entry_status(db, entry_id)
+    return await svc.advance_entry_status(db, entry_id, current)

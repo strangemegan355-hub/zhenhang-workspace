@@ -97,9 +97,9 @@ async def delete_work_order(
 async def advance_work_order_status(
     work_order_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:work_order:update"))],
+    current: Annotated[User, Depends(require_permissions("business:work_order:update"))],
 ) -> WorkOrderRead:
-    return await svc.advance_work_order_status(db, work_order_id)
+    return await svc.advance_work_order_status(db, work_order_id, current)
 
 
 @router.post("/{work_order_id}/claim", response_model=WorkOrderRead)
@@ -107,9 +107,9 @@ async def claim_work_order(
     work_order_id: UUID,
     payload: WorkOrderClaim,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:work_order:update"))],
+    current: Annotated[User, Depends(require_permissions("business:work_order:update"))],
 ) -> WorkOrderRead:
-    return await svc.claim_work_order(db, work_order_id, payload)
+    return await svc.claim_work_order(db, work_order_id, payload, current)
 
 
 @router.post("/{work_order_id}/post-expense")

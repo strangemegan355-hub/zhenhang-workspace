@@ -182,8 +182,8 @@ async def delete_record(
     return _to_read(deleted)
 
 
-async def advance_record_status(db: AsyncSession, object_id: UUID) -> FieldworkRecordRead:
-    obj = await repo.get_record(db, object_id)
+async def advance_record_status(db: AsyncSession, object_id: UUID, current_user) -> FieldworkRecordRead:
+    obj = await repo.get_record(db, object_id, predicate=scope_predicate(FieldworkRecord, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fieldwork record not found")
     flow = _STATUS_FLOW.get(obj.record_type)

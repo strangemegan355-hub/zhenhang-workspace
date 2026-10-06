@@ -38,6 +38,11 @@ async def create_config(db: AsyncSession, payload: dict, current_user):
 
 async def update_config(db: AsyncSession, config_id, payload: dict, current_user):
     obj = await repo.get_config_by_id(db, config_id)
+    # The domain's own owner convention, as list_configs applies it. 404 rather than 403, so a config outside
+    # the caller's scope is indistinguishable from a missing one.
+    owner_id = owner_scope_user_id(current_user)
+    if obj is not None and owner_id is not None and obj.created_by != owner_id:
+        obj = None
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System config not found")
     updated = await repo.update_config(db, obj, payload, autocommit=False)

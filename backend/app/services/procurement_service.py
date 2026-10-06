@@ -112,8 +112,8 @@ async def delete_entry(
     return _to_read(deleted)
 
 
-async def advance_entry_status(db: AsyncSession, object_id: UUID) -> ProcurementEntryRead:
-    obj = await repo.get_entry(db, object_id)
+async def advance_entry_status(db: AsyncSession, object_id: UUID, current_user) -> ProcurementEntryRead:
+    obj = await repo.get_entry(db, object_id, predicate=scope_predicate(ProcurementEntry, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Procurement entry not found")
     try:
