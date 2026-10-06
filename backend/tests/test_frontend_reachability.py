@@ -51,6 +51,37 @@ REFERENCED_NOWHERE = {
     "TableToolbar",
 }
 
+# --- The hook layer, added in round 190. -------------------------------------------------------------------------------
+# **Round 186's instrument required a capital first letter** — the React component convention — so **every `useXxx` hook
+# was invisible to it.** Walking the same directories for hooks finds **203 exported hooks**, of which **13 are referenced
+# by no other file and, unlike the three above, none of them is even used inside its own file.** They cluster:
+#
+# * `admin.ts` — `useUpdateDepartmentMutation`, `useUpdateRoleMutation`, `useUpdateUserMutation`: **the three admin edit
+#   hooks whose wiring was an open question; they exist and no page calls them.**
+# * `accounting.ts` — `useApproveQuoteReceivableMutation`, `useRejectQuoteReceivableMutation`,
+#   `useCreateAccountingEntryMutation`, `useQuoteReceivableRequestsQuery`: **a whole quote-receivable approval flow.**
+# * single detail queries in `aftersales`, `boms`, `equipment-units`, `machines`, `quotes`, and `useNotificationRealtime`
+#   in `packages/realtime`.
+#
+# Recorded, not deleted: wiring them is a product decision, and removing them is the user's.
+HOOKS_REFERENCED_NOWHERE = {
+    "useAftersalesDetailQuery",
+    "useApproveQuoteReceivableMutation",
+    "useBomQuery",
+    "useCreateAccountingEntryMutation",
+    "useEquipmentUnitDetailQuery",
+    "useMachinePricingProfileQuery",
+    "useNotificationRealtime",
+    "useQuoteDiffQuery",
+    "useQuoteReceivableRequestsQuery",
+    "useRejectQuoteReceivableMutation",
+    "useUpdateDepartmentMutation",
+    "useUpdateRoleMutation",
+    "useUpdateUserMutation",
+}
+
+HOOK = re.compile(r"^export (?:async )?(?:function|const) (use[A-Z][A-Za-z0-9_]*)", re.MULTILINE)
+
 
 def _sources() -> list[Path]:
     roots = [*(REPO / "apps").glob("*/src"), *(REPO / "packages").glob("*/src")]
@@ -116,4 +147,43 @@ def test_symbols_referenced_nowhere_are_the_recorded_set():
         f"  now used: {removed or 'none'}\n"
         "These are declared and used by nothing, not even in their own file. Removing them is the user's decision, "
         "recorded in the pending deletion proposal; this record has to move with them."
+    )
+
+
+def _hooks_referenced_nowhere() -> set[str]:
+    """Exported `useXxx` hooks no other file references — the layer round 186's capital-letter regex could not see."""
+    sources = _sources()
+    texts = {p: p.read_text(encoding="utf-8", errors="replace") for p in sources}
+    exports: dict[str, list[Path]] = defaultdict(list)
+    for path, text in texts.items():
+        for name in HOOK.findall(text):
+            exports[name].append(path)
+
+    found: set[str] = set()
+    for name, definers in exports.items():
+        use = re.compile(rf"(?<![A-Za-z0-9_]){re.escape(name)}(?![A-Za-z0-9_])")
+        if any(use.search(text) for path, text in texts.items() if path not in definers):
+            continue
+        found.add(name)
+    return found
+
+
+def test_the_hook_layer_was_actually_scanned():
+    sources = _sources()
+    hooks = {name for path in sources for name in HOOK.findall(path.read_text(encoding="utf-8", errors="replace"))}
+    # A floor from the filesystem rather than a constant: the hook layer is large, and a scan that found a handful would
+    # mean the pattern stopped matching rather than that the hooks went away.
+    assert len(hooks) >= 150, f"only {len(hooks)} exported hooks were found, so the hook scan is broken"
+
+
+def test_hooks_referenced_nowhere_are_the_recorded_set():
+    found = _hooks_referenced_nowhere()
+    added = sorted(found - HOOKS_REFERENCED_NOWHERE)
+    removed = sorted(HOOKS_REFERENCED_NOWHERE - found)
+    assert not added and not removed, (
+        "the set of exported hooks nothing consumes changed.\n"
+        f"  new:      {added or 'none'}\n"
+        f"  now used: {removed or 'none'}\n"
+        "A new one is a hook written but never wired (the `admin.ts` trio and the quote-receivable flow were both this); "
+        "a removed one means a page now calls it, which is the wiring the phase-4 alignment is waiting on."
     )
