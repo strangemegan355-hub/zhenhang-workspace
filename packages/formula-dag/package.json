@@ -6,6 +6,6 @@
   "main": "src/index.ts",
   "dependencies": {
     "@zhenhang/formula-engine": "0.1.0",
-    "@zhenhang/runtime-bus": "0.1.0",
+    "@zhenhang/runtime-bus": "0.1.0"
   }
 }
