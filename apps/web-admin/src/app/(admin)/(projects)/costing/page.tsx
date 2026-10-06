@@ -1,6 +1,6 @@
 "use client";
 
-import { apiClient } from "@zhenhang/http-client";
+import { apiErrorMessage } from "@/lib/api-error";
 import { MasterListPage } from "@/components/master/master-list-page";
 import {
   useBusinessSettingsQuery,
@@ -10,6 +10,7 @@ import {
   useDeleteCostEstimateMutation,
   useMaterialCategoriesQuery,
   useMaterialsQuery,
+  usePostCostEstimateExpenseMutation,
   usePreviewCostEstimateMutation,
   useUnitsQuery,
   useUpdateCostEstimateMutation,
@@ -218,6 +219,7 @@ export default function CostingPage() {
   const createMutation = useCreateCostEstimateMutation();
   const updateMutation = useUpdateCostEstimateMutation();
   const deleteMutation = useDeleteCostEstimateMutation();
+  const postExpenseMutation = usePostCostEstimateExpenseMutation();
 
   const listData = (listQuery.data as { items?: Record<string, unknown>[]; total?: number } | undefined) ?? {};
 
@@ -750,10 +752,13 @@ export default function CostingPage() {
               const defaultAmount = row.totalCost?.replace(/,/g, "") || "0";
               const amt = window.prompt("输入推送到账目的金额（完全成本）", defaultAmount);
               if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
-              apiClient.post(`/api/v1/cost-estimates/${row.id}/post-expense`, {
-                amount: Number(amt),
-                title: `成本核算: ${row.productName}`,
-              }).then(() => listQuery.refetch()).catch(e => window.alert(e?.response?.data?.detail?.detail ?? "推送失败"));
+              postExpenseMutation
+                              .mutateAsync({
+                                estimateId: row.id,
+                                amount: Number(amt),
+                                title: `成本核算: ${row.productName}`,
+                              })
+                              .catch((e) => window.alert(apiErrorMessage(e, "推送失败")));
             }}>
               推送至账目
             </button>

@@ -1,7 +1,7 @@
 "use client";
 
-import { apiClient } from "@zhenhang/http-client";
 import { MasterCreateForm } from "@/components/master/master-create-form";
+import { apiErrorMessage } from "@/lib/api-error";
 import { MasterListPage } from "@/components/master/master-list-page";
 import {
   useAdvanceWorkOrderMutation,
@@ -10,6 +10,7 @@ import {
   useDeleteWorkOrderMutation,
   useGenerateWorkOrderChainMutation,
   useMachinesQuery,
+  usePostWorkOrderExpenseMutation,
   useProjectsQuery,
   useWorkOrderSummaryQuery,
   useWorkOrdersQuery,
@@ -75,6 +76,7 @@ export default function WorkOrdersPage() {
   const claimMutation = useClaimWorkOrderMutation();
   const deleteMutation = useDeleteWorkOrderMutation();
   const chainMutation = useGenerateWorkOrderChainMutation();
+  const postExpenseMutation = usePostWorkOrderExpenseMutation();
 
   const data = (query.data as { items?: Record<string, unknown>[]; total?: number } | undefined) ?? {};
   const summary = summaryQuery.data;
@@ -305,10 +307,13 @@ export default function WorkOrdersPage() {
                 onClick={() => {
                   const amt = window.prompt("输入工单成本金额", "500");
                   if (!amt || isNaN(Number(amt))) return;
-                  apiClient.post(`/api/v1/work-orders/${row.id}/post-expense`, {
-                    amount: Number(amt),
-                    title: `工单成本: ${row.taskDesc || row.workOrderNo}`,
-                  }).then(() => query.refetch()).catch(e => window.alert(e?.response?.data?.detail?.detail ?? "入账失败"));
+                  postExpenseMutation
+                                      .mutateAsync({
+                                        workOrderId: row.id,
+                                        amount: Number(amt),
+                                        title: `工单成本: ${row.taskDesc || row.workOrderNo}`,
+                                      })
+                                      .catch((e) => window.alert(apiErrorMessage(e, "入账失败")));
                 }}
               >
                 计入支出

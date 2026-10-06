@@ -1,39 +1,18 @@
 "use client";
 
-import { apiClient } from "@zhenhang/http-client";
+import { useAuditsQuery } from "@zhenhang/query-hooks";
 import { IndustrialPage, IndustrialPanel, PageHeader } from "@zhenhang/ui";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { fieldInputClass, fieldLabelClass, tableBodyRowClass, tableHeaderRowClass } from "@/lib/form-styles";
-
-type AuditRow = {
-  id: string;
-  module: string;
-  action: string;
-  resource_type: string;
-  resource_id: string;
-  detail: string;
-  user_name: string;
-  created_at: string;
-};
 
 export default function AuditsPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [moduleFilter, setModuleFilter] = useState("");
 
-  // react-query owns the request, the loading state and the cancellation, so the effect that set
-  // state synchronously (and the ignore flag it needed) are gone.
-  const auditsQuery = useQuery({
-    queryKey: ["audits", page, q, moduleFilter],
-    queryFn: async () => {
-      const { data } = await apiClient.get<{ data: { items?: AuditRow[]; total?: number } }>(
-        "/api/v1/audits",
-        { params: { page, page_size: 20, q: q || undefined, module: moduleFilter || undefined } },
-      );
-      return { items: data.data?.items ?? [], total: data.data?.total ?? 0 };
-    },
-  });
+  // The request lives in the hook domain, as the repository's governance asks, so this page holds
+  // only its own filters. It was converted from a hand-written effect to react-query in round 16.
+  const auditsQuery = useAuditsQuery(page, q || undefined, moduleFilter || undefined);
 
   const rows = auditsQuery.data?.items ?? [];
   const total = auditsQuery.data?.total ?? 0;

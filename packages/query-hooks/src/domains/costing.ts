@@ -145,3 +145,28 @@ export function useDeleteCostEstimateMutation() {
     },
   });
 }
+
+
+export function usePostCostEstimateExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      estimateId,
+      amount,
+      title,
+    }: {
+      estimateId: string;
+      amount: number;
+      title: string;
+    }) => {
+      const { data } = await apiClient.post<{ data: Record<string, unknown> }>(
+        `/api/v1/cost-estimates/${estimateId}/post-expense`,
+        { amount, title },
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk("costing", "list") });
+    },
+  });
+}

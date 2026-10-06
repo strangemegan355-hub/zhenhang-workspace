@@ -136,3 +136,30 @@ export function useGenerateWorkOrderChainMutation() {
     },
   });
 }
+
+
+export function usePostWorkOrderExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      workOrderId,
+      amount,
+      title,
+    }: {
+      workOrderId: string;
+      amount: number;
+      title: string;
+    }) => {
+      const { data } = await apiClient.post<{ data: Record<string, unknown> }>(
+        `/api/v1/work-orders/${workOrderId}/post-expense`,
+        { amount, title },
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk("workOrders", "list") });
+      void queryClient.invalidateQueries({ queryKey: qk("workOrders", "summary") });
+      void queryClient.invalidateQueries({ queryKey: qk("workshop", "board") });
+    },
+  });
+}
