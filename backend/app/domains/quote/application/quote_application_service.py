@@ -81,7 +81,7 @@ async def create_quote(db: AsyncSession, payload: dict, current_user):
 
 
 async def create_quote_version(db: AsyncSession, quote_id: UUID, items_payload: list[dict], current_user):
-    quote = await repo.get_quote(db, quote_id)
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
 
@@ -241,15 +241,15 @@ async def get_quote_detail(db: AsyncSession, quote_id: UUID, current_user):
 
 
 async def list_quote_versions(db: AsyncSession, quote_id: UUID, current_user):
-    quote = await repo.get_quote(db, quote_id)
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
     versions = await repo.list_quote_versions(db, quote_id)
     return versions
 
 
-async def list_quote_approvals(db: AsyncSession, quote_id: UUID):
-    quote = await repo.get_quote(db, quote_id)
+async def list_quote_approvals(db: AsyncSession, quote_id: UUID, current_user):
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
     return await repo.list_quote_approvals(db, quote_id)
@@ -314,7 +314,7 @@ async def create_quote_wizard(db: AsyncSession, payload: dict, current_user):
 
     if items_payload:
         await create_quote_version(db, quote.id, items_payload, current_user)
-        quote = await repo.get_quote(db, quote.id)
+        quote = await repo.get_quote(db, quote.id, predicate=scope_predicate(Quote, current_user))
 
     return await get_quote_detail(db, quote.id, current_user)
 
@@ -532,7 +532,7 @@ async def create_export_task(
     *,
     template_id: str | None = None,
 ):
-    quote = await repo.get_quote(db, quote_id)
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
     task = await repo.create_export_task(
@@ -777,7 +777,7 @@ async def create_customer_quote(db: AsyncSession, payload: dict, current_user):
 
 
 async def update_customer_quote(db: AsyncSession, quote_id: UUID, payload: dict, current_user):
-    quote = await repo.get_quote(db, quote_id)
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None or quote.quote_kind != "customer":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer quote not found")
     if quote.receivable_status == "posted":

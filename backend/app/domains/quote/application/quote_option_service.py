@@ -10,14 +10,16 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
 from app.domains.quote.repositories import quote_repository as repo
+from app.models.quote import Quote
 from app.services import option_group_service as opt_svc
 
 
 async def update_quote_item_options(
-    db: AsyncSession, quote_id: UUID, item_id: UUID, option_item_ids: list[UUID]
+    db: AsyncSession, quote_id: UUID, item_id: UUID, option_item_ids: list[UUID], current_user
 ) -> dict:
-    quote = await repo.get_quote(db, quote_id)
+    quote = await repo.get_quote(db, quote_id, predicate=scope_predicate(Quote, current_user))
     if quote is None:
         raise ValueError(f"报价 {quote_id} 不存在")
 

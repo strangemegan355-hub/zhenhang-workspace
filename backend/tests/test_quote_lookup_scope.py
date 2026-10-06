@@ -78,3 +78,47 @@ async def test_transition_applies_the_callers_scope(monkeypatch):
         "transition_quote_state fetched the quote without the data-scope predicate, so any holder of "
         "business:quote:approve could transition any quote"
     )
+
+
+# Every remaining entry point that loads a quote by id, so the sweep in round 86 stays closed. Each is called
+# with a recorder in place of the repository and must pass a predicate; an absent quote then answers 404.
+ENTRY_POINTS = [
+    ("create_quote_version", lambda s, q, u: s.create_quote_version(None, q, [], u)),
+    ("list_quote_versions", lambda s, q, u: s.list_quote_versions(None, q, u)),
+    ("list_quote_approvals", lambda s, q, u: s.list_quote_approvals(None, q, u)),
+    ("create_export_task", lambda s, q, u: s.create_export_task(None, q, "xlsx", u)),
+    ("update_customer_quote", lambda s, q, u: s.update_customer_quote(None, q, {}, u)),
+]
+
+
+@pytest.mark.parametrize(("name", "call"), ENTRY_POINTS, ids=[name for name, _ in ENTRY_POINTS])
+@pytest.mark.asyncio
+async def test_every_quote_entry_point_applies_the_scope(monkeypatch, name, call):
+    recorder = _Recorder()
+    monkeypatch.setattr(svc.repo, "get_quote", recorder.get_quote)
+
+    with pytest.raises(HTTPException) as raised:
+        await call(svc, uuid4(), _user())
+
+    assert raised.value.status_code == 404
+    assert len(recorder.predicates) == 1, f"{name} must look the quote up exactly once"
+    assert recorder.predicates[0] is not None, (
+        f"{name} fetched the quote without the data-scope predicate, so it read or wrote a quote outside the "
+        "caller's scope"
+    )
+
+
+@pytest.mark.asyncio
+async def test_option_update_applies_the_scope(monkeypatch):
+    from app.domains.quote.application import quote_option_service as opt
+
+    recorder = _Recorder()
+    monkeypatch.setattr(opt.repo, "get_quote", recorder.get_quote)
+
+    with pytest.raises(ValueError):
+        await opt.update_quote_item_options(None, uuid4(), uuid4(), [], _user())
+
+    assert len(recorder.predicates) == 1
+    assert recorder.predicates[0] is not None, (
+        "update_quote_item_options fetched the quote without the data-scope predicate"
+    )

@@ -171,9 +171,9 @@ async def list_quote_versions(
 async def list_quote_approvals(
     quote_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:quote:read"))],
+    current: Annotated[User, Depends(require_permissions("business:quote:read"))],
 ) -> list[QuoteApprovalRead]:
-    return await app_svc.list_quote_approvals(db, quote_id)
+    return await app_svc.list_quote_approvals(db, quote_id, current)
 
 
 @router.get("/approval-templates/{template_id}", response_model=ApprovalTemplateDetailRead)
@@ -208,10 +208,14 @@ async def quote_copilot_summary(
 async def diff_quote_versions(
     quote_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:quote:read"))],
+    current: Annotated[User, Depends(require_permissions("business:quote:read"))],
     from_version_no: int = Query(ge=1),
     to_version_no: int = Query(ge=1),
 ) -> dict:
+    # No signature change for compare_quote_versions: it is an internal helper whose third caller is the
+    # copilot passing it as compare_fn, so a new parameter would ripple into the analysis function. The
+    # already-scoped detail lookup answers 404 for an out-of-scope quote, which is the same guarantee.
+    await app_svc.get_quote_detail(db, quote_id, current)
     return await app_svc.compare_quote_versions(db, quote_id, from_version_no, to_version_no)
 
 
@@ -260,9 +264,11 @@ async def update_quote_item_options(
     item_id: UUID,
     payload: QuoteItemOptionsUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    _: Annotated[User, Depends(require_permissions("business:quote:update"))],
+    current: Annotated[User, Depends(require_permissions("business:quote:update"))],
 ) -> dict:
     try:
-        return await opt_svc.update_quote_item_options(db, quote_id, item_id, payload.option_item_ids)
+        return await opt_svc.update_quote_item_options(
+            db, quote_id, item_id, payload.option_item_ids, current
+        )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

@@ -42,6 +42,12 @@ def test_quote_approval_template_and_diff(monkeypatch):
             "is_deleted": False,
         }
 
+    async def _fake_detail(db, quote_id, current_user):
+        # The diff route looks the quote up through the data-scope filtered detail service before comparing,
+        # so that an out-of-scope quote answers 404 without threading a user through compare_quote_versions
+        # (which the copilot also calls, as compare_fn).
+        return {"id": str(quote_id)}
+
     async def _fake_diff(db, quote_id, from_version_no, to_version_no):
         return {
             "from_version": from_version_no,
@@ -55,6 +61,7 @@ def test_quote_approval_template_and_diff(monkeypatch):
 
     monkeypatch.setattr(quote_application_service, "create_approval_template", _fake_create_template)
     monkeypatch.setattr(quote_application_service, "compare_quote_versions", _fake_diff)
+    monkeypatch.setattr(quote_application_service, "get_quote_detail", _fake_detail)
     app, client = _app_client()
     try:
         r1 = client.post(
