@@ -194,14 +194,21 @@ def test_every_model_column_is_either_exposed_or_recorded():
     models = _gather(MODELS)
     schemas = _gather(SCHEMAS)
 
+    # Round 234: this used to iterate `COLUMNS_NOT_IN_THE_READ_SCHEMA` itself, so **a column added to a model not listed
+    # there was invisible** — planting one on `Unit` passed the whole file in round 233. Measured: **58 models have a
+    # matching `XRead` schema and only 25 were covered, while none of the other 33 currently omits a column.** The dict is
+    # therefore a list of recorded exceptions rather than the scope, and the loop is over the models.
     unrecorded = []
-    for model_name, recorded in COLUMNS_NOT_IN_THE_READ_SCHEMA.items():
+    for model_name in sorted(models):
+        if model_name.endswith("Mixin"):
+            continue
         read_name = f"{model_name}Read"
         if read_name not in schemas:
-            unrecorded.append(f"{read_name} does not exist, so its recorded exceptions cannot be checked")
+            # A model with no Read schema reaches no client at all; whether it should have one is a different question,
+            # and `test_model_schema_parity` owns the model-versus-database side.
             continue
-        absent = sorted(models[model_name] - schemas[read_name])
-        for field in absent:
+        recorded = COLUMNS_NOT_IN_THE_READ_SCHEMA.get(model_name, ())
+        for field in sorted(models[model_name] - schemas[read_name]):
             if field not in recorded:
                 unrecorded.append(f"{model_name}.{field} is in no Read schema and in no recorded list")
 
