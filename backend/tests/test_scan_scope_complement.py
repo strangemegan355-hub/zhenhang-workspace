@@ -42,6 +42,7 @@ NARROW_ROOTS: dict[str, str] = {
     "test_page_data_use.py": "walks the app-router page tree only",
     "test_repository_predicate_coverage.py": "globs `app/repositories/*.py`, a flat directory",
     "test_reviewed_lists_carry_reasons.py": "globs the two flat test directories, as this file does",
+    "test_route_bounds_are_bounded.py": "globs `app/api/v1/endpoints/*.py`, a flat directory",
     "test_scope_coverage.py": "walks `app/` for `*.py`; `__pycache__` holds only `.pyc`, so the glob finds nothing there",
 }
 

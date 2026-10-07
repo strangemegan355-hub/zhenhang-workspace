@@ -5,6 +5,15 @@ from uuid import UUID
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Round 227: every list route bounds `page_size` (`le=100` or `le=200`) and **none bounds `page`** — 42 route parameters,
+# zero upper bounds — so `?page=100000000&page_size=100` asked the database for `OFFSET 9999999900`. The offset is what
+# costs, and this is the one place all 42 of them flow through.
+#
+# The ceiling is on the OFFSET rather than on `page`, so it holds for any page size a route allows. **A page within the
+# cap is untouched**, which is every page any client can reach by paging normally; a page beyond it clamps to the same
+# offset instead of scanning.
+MAX_OFFSET = 100_000
+
 
 async def paginate_query(
     db: AsyncSession,
@@ -28,7 +37,7 @@ async def paginate_query(
     stmt = (
         select(model)
         .where(*filters)
-        .offset((page - 1) * page_size)
+        .offset(min(max(page - 1, 0) * page_size, MAX_OFFSET))
         .limit(page_size)
         .order_by(model.created_at.desc())
     )
