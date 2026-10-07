@@ -22,10 +22,15 @@ class UUIDPrimaryKeyMixin:
 
 
 class TimestampMixin:
+    # Round 228: `AuditSoftDeleteMixin` below indexes both columns its WHERE clause uses (`created_by`, `is_deleted`), and
+    # this mixin indexed neither of its own. **`common_repository.paginate_query` orders every paginated list by
+    # `created_at DESC`** — twenty-five models' worth of lists — so all of them sorted an unindexed column. The only
+    # `created_at` index in the whole migration chain was `ix_realtime_events_created_at`.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+        index=True,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
