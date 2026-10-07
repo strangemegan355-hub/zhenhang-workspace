@@ -21,8 +21,13 @@ class Settings(BaseSettings):
 
     secret_key: str = Field(..., min_length=32)
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
-    refresh_token_expire_minutes: int = 60 * 24 * 7
+    # Round 226: these two were plain `int`s while every other policy number in this file carried a bound — including
+    # `realtime_ticket_expire_seconds` three lines below. **So an operator could set the access-token lifetime to ten
+    # years or to zero and nothing would fail either way**, even though this is the number that decides how long a stolen
+    # token works, and `le=1440` is the point past which re-login stops being a revocation path.
+    access_token_expire_minutes: int = Field(default=60, ge=1, le=1440)
+    # A refresh token is a session. **Past a year it is not a session, it is a credential**, so it is bounded there.
+    refresh_token_expire_minutes: int = Field(default=60 * 24 * 7, ge=1, le=525600)
     # Realtime transports carry this credential in a URL, so it stays short-lived.
     realtime_ticket_expire_seconds: int = Field(default=300, ge=30, le=3600)
 
