@@ -171,7 +171,12 @@ async def push_quote_export_status(
         kind="quote.export",
         payload=body,
         broadcast=True,
-        resource_owner_id=owner_id,
+        # Round 224: this broadcast carried `owner_id`, which `quote_export_handlers.py:78` passes as
+        # `quote.created_by if quote else None` — **so when the quote row was gone the envelope arrived ownerless, and
+        # `acl.py` deliberately returns True for an ownerless envelope at SELF and DEPARTMENT scope**, delivering it to
+        # every such viewer on the channel rather than to the one person it concerns.
+        # **The export task belongs to `user_id`**, so naming them closes that path and changes nothing else.
+        resource_owner_id=owner_id or user_id,
     )
     await push_realtime_event(
         channel="audit",
