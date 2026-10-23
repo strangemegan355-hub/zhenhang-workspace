@@ -28,6 +28,7 @@ import {
 } from "@zhenhang/query-hooks";
 import { useToastStore } from "@zhenhang/realtime";
 import { EmptyState, IndustrialPage, StatusBadge, typography, workflowStateToStatus } from "@zhenhang/ui";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useRef, useState } from "react";
 import {
@@ -245,7 +246,7 @@ function QuotesPageContent() {
   const exportTask = (exportTaskQuery.data ?? exportTaskSnapshot) as Record<string, unknown> | undefined;
   const exportCompletedRef = useRef<string | null>(null);
   const selectedTemplate = exportTemplates.find((t) => t.id === effectiveTemplateId) ?? exportTemplates[0];
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
   const polledExportMessage = useMemo(() => {
     if (!exportTask?.id) return null;
@@ -488,15 +489,24 @@ function QuotesPageContent() {
 
   const workflowActions = actionsQuery.data ?? [];
   const centerWorkflowActions = workflowState === "reviewing" ? [] : workflowActions;
-  const masterLoading =
-    customersQuery.isLoading || machinesQuery.isLoading || productsQuery.isLoading;
+  // Machines are an advanced/legacy path (menu hidden); do not block the product-first
+  // quote list or customer/product dropdowns on machinesQuery latency or failure.
+  const masterLoading = customersQuery.isLoading || productsQuery.isLoading;
 
   return (
     <IndustrialPage fill className="!gap-0 !p-0">
       <div className="flex h-full min-h-0 flex-col">
-        <header className="shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
-          <h1 className={`${typography.pageTitle} text-base`}>报价中心</h1>
-          <p className="text-[11px] text-[var(--color-text-muted)]">左选产品 · 中编明细 · 右看成本利润，单页完成全部操作</p>
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
+          <div>
+            <h1 className={`${typography.pageTitle} text-base`}>报价中心</h1>
+            <p className="text-[11px] text-[var(--color-text-muted)]">默认选产品库出报价；左选产品 · 中编明细 · 右看成本利润</p>
+          </div>
+          <Link
+            href="/quotes/customer"
+            className="shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-primary-soft)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-primary)] hover:border-[var(--color-primary)]"
+          >
+            对客报价视图
+          </Link>
         </header>
 
         <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_300px]">

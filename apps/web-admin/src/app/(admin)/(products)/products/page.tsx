@@ -21,6 +21,7 @@ import { autoMasterCode } from "@/lib/auto-master-code";
 import { messageBannerClass } from "@/lib/form-styles";
 import { masterNameCol, masterStatusCol } from "@/lib/master-grid-columns";
 import { isMotorCategory, productSpecLabel, productSpecPlaceholder } from "@/lib/product-category-labels";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 const defaultForm = {
@@ -188,7 +189,17 @@ export default function ProductsPage() {
       <PageHeader
         title="产品库"
         subtitle={productsSubtitle}
-        actions={<WorkspaceToolbarButton onClick={openCreate}>新建产品</WorkspaceToolbarButton>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link
+              href="/machines"
+              className="text-xs text-[var(--color-text-muted)] underline-offset-2 hover:text-[var(--color-primary)] hover:underline"
+            >
+              高级：机型/BOM
+            </Link>
+            <WorkspaceToolbarButton onClick={openCreate}>新建产品</WorkspaceToolbarButton>
+          </div>
+        }
       />
 
       <div className="flex min-h-0 flex-1 gap-4">

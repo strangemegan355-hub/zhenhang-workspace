@@ -221,7 +221,7 @@ export default function EquipmentUnitsPage() {
                   {
                     key: "build_start_date" as string,
                     label: "生产开始日期",
-                    placeholder: "YYYY-MM-DD",
+                    type: "date" as const,
                   },
                 ]),
             {

@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-chars-long!!")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://erp:erp@localhost:5432/erp_db")
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/0")
 
 
 def _app_client():

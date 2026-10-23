@@ -1,11 +1,18 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# musl needs the matching optional native bindings for PostCSS/lightningcss.
+RUN apk add --no-cache libc6-compat
+
+COPY package.json package-lock.json tsconfig.base.json tsconfig.packages.json ./
 COPY apps ./apps
 COPY packages ./packages
 
-RUN npm ci
+RUN npm ci \
+  && npm install --no-save --no-package-lock \
+    lightningcss-linux-x64-musl \
+    @tailwindcss/oxide-linux-x64-musl \
+  || true
 
 ARG NEXT_PUBLIC_API_BASE_URL=
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
@@ -23,7 +30,7 @@ ENV HOSTNAME=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs \
-  && apk add --no-cache curl
+  && apk add --no-cache curl libc6-compat
 
 COPY --from=builder /app/apps/web-admin/public ./apps/web-admin/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web-admin/.next/standalone ./

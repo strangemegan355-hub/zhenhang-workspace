@@ -73,7 +73,14 @@ export function LoginFormPanel() {
         </div>
 
         <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-panel)]">
-          <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)}>
+          <form
+            className="space-y-3"
+            method="post"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void form.handleSubmit(onSubmit)(e);
+            }}
+          >
             <div>
               <label htmlFor="username" className="mb-1 block text-[12px] font-medium text-[var(--color-text)]">
                 用户名

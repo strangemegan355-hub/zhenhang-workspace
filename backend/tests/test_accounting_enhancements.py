@@ -2,8 +2,8 @@
 import os
 
 os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-chars-long!!")
-os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://erp:erp@localhost:5432/erp_db")
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://erp:erp@127.0.0.1:5432/erp_db")
+os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/0")
 
 from types import SimpleNamespace
 from uuid import uuid4

@@ -240,7 +240,7 @@ export default function ProcurementPage() {
             { key: "qty", label: "数量", required: true, placeholder: "如 10" },
             { key: "unit_price", label: "单价", required: true, placeholder: "如 125.50" },
             { key: "lead_days", label: "交期(天)", placeholder: "默认 7" },
-            { key: "need_date", label: "需求日期", placeholder: "YYYY-MM-DD" },
+            { key: "need_date", label: "需求日期", type: "date" },
             { key: "remark", label: "备注", placeholder: "用途、规格补充等" },
           ]}
           values={form}

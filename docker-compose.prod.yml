@@ -12,7 +12,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-erp_db}
     volumes:
-      - ./volumes/postgres:/var/lib/postgresql/data
+      # Subdir avoids host `.gitkeep` making PGDATA "not empty" (initdb abort).
+      - ./volumes/postgres/data:/var/lib/postgresql/data
       - ./deploy/backup/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-erp} -d ${POSTGRES_DB:-erp_db}"]
@@ -66,7 +67,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_SECURE: "false"
       MINIO_BUCKET: erp-files
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost"]}
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,7 +109,12 @@ services:
         condition: service_healthy
     command: sh -c "python -m workers.event_worker"
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'workers.event_worker' >/dev/null || exit 1"]
+      # python:slim has no pgrep; scan /proc cmdlines instead
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import pathlib; import sys; sys.exit(0 if any(b'event_worker' in p.read_bytes() for p in pathlib.Path('/proc').glob('*/cmdline')) else 1)\"",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -126,6 +132,12 @@ services:
       ENVIRONMENT: production
       SECRET_KEY: ${SECRET_KEY}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-erp}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-erp_db}
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_SECURE: "false"
+      MINIO_BUCKET: erp-files
       MAINTENANCE_INTERVAL_SECONDS: ${MAINTENANCE_INTERVAL_SECONDS:-300}
     depends_on:
       postgres:

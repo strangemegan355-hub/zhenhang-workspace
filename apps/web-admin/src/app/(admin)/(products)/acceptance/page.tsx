@@ -406,13 +406,13 @@ export default function AcceptancePage() {
                     required: true,
                   },
                   { key: "inspector_name", label: "检验人", required: true, placeholder: "检验人姓名" },
-                  { key: "test_date", label: "检验日期", placeholder: "YYYY-MM-DD" },
+                  { key: "test_date", label: "检验日期", type: "date" as const },
                   { key: "remarks", label: "备注", placeholder: "备注信息" },
                 ]),
             {
               key: "items_json",
               label: "检验结果 (JSON)",
-              type: "textarea",
+              type: "textarea" as const,
               placeholder: sampleResultJson,
             },
           ]}

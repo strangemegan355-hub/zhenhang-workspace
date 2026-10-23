@@ -5,7 +5,7 @@ import {
   useApprovalInboxQuery,
   type ApprovalTask,
 } from "@zhenhang/query-hooks";
-import { PageHeader } from "@zhenhang/ui";
+import { IndustrialPage, PageHeader } from "@zhenhang/ui";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { MasterListPage } from "@/components/master/master-list-page";
@@ -95,15 +95,16 @@ export default function ApprovalsPage() {
   );
 
   return (
+    <IndustrialPage gap="md" fill>
     <MasterListPage<ApprovalDisplayRow>
       title="待办列表"
       externalHeader={
         <>
           <PageHeader
             title="审批中心"
-            subtitle="集中处理待办审批；后续采购、项目等审批也会汇总到此"
+            subtitle={`待办 ${items.length} 条 · 类型：应收优惠 / 报价审批 / 采购应付；处理后请刷新确认结果`}
           />
-          {actionError ? <p className="mb-2 text-xs text-red-500">{actionError}</p> : null}
+          {actionError ? <p className="mb-2 text-xs text-[var(--color-danger)]">{actionError}</p> : null}
         </>
       }
       persistenceKey="approvals-v1"
@@ -174,5 +175,6 @@ export default function ApprovalsPage() {
         );
       }}
     />
+    </IndustrialPage>
   );
 }

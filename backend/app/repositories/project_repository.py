@@ -82,10 +82,16 @@ async def soft_delete_project(db: AsyncSession, obj: Project) -> Project:
     return obj
 
 
+async def get_quote_by_id(db: AsyncSession, quote_id: UUID, predicate=None) -> Quote | None:
+    stmt = select(Quote).where(Quote.id == quote_id, Quote.is_deleted.is_(False))
+    if predicate is not None:
+        stmt = stmt.where(predicate)
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
 async def find_linked_quote(db: AsyncSession, project: Project) -> Quote | None:
     if project.primary_quote_id:
-        stmt = select(Quote).where(Quote.id == project.primary_quote_id, Quote.is_deleted.is_(False))
-        found = (await db.execute(stmt)).scalar_one_or_none()
+        found = await get_quote_by_id(db, project.primary_quote_id)
         if found:
             return found
     stmt = (

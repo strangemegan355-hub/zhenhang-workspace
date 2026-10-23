@@ -102,19 +102,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <IndustrialRealtimeProvider>
       <div className="flex h-screen min-h-0 overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)]">
-        {/* 左侧栏 — Frappe Workspace Sidebar */}
+        {/* 左侧栏 — 深蓝工业导航 */}
         <aside
-          className="flex shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-[width] duration-200"
+          className="flex shrink-0 flex-col border-r border-white/10 bg-[var(--color-sidebar)] transition-[width] duration-200"
           style={{ width: collapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)" }}
         >
-          <div className="flex h-[var(--navbar-height)] items-center gap-2 border-b border-[var(--color-border)] px-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[var(--color-accent)] text-sm font-bold text-white">
+          <div className="flex h-[var(--navbar-height)] items-center gap-2 border-b border-white/10 px-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[var(--color-primary)] text-sm font-bold text-white">
               振
             </div>
             {!collapsed ? (
               <div className="min-w-0 flex-1">
-                <div className="truncate text-base font-semibold text-[var(--color-text)]">振航 ERP</div>
-                <div className="truncate text-sm text-[var(--color-text-soft)]">Desk</div>
+                <div className="truncate text-base font-semibold text-[var(--color-sidebar-text)]">振航 ERP</div>
+                <div className="truncate text-sm text-[var(--color-sidebar-muted)]">工业数字生态</div>
               </div>
             ) : null}
           </div>
@@ -125,11 +125,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
 
-          <div className="border-t border-[var(--color-border)] p-2">
+          <div className="border-t border-white/10 p-2">
             <button
               type="button"
               onClick={() => setCollapsed((v) => !v)}
-              className="flex w-full items-center justify-center gap-1 rounded py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-soft)]"
+              className="flex w-full items-center justify-center gap-1 rounded py-1.5 text-sm text-[var(--color-sidebar-muted)] hover:bg-white/10 hover:text-[var(--color-sidebar-text)]"
               aria-label={collapsed ? "展开侧栏" : "收起侧栏"}
             >
               {collapsed ? <ChevronsRight size={14} /> : <ChevronsLeft size={14} />}
@@ -140,7 +140,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* 右侧主区域 */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {/* 顶栏 — Frappe Navbar */}
+          {/* 顶栏 */}
           <header className="flex h-[var(--navbar-height)] shrink-0 items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4">
             <nav className="hidden min-w-0 flex-1 items-center gap-1 text-sm text-[var(--color-text-muted)] md:flex">
               {routeMeta ? (
@@ -243,15 +243,15 @@ function MenuGroupSection({
       <button
         type="button"
         onClick={toggleExpanded}
-        className="flex w-full items-center gap-1 rounded px-2 py-1.5 text-left hover:bg-[var(--color-surface-soft)]"
+        className="flex w-full items-center gap-1 rounded px-2 py-1.5 text-left hover:bg-white/10"
         aria-expanded={expanded}
       >
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold uppercase tracking-wide text-[var(--color-text-soft)]">
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold uppercase tracking-wide text-[var(--color-sidebar-muted)]">
           {group.title}
         </span>
         <ChevronDown
           size={12}
-          className={`shrink-0 text-[var(--color-text-soft)] transition-transform ${expanded ? "" : "-rotate-90"}`}
+          className={`shrink-0 text-[var(--color-sidebar-muted)] transition-transform ${expanded ? "" : "-rotate-90"}`}
         />
       </button>
       {expanded ? (
@@ -285,10 +285,9 @@ function SidebarMenuLink({
         collapsed ? "justify-center px-2 py-2" : "px-2 py-1.5"
       } ${
         active
-          ? "bg-[var(--color-primary-soft)] font-medium text-[var(--color-text)]"
-          : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-text)]"
+          ? "bg-[var(--color-primary)] font-medium text-white"
+          : "text-[var(--color-sidebar-muted)] hover:bg-white/10 hover:text-[var(--color-sidebar-text)]"
       }`}
-      style={active && !collapsed ? { boxShadow: "inset 2px 0 0 0 var(--color-primary)" } : undefined}
     >
       <span className="shrink-0 opacity-80">{icon}</span>
       {!collapsed ? <span className="truncate">{menu.title}</span> : null}

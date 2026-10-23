@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from time import perf_counter
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,7 +34,8 @@ async def handle_quote_export_requested(db: AsyncSession, payload: dict) -> None
         template_id=str(template_id) if template_id else None,
     )
     data, ext = render_document(doc_payload, template_id=doc_payload.get("template_id"))
-    object_name = f"exports/quotes/{task.quote_id}-{task.id}.{ext}"
+    # Include a fresh suffix so re-processing / retry never collides with ix_file_objects_object_name.
+    object_name = f"exports/quotes/{task.quote_id}-{task.id}-{uuid4().hex[:8]}.{ext}"
     mime_type = (
         "application/pdf"
         if ext == "pdf"
@@ -56,6 +57,8 @@ async def handle_quote_export_requested(db: AsyncSession, payload: dict) -> None
     # would be a second unscoped read of a scoped row for a notification string.
     quote_no = str(doc_payload.get("quote_no") or task.quote_id)
     receiver_id = UUID(str(payload["created_by"])) if payload.get("created_by") else task.created_by
+    owner_id = doc_payload.get("created_by")
+    owner_uuid = UUID(str(owner_id)) if owner_id else receiver_id
     if receiver_id:
         await create_notification(
             db,
@@ -75,5 +78,5 @@ async def handle_quote_export_requested(db: AsyncSession, payload: dict) -> None
             quote_no=quote_no,
             status="completed",
             file_id=file_obj.id,
-            owner_id=quote.created_by if quote else None,
+            owner_id=owner_uuid,
         )

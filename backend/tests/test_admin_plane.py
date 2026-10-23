@@ -20,7 +20,7 @@ import pytest
 # SECRET_KEY at instantiation. The conftest fixture runs later than collection.
 os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-chars-long!!")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://erp:erp@localhost:5432/erp_db")
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/0")
 
 from fastapi import HTTPException  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

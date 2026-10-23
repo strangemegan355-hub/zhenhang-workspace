@@ -66,6 +66,10 @@ DEFINED_BUT_UNRENDERED = {
     # package is the one named in the pending deletion proposal. Round 170 found them when the scan reached that README.
     "LoginRequest",
     "LoginResponse",
+    # UX-006 (2026-10-23): dashboard stopped rendering these; files kept pending a deletion pass.
+    # Also recorded in test_frontend_reachability.REFERENCED_NOWHERE.
+    "RecentFilesCard",
+    "WorkflowProgressCard",
 }
 
 

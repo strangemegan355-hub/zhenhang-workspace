@@ -1,25 +1,28 @@
 @import "tailwindcss";
 
-/* Frappe / ERPNext Desk 风格设计变量 */
+/* 振航 ERP — 浅色科技感工业风（对齐 docs/UI_DESIGN_SYSTEM.md） */
 :root {
-  --color-bg: #f4f5f6;
+  --color-bg: #f5f7fa;
   --color-surface: #ffffff;
   --color-surface-soft: #fafbfc;
-  --color-border: #d1d8dd;
+  --color-border: #d9e0e7;
   --color-border-soft: #ebeef0;
-  --color-text: #36414c;
-  --color-text-muted: #6c7680;
+  --color-text: #1f2933;
+  --color-text-muted: #64748b;
   --color-text-soft: #8d99a6;
-  --color-primary: #171717;
-  --color-primary-hover: #000000;
-  --color-primary-soft: #f0f0f0;
+  --color-primary: #1677ff;
+  --color-primary-hover: #0958d9;
+  --color-primary-soft: #e6f4ff;
   --color-accent: #e74c3c;
   --color-accent-soft: #fdecea;
-  --color-success: #28a745;
-  --color-warning: #f0ad4e;
-  --color-danger: #d9534f;
-  --radius-card: 6px;
-  --radius-btn: 5px;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-sidebar: #0f172a;
+  --color-sidebar-text: #e2e8f0;
+  --color-sidebar-muted: #94a3b8;
+  --radius-card: 8px;
+  --radius-btn: 6px;
   --shadow-card: none;
   --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.04);
   --font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -59,14 +62,14 @@ html, body {
 }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
-::selection { background: rgba(23, 23, 23, 0.1); }
+::selection { background: rgba(22, 119, 255, 0.15); }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #c8cfd5; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #aeb8c2; }
 
-/* Frappe 风格按钮 */
+/* 主操作按钮 */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -112,9 +115,12 @@ button, input, select, textarea { font: inherit; }
   --color-text: #e8e8e8;
   --color-text-muted: #a0a0a0;
   --color-text-soft: #888888;
-  --color-primary: #f5f5f5;
-  --color-primary-hover: #ffffff;
-  --color-primary-soft: #333333;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #60a5fa;
+  --color-primary-soft: #1e3a5f;
+  --color-sidebar: #020617;
+  --color-sidebar-text: #e2e8f0;
+  --color-sidebar-muted: #64748b;
   --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 

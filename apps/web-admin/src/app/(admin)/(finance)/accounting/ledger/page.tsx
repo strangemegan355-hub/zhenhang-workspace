@@ -27,6 +27,7 @@ import {
   tableBodyRowClass,
   tableHeaderRowClass,
 } from "@/lib/form-styles";
+import { FinanceSubNav } from "@/components/finance/finance-sub-nav";
 import { hasPermission } from "@/lib/access";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -279,7 +280,8 @@ export default function AccountingLedgerPage() {
   if (!enabled && !statusQuery.isLoading) {
     return (
       <IndustrialPage gap="md" fill>
-        <PageHeader title="账目明细" subtitle="记账功能未开启" />
+        <PageHeader title="财务中心 · 客户应收" subtitle="记账功能未开启" />
+        <FinanceSubNav />
         <IndustrialPanel>
           <p className="text-sm text-[var(--color-text-muted)]">
             请先在
@@ -303,7 +305,7 @@ export default function AccountingLedgerPage() {
     return (
       <IndustrialPage gap="md" fill>
         <PageHeader
-          title={`账目明细 · ${detail?.customer_name ?? selectedCustomerName}`}
+          title={`客户应收 · ${detail?.customer_name ?? selectedCustomerName}`}
           subtitle={detail?.customer_code ? `客户编码 ${detail.customer_code}` : "客户应收、收款与支付状态"}
           actions={
             <div className="flex flex-wrap gap-2">
@@ -333,6 +335,7 @@ export default function AccountingLedgerPage() {
             </div>
           }
         />
+        <FinanceSubNav />
 
         {detailError ? (
           <IndustrialPanel>
@@ -641,21 +644,17 @@ export default function AccountingLedgerPage() {
   return (
     <IndustrialPage gap="md" fill>
       <PageHeader
-        title="账目明细"
+        title="财务中心 · 客户应收"
         subtitle="按客户汇总应收、已收与欠款；可手动添加客户并录入账单"
         actions={
-          <div className="flex flex-wrap items-center gap-3">
-            {canCreate ? (
-              <WorkspaceToolbarButton onClick={() => { setShowAddCustomer((v) => !v); setFormError(null); }}>
-                {showAddCustomer ? "取消添加" : "添加客户"}
-              </WorkspaceToolbarButton>
-            ) : null}
-            <Link href="/accounting" className={linkActionClass}>
-              收支台账
-            </Link>
-          </div>
+          canCreate ? (
+            <WorkspaceToolbarButton onClick={() => { setShowAddCustomer((v) => !v); setFormError(null); }}>
+              {showAddCustomer ? "取消添加" : "添加客户"}
+            </WorkspaceToolbarButton>
+          ) : null
         }
       />
+      <FinanceSubNav />
 
       {showAddCustomer && canCreate ? (
         <IndustrialPanel title="添加客户账目">

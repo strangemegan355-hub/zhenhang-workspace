@@ -10,7 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useAuthStore } from "@/store/auth-store";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
 /** Realtime sync only — no toast popups (user preference for trial UI). */
 export function IndustrialRealtimeProvider({ children }: { children: React.ReactNode }) {

@@ -91,7 +91,12 @@ ROLE_EXPECTATIONS: dict[str, dict[str, object]] = {
         },
     },
     "finance01": {
-        "must_have": {"business:quote:read", "business:quote:export"},
+        "must_have": {
+            "business:quote:read",
+            "business:quote:export",
+            "business:accounting:read",
+            "business:accounting:create",
+        },
         "must_not_have": {
             "business:quote:create",
             "business:quote:approve",
@@ -113,7 +118,12 @@ ROLE_EXPECTATIONS: dict[str, dict[str, object]] = {
         "must_not_have": {"platform:config:read", "system:user:read"},
     },
     "trialadmin": {
-        "must_have": {"business:quote:read", "platform:notification:read"},
+        "must_have": {
+            "business:quote:read",
+            "platform:notification:read",
+            "business:settings:read",
+            "business:settings:update",
+        },
         "must_not_have": {"platform:config:read", "system:user:read"},
         "not_superuser": True,
     },

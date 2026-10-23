@@ -8,14 +8,19 @@ import {
   formPanelClass,
 } from "@/lib/form-styles";
 
-type Field = {
+export type MasterFormField = {
   key: string;
   label: string;
-  type?: "text" | "number" | "select" | "checkbox" | "textarea";
+  type?: "text" | "number" | "date" | "select" | "checkbox" | "textarea";
   placeholder?: string;
   options?: Array<{ value: string; label: string }>;
   required?: boolean;
+  /** When true, control is not editable (e.g. customer filled from quote). */
+  disabled?: boolean;
+  hint?: string;
 };
+
+type Field = MasterFormField;
 
 export function MasterCreateForm({
   title,
@@ -55,6 +60,7 @@ export function MasterCreateForm({
               <select
                 className={fieldInputClass}
                 value={String(values[field.key] ?? "")}
+                disabled={field.disabled}
                 onChange={(e) => onChange(field.key, e.target.value)}
               >
                 <option value="">请选择</option>
@@ -69,6 +75,7 @@ export function MasterCreateForm({
                 type="checkbox"
                 className="h-4 w-4"
                 checked={Boolean(values[field.key])}
+                disabled={field.disabled}
                 onChange={(e) => onChange(field.key, e.target.checked)}
               />
             ) : field.type === "textarea" ? (
@@ -76,6 +83,7 @@ export function MasterCreateForm({
                 className={`${fieldInputClass} min-h-[96px] font-mono`}
                 placeholder={field.placeholder}
                 value={String(values[field.key] ?? "")}
+                disabled={field.disabled}
                 onChange={(e) => onChange(field.key, e.target.value)}
               />
             ) : (
@@ -84,9 +92,11 @@ export function MasterCreateForm({
                 className={fieldInputClass}
                 placeholder={field.placeholder}
                 value={String(values[field.key] ?? "")}
+                disabled={field.disabled}
                 onChange={(e) => onChange(field.key, e.target.value)}
               />
             )}
+            {field.hint ? <span className="text-[10px] text-[var(--color-text-muted)]">{field.hint}</span> : null}
           </label>
         ))}
       </div>

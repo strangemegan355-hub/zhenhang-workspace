@@ -137,7 +137,7 @@ export function ProjectActualCostsPanel({ projectId }: { projectId: string }) {
               { key: "amount", label: "金额", type: "text", required: true, placeholder: "如 12000" },
               { key: "source", label: "来源", type: "select", options: SOURCE_OPTIONS },
               { key: "supplier_id", label: "供应商", type: "select", options: supplierOptions },
-              { key: "occurred_on", label: "发生日期", type: "text", required: true, placeholder: "YYYY-MM-DD" },
+              { key: "occurred_on", label: "发生日期", type: "date", required: true },
               { key: "remark", label: "备注" },
             ]}
             values={form}

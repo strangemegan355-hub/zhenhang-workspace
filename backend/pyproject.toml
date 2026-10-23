@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 asyncio_mode = "auto"
 # Unit tests only, deliberately: `pytest` with no arguments collects backend/tests and never
 # backend/integration_tests, which needs PostgreSQL, Redis and MinIO. The integration suite is run explicitly

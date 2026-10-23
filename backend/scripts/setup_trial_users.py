@@ -246,6 +246,13 @@ TRIAL_ROLE_DEFS: list[tuple[str, str, str, list[tuple[str, str, str, str]]]] = [
             ("platform:notification:read", "通知读取", "platform:notification", "read"),
             ("platform:file:read", "文件读取", "platform:file", "read"),
             ("business:aftersales:read", "售后服务读取", "business:aftersales", "read"),
+            # 财务中心主路径（读 + 日常收付核销；不含平台配置）
+            ("business:accounting:read", "记账读取", "business:accounting", "read"),
+            ("business:accounting:create", "记账创建", "business:accounting", "create"),
+            ("business:accounting:confirm", "记账确认", "business:accounting", "confirm"),
+            ("business:accounting:confirm_receivable", "确认应收", "business:accounting", "confirm_receivable"),
+            ("business:accounting:post_payable", "应付过账", "business:accounting", "post_payable"),
+            ("business:approval:read", "审批中心", "business:approval", "read"),
         ],
     ),
     (
@@ -295,6 +302,9 @@ TRIAL_ROLE_DEFS: list[tuple[str, str, str, list[tuple[str, str, str, str]]]] = [
             ("business:workshop:read", "车间看板读取", "business:workshop", "read"),
             ("business:mes:read", "MES 信号读取", "business:mes", "read"),
             ("business:mes:write", "MES 信号写入", "business:mes", "write"),
+            # K-018: 业务开关（非 platform:config，避免试用账号进平台配置面）
+            ("business:settings:read", "业务设置读取", "business:settings", "read"),
+            ("business:settings:update", "业务设置更新", "business:settings", "update"),
         ],
     ),
 ]
@@ -403,12 +413,24 @@ def setup(*, dry_run: bool, reset_passwords: bool) -> None:
             else:
                 role.data_scope = data_scope
                 print(f"~ role exists {role_code}")
-            existing_ids = {p.id for p in role.permissions}
+            # Exact sync: trial roles must match the declared set. Earlier versions only
+            # appended, so forbidden codes (e.g. platform:config:*) could linger forever.
+            desired: list[Permission] = []
+            desired_ids: set = set()
             for pcode, pname, resource, action in perm_defs:
                 perm = _ensure_permission(db, pcode, pname, resource, action)
-                if perm.id not in existing_ids:
-                    role.permissions.append(perm)
-                    existing_ids.add(perm.id)
+                if perm.id not in desired_ids:
+                    desired.append(perm)
+                    desired_ids.add(perm.id)
+            current_ids = {p.id for p in role.permissions}
+            added = desired_ids - current_ids
+            removed = current_ids - desired_ids
+            if added or removed:
+                role.permissions = desired
+                print(
+                    f"  sync perms {role_code}: +{len(added)} -{len(removed)} "
+                    f"(now {len(desired)})"
+                )
             roles_by_code[role_code] = role
 
         # Generated lazily, per account, and only where a password will actually be written: resolving all

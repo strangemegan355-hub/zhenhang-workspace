@@ -52,6 +52,8 @@ class ProjectLinkedQuote(BaseModel):
     total_amount: Decimal
     workflow_state: str
 
+    model_config = {"from_attributes": True}
+
 
 class ProjectLinkedCostEstimate(BaseModel):
     id: UUID
@@ -59,6 +61,8 @@ class ProjectLinkedCostEstimate(BaseModel):
     product_name: str
     total_cost: Decimal
     final_total: Decimal
+
+    model_config = {"from_attributes": True}
 
 
 class ProjectProfitSnapshot(BaseModel):

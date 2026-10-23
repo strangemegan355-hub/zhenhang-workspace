@@ -19,6 +19,7 @@ import {
 } from "@zhenhang/ui";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { FinanceSubNav } from "@/components/finance/finance-sub-nav";
 import {
   fieldInputClass,
   fieldLabelClass,
@@ -179,7 +180,8 @@ export default function SupplierLedgerPage() {
   if (!enabled && !statusQuery.isLoading) {
     return (
       <IndustrialPage gap="md" fill>
-        <PageHeader title="供应商台账" subtitle="记账功能未开启" />
+        <PageHeader title="财务中心 · 供应商应付" subtitle="记账功能未开启" />
+        <FinanceSubNav />
         <IndustrialPanel>
           <p className="text-sm text-[var(--color-text-muted)]">
             请先在
@@ -193,7 +195,8 @@ export default function SupplierLedgerPage() {
 
   return (
     <IndustrialPage gap="md" fill>
-      <PageHeader title="供应商台账" subtitle="管理供应商应付与付款" />
+      <PageHeader title="财务中心 · 供应商应付" subtitle="管理供应商应付与付款" />
+      <FinanceSubNav />
 
       <IndustrialPanel title="供应商应付汇总">
         <div className="mb-3 flex flex-wrap items-end gap-3">

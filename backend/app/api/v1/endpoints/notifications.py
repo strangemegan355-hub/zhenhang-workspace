@@ -47,12 +47,7 @@ async def list_notifications(
         .limit(page_size)
     )
     items = list((await db.execute(stmt)).scalars().all())
-    return page_response(
-        total=total,
-        page=page,
-        page_size=page_size,
-        items=[NotificationRead.model_validate(i) for i in items],
-    )
+    return page_response(total, page, page_size, items, NotificationRead)
 
 
 @router.get("/unread-count", response_model=NotificationUnreadCount)

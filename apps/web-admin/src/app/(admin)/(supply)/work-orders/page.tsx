@@ -226,8 +226,8 @@ export default function WorkOrdersPage() {
             { key: "process_node", label: "工序", type: "select", options: PROCESS_OPTIONS },
             { key: "team", label: "班组", placeholder: "如 装配班组" },
             { key: "owner_name", label: "负责人", placeholder: "留空则全员可认领" },
-            { key: "plan_start", label: "计划开始", placeholder: "YYYY-MM-DD" },
-            { key: "plan_end", label: "计划结束", placeholder: "YYYY-MM-DD" },
+            { key: "plan_start", label: "计划开始", type: "date" },
+            { key: "plan_end", label: "计划结束", type: "date" },
             { key: "remark", label: "备注", placeholder: "可选" },
           ]}
           values={form}

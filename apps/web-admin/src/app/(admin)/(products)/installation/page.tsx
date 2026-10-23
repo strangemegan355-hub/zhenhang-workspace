@@ -226,12 +226,12 @@ export default function InstallationPage() {
                   ]},
                 ]
               : [
-                  { key: "planned_start_date", label: "计划开始", placeholder: "YYYY-MM-DD" },
-                  { key: "planned_end_date", label: "计划结束", placeholder: "YYYY-MM-DD" },
+                  { key: "planned_start_date", label: "计划开始", type: "date" as const },
+                  { key: "planned_end_date", label: "计划结束", type: "date" as const },
                   { key: "remarks", label: "备注", placeholder: "备注信息" },
                 ]),
-            { key: "install_json", label: "安装步骤 (JSON)", type: "textarea", placeholder: sampleInstallJson },
-            { key: "comm_json", label: "调试清单 (JSON)", type: "textarea", placeholder: sampleCommJson },
+            { key: "install_json", label: "安装步骤 (JSON)", type: "textarea" as const, placeholder: sampleInstallJson },
+            { key: "comm_json", label: "调试清单 (JSON)", type: "textarea" as const, placeholder: sampleCommJson },
           ]}
           values={form}
           onChange={(key, value) => setForm((s) => ({ ...s, [key]: String(value) }))}

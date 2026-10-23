@@ -96,6 +96,8 @@ export function QuoteProductPanel({
   loading,
 }: QuoteProductPanelProps) {
   const [search, setSearch] = useState("");
+  /** UX-001: 机型/BOM 默认折叠，标准路径只选产品库 */
+  const [showAdvancedMachine, setShowAdvancedMachine] = useState(false);
   const filteredCostTemplates = useMemo(
     () =>
       createForm.productId
@@ -258,23 +260,9 @@ export function QuoteProductPanel({
                 ))}
               </select>
             </label>
-            <label className="block text-[11px] text-[var(--color-text-muted)]">
-              机型（可选，兼容旧数据）
-              <select className={inputClass} value={createForm.machineId} onChange={(e) => patch({ machineId: e.target.value, bomId: "" })}>
-                <option value="">不绑定</option>
-                {machines.map((m) => (
-                  <option key={m.id} value={m.id}>{m.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-[11px] text-[var(--color-text-muted)]">
-              BOM（可选）
-              <select className={inputClass} value={createForm.bomId} onChange={(e) => patch({ bomId: e.target.value })} disabled={!createForm.machineId}>
-                <option value="">不绑定 / 稍后导入</option>
-                {filteredBoms.map((b) => (
-                  <option key={b.id} value={b.id}>{b.label}</option>
-                ))}
-              </select>
+            <label className="flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
+              <input type="checkbox" checked={createForm.seedFromProduct} onChange={(e) => patch({ seedFromProduct: e.target.checked })} />
+              从产品模板生成首版行项目
             </label>
             <label className="block text-[11px] text-[var(--color-text-muted)]">
               审批模板
@@ -285,14 +273,59 @@ export function QuoteProductPanel({
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
-              <input type="checkbox" checked={createForm.seedFromProduct} onChange={(e) => patch({ seedFromProduct: e.target.checked })} />
-              从产品模板生成首版行项目
-            </label>
-            <label className="flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
-              <input type="checkbox" checked={createForm.seedFromBom} onChange={(e) => patch({ seedFromBom: e.target.checked })} disabled={!createForm.bomId} />
-              从 BOM 生成首版行项目
-            </label>
+            <div className="rounded border border-dashed border-[var(--color-border)] p-2">
+              <button
+                type="button"
+                className="w-full text-left text-[11px] font-medium text-[var(--color-primary)] hover:underline"
+                onClick={() => setShowAdvancedMachine((v) => !v)}
+              >
+                {showAdvancedMachine ? "收起" : "展开"}高级：机型 / BOM（旧路径，一般不需要）
+              </button>
+              {showAdvancedMachine ? (
+                <div className="mt-2 space-y-2">
+                  <label className="block text-[11px] text-[var(--color-text-muted)]">
+                    机型
+                    <select
+                      className={inputClass}
+                      value={createForm.machineId}
+                      onChange={(e) => patch({ machineId: e.target.value, bomId: "" })}
+                    >
+                      <option value="">不绑定</option>
+                      {machines.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-[11px] text-[var(--color-text-muted)]">
+                    BOM
+                    <select
+                      className={inputClass}
+                      value={createForm.bomId}
+                      onChange={(e) => patch({ bomId: e.target.value })}
+                      disabled={!createForm.machineId}
+                    >
+                      <option value="">不绑定 / 稍后导入</option>
+                      {filteredBoms.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2 text-[11px] text-[var(--color-text-muted)]">
+                    <input
+                      type="checkbox"
+                      checked={createForm.seedFromBom}
+                      onChange={(e) => patch({ seedFromBom: e.target.checked })}
+                      disabled={!createForm.bomId}
+                    />
+                    从 BOM 生成首版行项目
+                  </label>
+                </div>
+              ) : null}
+            </div>
             {createError ? <p className="text-[11px] text-red-500">{createError}</p> : null}
             <div className="flex gap-2">
               <button
@@ -301,7 +334,8 @@ export function QuoteProductPanel({
                   creating ||
                   !createForm.title.trim() ||
                   !createForm.customerId ||
-                  (!createForm.productId && !createForm.machineId)
+                  // 标准路径必须选产品；仅在展开高级并选手型时才允许无产品
+                  !(createForm.productId || (showAdvancedMachine && createForm.machineId))
                 }
                 onClick={onCreateSubmit}
                 className="flex-1 rounded-lg bg-[var(--color-primary)] py-2 text-xs font-medium text-white hover:bg-[var(--color-primary-hover)] disabled:opacity-50"

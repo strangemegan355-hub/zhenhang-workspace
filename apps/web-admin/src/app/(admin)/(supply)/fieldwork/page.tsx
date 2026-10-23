@@ -274,7 +274,7 @@ export default function FieldworkPage() {
           title="外出维修登记"
           fields={[
             { key: "customer_id", label: "客户", required: true, type: "select", options: customerOptions },
-            { key: "occurred_on", label: "维修日期", placeholder: "YYYY-MM-DD" },
+            { key: "occurred_on", label: "维修日期", type: "date" },
             { key: "headline", label: "故障描述", required: true, placeholder: "设备出现了什么问题" },
             { key: "detail", label: "处理措施", placeholder: "怎么修的" },
             { key: "hours", label: "工时(小时)", type: "number" },
@@ -343,7 +343,7 @@ export default function FieldworkPage() {
           title="装车登记"
           fields={[
             { key: "customer_id", label: "客户", required: true, type: "select", options: customerOptions },
-            { key: "occurred_on", label: "装车日期", placeholder: "YYYY-MM-DD" },
+            { key: "occurred_on", label: "装车日期", type: "date" },
             { key: "headline", label: "货物描述", required: true, placeholder: "装车内容摘要" },
             { key: "detail", label: "设备明细", placeholder: "如 XX机型 × 1" },
             {

@@ -216,19 +216,28 @@ async def create_payment_with_allocations(
     await _require_accounting(db)
     await _ensure_supplier_accessible(db, payload.supplier_id)
 
-    # Validate allocations
+    # Validate allocations (row-lock payables to block concurrent over-settlement)
     scope = scope_predicate(AccountingEntry, current_user)
     total_allocated = Decimal("0")
+    locked_payables: dict = {}
     for alloc in payload.allocations:
-        pay = await repo.get_entry(db, alloc.payable_entry_id, predicate=scope)
+        pay = await repo.get_entry(
+            db,
+            alloc.payable_entry_id,
+            predicate=scope,
+            for_update=True,
+        )
         if pay is None or pay.entry_kind != _PAYABLE or pay.supplier_id != payload.supplier_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid payable: {alloc.payable_entry_id}")
         if pay.status != "confirmed":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Payable not confirmed: {alloc.payable_entry_id}")
+        if Decimal(str(alloc.amount)) <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="核销金额必须大于 0")
         open_amt = Decimal(str(pay.amount or 0)) - Decimal(str(pay.settled_amount or 0))
         if alloc.amount > open_amt:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Overpayment: {alloc.payable_entry_id}")
         total_allocated += alloc.amount
+        locked_payables[alloc.payable_entry_id] = pay
 
     if abs(total_allocated - Decimal(str(payload.amount))) > Decimal("0.01"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="分配金额合计与付款金额不一致")
@@ -256,15 +265,15 @@ async def create_payment_with_allocations(
         "created_by": current_user.id,
     })
 
-    # Create settlements and update payable settled amounts
+    # Create settlements and update payable settled amounts (reuse locked rows)
     for alloc in payload.allocations:
         await repo.create_settlement(db, {
             "receipt_entry_id": payment.id,  # payment acts as "receipt" in settlement table
             "receivable_entry_id": alloc.payable_entry_id,
             "amount": alloc.amount,
-            "party_type": "supplier",
+            "created_by": current_user.id,
         })
-        pay = await repo.get_entry(db, alloc.payable_entry_id, predicate=scope)
+        pay = locked_payables.get(alloc.payable_entry_id)
         if pay:
             pay.settled_amount = Decimal(str(pay.settled_amount or 0)) + alloc.amount
             await db.flush()

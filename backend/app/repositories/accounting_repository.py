@@ -44,15 +44,34 @@ async def generate_entry_no(db: AsyncSession, entry_kind: str) -> str:
     return f"{prefix}{count + 1:03d}"
 
 
-async def get_entry(db: AsyncSession, entry_id: UUID, predicate=None) -> AccountingEntry | None:
-    """Fetch one entry, optionally restricted by a data-scope predicate."""
-    stmt = (
-        select(AccountingEntry)
-        .where(AccountingEntry.id == entry_id, AccountingEntry.is_deleted.is_(False))
-        .options(selectinload(AccountingEntry.lines))
+async def get_entry(
+    db: AsyncSession,
+    entry_id: UUID,
+    predicate=None,
+    *,
+    for_update: bool = False,
+) -> AccountingEntry | None:
+    """Fetch one entry, optionally restricted by a data-scope predicate.
+
+    Pass ``for_update=True`` when mutating settled balances (receipt/payment
+    allocation) so concurrent writers cannot over-settle the same row.
+
+    Lock path must not OUTER JOIN joined-eager relationships (Postgres rejects
+    ``FOR UPDATE`` on the nullable side of an outer join).
+    """
+    from sqlalchemy.orm import noload
+
+    stmt = select(AccountingEntry).where(
+        AccountingEntry.id == entry_id,
+        AccountingEntry.is_deleted.is_(False),
     )
     if predicate is not None:
         stmt = stmt.where(predicate)
+    if for_update:
+        # Lock only accounting_entries; suppress joined-eager FK graphs.
+        stmt = stmt.options(noload("*")).with_for_update(of=AccountingEntry)
+    else:
+        stmt = stmt.options(selectinload(AccountingEntry.lines))
     return (await db.execute(stmt)).scalar_one_or_none()
 
 

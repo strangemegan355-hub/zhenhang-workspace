@@ -30,6 +30,7 @@ import {
   tableBodyRowClass,
   tableHeaderRowClass,
 } from "@/lib/form-styles";
+import { FinanceSubNav } from "@/components/finance/finance-sub-nav";
 import { hasPermission } from "@/lib/access";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -274,7 +275,8 @@ export default function AccountingPage() {
   if (!enabled && !statusQuery.isLoading) {
     return (
       <IndustrialPage gap="md" fill>
-        <PageHeader title="收支台账" subtitle="记账功能未开启" />
+        <PageHeader title="财务中心 · 收支台账" subtitle="记账功能未开启" />
+        <FinanceSubNav />
         <IndustrialPanel>
           <p className="text-sm text-[var(--color-text-muted)]">
             请先在
@@ -291,7 +293,7 @@ export default function AccountingPage() {
   return (
     <IndustrialPage gap="md" fill>
       <PageHeader
-        title="收支台账"
+        title="财务中心 · 收支台账"
         subtitle="按客户筛选账目；老板可补录历史账，入账日期自动为今天"
         actions={
           <>
@@ -304,6 +306,7 @@ export default function AccountingPage() {
           </>
         }
       />
+      <FinanceSubNav />
 
       {showBackfill && (canBackfill || editingId) ? (
         <IndustrialPanel title={editingId ? "编辑账目" : "补录账目"}>

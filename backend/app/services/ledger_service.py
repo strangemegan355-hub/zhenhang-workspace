@@ -295,7 +295,13 @@ async def create_receipt_with_allocations(
     receivable_ids = [a.receivable_entry_id for a in payload.allocations]
     receivables: dict[UUID, object] = {}
     for rid in receivable_ids:
-        obj = await repo.get_entry(db, rid, predicate=scope_predicate(AccountingEntry, current_user))
+        # Row lock: prevent concurrent receipts from over-settling the same AR.
+        obj = await repo.get_entry(
+            db,
+            rid,
+            predicate=scope_predicate(AccountingEntry, current_user),
+            for_update=True,
+        )
         if obj is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"应收账目不存在: {rid}")
         if obj.entry_kind != "receivable" or obj.status != "confirmed":
@@ -310,6 +316,8 @@ async def create_receipt_with_allocations(
         settled = Decimal(str(obj.settled_amount or 0))
         open_amt = amount - settled
         alloc = Decimal(str(item.amount))
+        if alloc <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="核销金额必须大于 0")
         if alloc > open_amt:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

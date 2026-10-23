@@ -1,3 +1,4 @@
+import asyncio
 from time import perf_counter
 from typing import Annotated
 
@@ -44,14 +45,21 @@ async def live() -> dict:
 
 @router.get("/ready", summary="Readiness probe (DB + Redis)")
 async def ready(db: Annotated[AsyncSession, Depends(get_db)]) -> dict:
-    db_started = perf_counter()
-    await db.execute(text("SELECT 1"))
-    db_latency_ms = round((perf_counter() - db_started) * 1000, 2)
     from app.core.redis_client import get_redis
 
+    db_started = perf_counter()
+    try:
+        await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=3)
+    except Exception as exc:  # noqa: BLE001 — probe must never hang
+        raise HTTPException(status_code=503, detail=f"database not ready: {type(exc).__name__}") from exc
+    db_latency_ms = round((perf_counter() - db_started) * 1000, 2)
+
     redis_started = perf_counter()
-    redis = await get_redis()
-    await redis.ping()
+    try:
+        redis = await get_redis()
+        await asyncio.wait_for(redis.ping(), timeout=3)
+    except Exception as exc:  # noqa: BLE001 — probe must never hang
+        raise HTTPException(status_code=503, detail=f"redis not ready: {type(exc).__name__}") from exc
     redis_latency_ms = round((perf_counter() - redis_started) * 1000, 2)
     return {
         "status": "ready",

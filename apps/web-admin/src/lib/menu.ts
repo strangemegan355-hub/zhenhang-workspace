@@ -18,7 +18,10 @@ export type MenuGroup = {
   defaultExpanded?: boolean;
 };
 
-/** V2.0 信息架构 — 侧栏可见分组 */
+/**
+ * V2.1 信息架构 — 侧栏只保留日常高频入口。
+ * 机型/BOM/选项组/验收/安装、对客报价独立页仍可通过 URL 与产品详情/报价详情进入（路由保留）。
+ */
 export const APP_MENU_GROUPS: MenuGroup[] = [
   {
     key: "cockpit",
@@ -30,7 +33,8 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
     title: "报价中心",
     items: [
       { key: "quotes", title: "报价中心", href: "/quotes", permission: "business:quote:read" },
-      { key: "quotes-customer", title: "对客报价", href: "/quotes/customer", permission: "business:quote:read" },
+      // 对客报价：侧栏隐藏，从报价中心页内入口进入（UX-002）
+      { key: "quotes-customer", title: "对客报价", href: "/quotes/customer", permission: "business:quote:read", hidden: true },
     ],
   },
   {
@@ -48,14 +52,15 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
     defaultExpanded: false,
     items: [
       { key: "products", title: "产品库", href: "/products", permission: "master:product:read" },
-      { key: "machines", title: "机型管理", href: "/machines", permission: "master:machine:read" },
-      { key: "boms", title: "BOM 管理", href: "/boms", permission: "master:bom:read" },
       { key: "product-cost-templates", title: "成本模板", href: "/product-cost-templates", permission: "master:product_cost_template:read" },
       { key: "product-price-templates", title: "售价模板", href: "/product-price-templates", permission: "master:product_price_template:read" },
-      { key: "option-groups", title: "选项组", href: "/option-groups", permission: "master:machine:read" },
       { key: "equipment-units", title: "设备序列号", href: "/equipment-units", permission: "master:equipment_unit:read" },
-      { key: "acceptance", title: "验收管理", href: "/acceptance", permission: "master:machine:read" },
-      { key: "installation", title: "安装调试", href: "/installation", permission: "master:machine:read" },
+      // 高级/工业路径：侧栏隐藏，URL 与权限保留（UX-001）
+      { key: "machines", title: "机型管理", href: "/machines", permission: "master:machine:read", hidden: true },
+      { key: "boms", title: "BOM 管理", href: "/boms", permission: "master:bom:read", hidden: true },
+      { key: "option-groups", title: "选项组", href: "/option-groups", permission: "master:machine:read", hidden: true },
+      { key: "acceptance", title: "验收管理", href: "/acceptance", permission: "master:machine:read", hidden: true },
+      { key: "installation", title: "安装调试", href: "/installation", permission: "master:machine:read", hidden: true },
     ],
   },
   {
@@ -86,12 +91,21 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
     title: "财务中心",
     defaultExpanded: false,
     items: [
+      // UX-003：侧栏只保留一个入口；客户应收 / 收支 / 供应商应付在页内 Tab 切换
       {
-        key: "accounting-ledger",
-        title: "账目明细",
+        key: "accounting-hub",
+        title: "财务中心",
         href: "/accounting/ledger",
         permission: "business:accounting:read",
         featureFlag: "accounting_enabled",
+      },
+      {
+        key: "accounting-ledger",
+        title: "客户应收",
+        href: "/accounting/ledger",
+        permission: "business:accounting:read",
+        featureFlag: "accounting_enabled",
+        hidden: true,
       },
       {
         key: "accounting",
@@ -99,13 +113,15 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
         href: "/accounting",
         permission: "business:accounting:read",
         featureFlag: "accounting_enabled",
+        hidden: true,
       },
       {
         key: "accounting-supplier",
-        title: "供应商台账",
+        title: "供应商应付",
         href: "/accounting/supplier-ledger",
         permission: "business:accounting:read",
         featureFlag: "accounting_enabled",
+        hidden: true,
       },
     ],
   },
@@ -133,8 +149,8 @@ export const APP_MENU_GROUPS: MenuGroup[] = [
 ];
 
 /**
- * 隐藏菜单 — 路由与页面代码保留，仅不在侧栏展示。
- * 含：BOM、机型管理、文件中心；AI/MES 无独立 Web 菜单项。
+ * 额外隐藏菜单 — 路由与页面代码保留，仅不在侧栏展示。
+ * 机型/BOM 等已在 APP_MENU_GROUPS 内标 hidden；此处为独立路由项。
  */
 export const HIDDEN_APP_MENUS: MenuItem[] = [
   { key: "product-categories", title: "产品分类", href: "/product-categories", permission: "master:product_category:read", hidden: true },

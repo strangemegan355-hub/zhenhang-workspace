@@ -55,7 +55,34 @@ async def _build_project_profit_context(db: AsyncSession, project) -> dict:
         "actual_count": actual_count,
     }
 
+async def _apply_primary_quote_customer(
+    db: AsyncSession, payload: dict, current_user: User
+) -> dict:
+    """UX-004: when a primary quote is set, customer must match the quote's customer."""
+    from app.models.quote import Quote
+
+    quote_id = payload.get("primary_quote_id")
+    if not quote_id:
+        return payload
+    linked = await repo.get_quote_by_id(
+        db, quote_id, predicate=scope_predicate(Quote, current_user)
+    )
+    if linked is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="关联报价不存在或无权访问")
+    if linked.customer_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="关联报价缺少客户")
+    existing = payload.get("customer_id")
+    if existing and existing != linked.customer_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="项目客户必须与关联报价客户一致",
+        )
+    payload["customer_id"] = linked.customer_id
+    return payload
+
+
 async def create_project(db: AsyncSession, payload: dict, current_user: User) -> ProjectRead:
+    payload = await _apply_primary_quote_customer(db, dict(payload), current_user)
     if not payload.get("project_no"):
         payload["project_no"] = await repo.generate_project_no(db)
     payload["created_by"] = current_user.id
@@ -215,6 +242,7 @@ async def update_project(
     obj = await repo.get_project(db, object_id, predicate=scope_predicate(Project, current_user))
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    payload = await _apply_primary_quote_customer(db, dict(payload), current_user)
     updated = await repo.update_project(db, obj, payload)
     return ProjectRead.model_validate(updated)
 

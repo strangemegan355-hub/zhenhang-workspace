@@ -29,3 +29,16 @@ deploy/nginx/certs/*.crt
 scripts/_s_test.json
 scripts/_verify.txt
 
+# local trial passwords / agent scratch (never commit)
+logs/
+logs/*.local.env
+logs/trial-passwords*
+.tmp_*
+
+# docker compose runtime data (placeholders under volumes/**/.gitkeep stay tracked)
+volumes/postgres/data/
+volumes/minio/.minio.sys/
+volumes/redis/appendonlydir/
+volumes/nginx/logs/*
+!volumes/nginx/logs/.gitkeep
+

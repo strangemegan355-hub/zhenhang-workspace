@@ -48,7 +48,11 @@ BARREL_EXPORTS_WITHOUT_A_CONSUMER = {
 REFERENCED_NOWHERE = {
     "BOM_IMPORT_TEMPLATE",
     "MasterRowActions",
+    # UX-006 (2026-10-23): dashboard dropped these from the action-first layout;
+    # files remain until a deliberate deletion pass.
+    "RecentFilesCard",
     "TableToolbar",
+    "WorkflowProgressCard",
 }
 
 # --- The hook layer, added in round 190. -------------------------------------------------------------------------------

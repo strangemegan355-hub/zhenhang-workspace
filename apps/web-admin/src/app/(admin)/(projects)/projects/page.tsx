@@ -8,6 +8,7 @@ import {
   useDeleteProjectMutation,
   useProjectSummaryQuery,
   useProjectsQuery,
+  useQuotesQuery,
   useUpdateProjectMutation,
   type ProjectSummary,
 } from "@zhenhang/query-hooks";
@@ -34,6 +35,7 @@ type ProjectRow = {
   ownerName: string;
   category: string;
   customerId: string;
+  primaryQuoteId: string;
   targetDate: string;
   remark: string;
 };
@@ -52,6 +54,7 @@ const STAGE_LABEL: Record<string, string> = Object.fromEntries(STAGE_OPTIONS.map
 const emptyForm = {
   name: "",
   customer_id: "",
+  primary_quote_id: "",
   category: "",
   stage: "lead",
   owner_name: "",
@@ -115,6 +118,7 @@ export default function ProjectsPage() {
 
   const query = useProjectsQuery(page, search.trim() || undefined);
   const customersQuery = useCustomersQuery(1);
+  const quotesQuery = useQuotesQuery({ page: 1, quoteKind: "customer" });
   const summaryQuery = useProjectSummaryQuery(editId ?? undefined);
   const createMutation = useCreateProjectMutation();
   const updateMutation = useUpdateProjectMutation();
@@ -130,6 +134,16 @@ export default function ProjectsPage() {
     [customersQuery.data],
   );
 
+  const quoteOptions = useMemo(
+    () =>
+      ((quotesQuery.data as { items?: Record<string, unknown>[] } | undefined)?.items ?? []).map((q) => ({
+        value: String(q.id ?? ""),
+        label: `${String(q.quote_no ?? "")} · ${String(q.title ?? "")}`,
+        customerId: String(q.customer_id ?? ""),
+      })),
+    [quotesQuery.data],
+  );
+
   const rows = useMemo(
     () =>
       (data.items ?? []).map((row) => {
@@ -143,6 +157,7 @@ export default function ProjectsPage() {
           ownerName: String(row.owner_name ?? ""),
           category: String(row.category ?? ""),
           customerId: String(row.customer_id ?? ""),
+          primaryQuoteId: String(row.primary_quote_id ?? ""),
           targetDate: String(row.target_date ?? ""),
           remark: String(row.remark ?? ""),
         };
@@ -167,6 +182,7 @@ export default function ProjectsPage() {
     setForm({
       name: row.name,
       customer_id: row.customerId,
+      primary_quote_id: row.primaryQuoteId,
       category: row.category,
       stage: row.stage,
       owner_name: row.ownerName,
@@ -200,6 +216,7 @@ export default function ProjectsPage() {
     const body = {
       name: form.name.trim(),
       customer_id: form.customer_id.trim() || undefined,
+      primary_quote_id: form.primary_quote_id.trim() || undefined,
       category: form.category.trim() || undefined,
       stage: form.stage || "lead",
       owner_name: form.owner_name.trim() || undefined,
@@ -231,7 +248,7 @@ export default function ProjectsPage() {
     <IndustrialPage gap="md" fill>
       <PageHeader
         title="项目台账"
-        subtitle="项目主数据统一接入页面标题与页面壳层"
+        subtitle="优先从已通过的对客报价关联项目；金额与客户以报价为准，避免重复录入"
         actions={<WorkspaceToolbarButton onClick={openCreate}>新增项目</WorkspaceToolbarButton>}
       />
 
@@ -240,15 +257,46 @@ export default function ProjectsPage() {
           title={editId ? "修改项目" : "新增项目"}
           fields={[
             { key: "name", label: "项目名称", required: true, placeholder: "如 XX客户设备项目" },
-            { key: "customer_id", label: "客户", type: "select", options: customerOptions },
+            {
+              key: "primary_quote_id",
+              label: "关联对客报价（推荐）",
+              type: "select",
+              options: quoteOptions.map((q) => ({ value: q.value, label: q.label })),
+              hint: "选定后自动带出客户，与报价保持一致",
+            },
+            {
+              key: "customer_id",
+              label: "客户",
+              type: "select",
+              options: customerOptions,
+              disabled: Boolean(form.primary_quote_id.trim()),
+              hint: form.primary_quote_id.trim()
+                ? "已由关联报价带出，如需改客户请先清空报价"
+                : "无报价时可手选；有报价时以报价客户为准",
+            },
             { key: "category", label: "产品分类", placeholder: "如 注塑机/压铸机" },
             { key: "stage", label: "阶段", type: "select", options: STAGE_OPTIONS },
             { key: "owner_name", label: "负责人", placeholder: "项目负责人姓名" },
-            { key: "target_date", label: "目标交付日", type: "text", placeholder: "YYYY-MM-DD" },
+            { key: "target_date", label: "目标交付日", type: "date" },
             { key: "remark", label: "备注" },
           ]}
           values={form}
-          onChange={(key, value) => setForm((s) => ({ ...s, [key]: value }))}
+          onChange={(key, value) => {
+            setForm((s) => {
+              const next = { ...s, [key]: value };
+              if (key === "primary_quote_id" && value) {
+                const hit = quoteOptions.find((q) => q.value === value);
+                // UX-004：选报价后始终带出客户，避免与报价客户不一致
+                if (hit?.customerId) next.customer_id = hit.customerId;
+                if (hit && !s.name.trim()) {
+                  const title = hit.label.split(" · ").slice(1).join(" · ");
+                  if (title) next.name = title;
+                }
+                if (s.stage === "lead") next.stage = "quoted";
+              }
+              return next;
+            });
+          }}
           onSubmit={() => void handleSave()}
           onCancel={closeForm}
           submitting={createMutation.isPending || updateMutation.isPending}
@@ -288,7 +336,7 @@ export default function ProjectsPage() {
                 </Link>
               </div>
             ) : (
-              <div className="text-zinc-500 md:col-span-2">尚未关联报价，可在对客报价中选择本项目</div>
+              <div className="text-[var(--color-text-muted)] md:col-span-2">尚未关联报价，可在对客报价中选择本项目</div>
             )}
             {linkedCost ? (
               <div className="md:col-span-2">
@@ -296,7 +344,7 @@ export default function ProjectsPage() {
               </div>
             ) : null}
           </div>
-          <p className="mt-2 text-[11px] text-zinc-500">
+          <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
             预算侧取自对客报价与成本核算完全成本；实际侧来自下方登记。偏差 = 实际成本 − 预算成本，正数为超预算。
           </p>
         </IndustrialPanel>
@@ -329,7 +377,7 @@ export default function ProjectsPage() {
         rowKey={(row) => row.id}
         rowActions={(row) => <RowActions onEdit={() => openEdit(row)} onDelete={() => void handleDelete(row.id, row.name)} />}
         toolbarExtra={<WorkspaceToolbarButton onClick={openCreate}>新增项目</WorkspaceToolbarButton>}
-        emptyHint="项目台账用于汇总预算与报价；创建后可在对客报价、成本核算中关联本项目"
+        emptyHint="建议先在对客报价完成选型，再在此新建项目并选择「关联对客报价」，系统会自动带出客户"
       />
     </IndustrialPage>
   );
