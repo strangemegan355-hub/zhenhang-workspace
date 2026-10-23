@@ -4,14 +4,21 @@ import Link from "next/link";
 import { useWorkOrdersQuery } from "@zhenhang/query-hooks";
 import { StatusBadge, type InteractionStatus } from "@zhenhang/ui";
 import { ArrowUpRight, Wrench } from "lucide-react";
+import { hasPermission } from "@/lib/access";
+import { useAuthStore } from "@/store/auth-store";
 import { DashboardCard } from "./dashboard-card";
 import { formatRelativeTime } from "./dashboard-utils";
 
 const STATUS_LABELS: Record<string, string> = { todo: "待开工", doing: "进行中", done: "已完成", exception: "异常" };
 const STATUS_MAP: Record<string, InteractionStatus> = { todo: "idle", doing: "processing", done: "success", exception: "danger" };
 
+/** UX-006：无工单读权限则不渲染 */
 export function RecentWorkOrdersCard() {
+  const perms = useAuthStore((s) => s.user?.permissions ?? []);
+  const canRead = hasPermission(perms, "business:work_order:read");
   const { data } = useWorkOrdersQuery(1);
+  if (!canRead) return null;
+
   const items = ((data?.items ?? []) as Record<string, unknown>[]).slice(0, 5);
   return (
     <DashboardCard title="最近工单" toolbar={<Link href="/work-orders" className="flex items-center gap-1 text-xs text-[var(--color-primary)] hover:underline">全部<ArrowUpRight className="h-3 w-3" /></Link>}>

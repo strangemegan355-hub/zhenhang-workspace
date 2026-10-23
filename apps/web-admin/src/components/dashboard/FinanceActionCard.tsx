@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { Wallet } from "lucide-react";
+import { hasPermission } from "@/lib/access";
+import { useAuthStore } from "@/store/auth-store";
 import { DashboardCard } from "./dashboard-card";
 
 const ACTIONS = [
@@ -22,8 +24,11 @@ const ACTIONS = [
   },
 ] as const;
 
-/** 工作台财务行动入口（UX-003 / UX-006） */
+/** 工作台财务行动入口（UX-003 / UX-006）：无记账读权限则不渲染 */
 export function FinanceActionCard() {
+  const perms = useAuthStore((s) => s.user?.permissions ?? []);
+  if (!hasPermission(perms, "business:accounting:read")) return null;
+
   return (
     <DashboardCard
       title="财务待办"

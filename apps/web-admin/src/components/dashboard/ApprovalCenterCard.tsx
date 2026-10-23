@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowUpRight, ClipboardList } from "lucide-react";
 import { useApprovalInboxQuery } from "@zhenhang/query-hooks";
 import { StatusBadge } from "@zhenhang/ui";
+import { hasPermission } from "@/lib/access";
+import { useAuthStore } from "@/store/auth-store";
 import { DashboardCard } from "./dashboard-card";
 import { formatRelativeTime } from "./dashboard-utils";
 
@@ -12,8 +14,13 @@ const TASK_TYPE_LABEL: Record<string, string> = {
   quote_workflow: "报价",
 };
 
+/** UX-006：无审批读权限则不渲染（销售/财务/老板按角色见待办） */
 export function ApprovalCenterCard() {
-  const inboxQuery = useApprovalInboxQuery();
+  const perms = useAuthStore((s) => s.user?.permissions ?? []);
+  const canRead = hasPermission(perms, "business:approval:read");
+  const inboxQuery = useApprovalInboxQuery(canRead);
+  if (!canRead) return null;
+
   const display = (inboxQuery.data?.items ?? []).slice(0, 6);
 
   return (

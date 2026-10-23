@@ -3,7 +3,7 @@
 > **说明**：本矩阵区分证据类型，避免把「有代码」写成「已验收」。  
 > 图例：✅ 运行验证 · 📄 代码/静态测试 · ☐ 未验证 · ⚠️ 部分/存疑
 
-最后更新：2026-10-23（K-030 后续：审批视口纳入脚本；UX-001/002/006 静态验收 + Dashboard 权限门禁；README/:55432 注释；勿改种子默认记账策略）
+最后更新：2026-10-23（UX-006 四角色 Dashboard 卡门禁 headless PASS；UX-002 Tab 评估暂缓；审批金额视口仍无待办样本；勿改种子默认记账策略）
 
 ---
 
@@ -12,15 +12,15 @@
 | 模块 | 页面/入口 | API | 持久化模型 | 静态对齐测试 | 运行验收 |
 |---|---|---|---|---|---|
 | 登录/会话 | `/login` | `/auth/*` | User | 📄 `test_token_types` 等 | ✅ 6 试用账号 `smoke_trial_login`；K-020 防 GET 泄密已修 |
-| 运营看板 | `/dashboard` | `/dashboard/*` | 多表聚合 | 📄 `test_dashboard_*` + `test_ux_menu_and_dashboard_static`（UX-006 置顶卡 + 权限门禁） | ✅ 浏览器可开；⚠️ 完整角色化布局多账号对比仍 ☐（K-006） |
-| 报价中心 | `/quotes`, `/quotes/customer` | `/quotes/*` | Quote… | 📄 PageHeader；对客列表金额 `align:right`；UX-002 对客侧栏 hidden（静态测）；`check-ui-batch`+`tsc` OK | ✅ 场景 A API；视口页头可见；列表 loading 未断言金额（K-028） |
+| 运营看板 | `/dashboard` | `/dashboard/*` | 多表聚合 | 📄 `test_dashboard_*` + UX 静态（门禁 + 种子角色矩阵） | ✅ 四角色 headless 卡显隐 PASS（`run-dashboard-role-cards.mjs`）；⚠️「按角色换整套布局」仍 ☐（K-006） |
+| 报价中心 | `/quotes`, `/quotes/customer` | `/quotes/*` | Quote… | 📄 PageHeader；对客金额 `align:right`；UX-002 侧栏 hidden + 页内深链；合并 Tab ☐（两套模型，非小补丁） | ✅ 场景 A API；视口页头可见；列表 loading 未断言金额（K-028） |
 | 项目 | `/projects`… | `/projects/*` | Project… | 📄 | ✅ 场景 B API；浏览器「项目台账」可开 |
 | 产品库 | `/products` | `/products/*` | Product | 📄 | ✅ sales 列表 200 |
 | 机型/BOM | `/machines`, `/boms` | … | Machine… | 📄 UX-001 侧栏 `hidden`（静态测） | ⚠️ URL/权限保留；侧栏不展示（非日常路径） |
 | 主数据 | customers 等 | … | … | 📄 | ✅ customers 列表 200 |
 | 采购 | `/procurement` | … | … | 📄 PageHeader + 主操作 + DataGrid 金额/数量 `align:right`；空材料/供应商引导链；`check-ui-batch` OK | ✅ 场景 C API；视口金额 `right=9/9`（试用 TRIAL-PR-*）；K-030 修列表 500 |
 | 财务 | `/accounting*` | `/accounting/*` | … | 📄 三页 FilterBar + `moneyCellClass`；未开记账提示指向 trialadmin；`check-ui-batch`+`tsc` OK | ✅ 场景 C/D API；视口金额 `right=3/3`（试用种子开记账 + draft 样例） |
-| 审批 | `/approvals` | `/approvals/*` | … | 📄 金额/优惠列 `align:right`；文案强调本页处理勿重复录入；`check-ui-batch` | ✅ 浏览器可开；视口路由已纳入（待办空则金额不强制断言，见脚本 NOTE） |
+| 审批 | `/approvals` | `/approvals/*` | … | 📄 金额/优惠列 `align:right`；文案强调本页处理勿重复录入；`check-ui-batch` | ✅ 壳层视口 OK；⚠️ inbox=0，**未**做有金额行的视口右齐（见 `logs/approvals-money-align-note.txt`） |
 | 权限 | 菜单+按钮 | `require_permissions` | Role… | ✅ | ✅ `verify_permissions` + 角色冒烟 |
 | 车间 | `/workshop` + workshop-terminal | `/workshop` | … | 📄 | ✅ API board + UI 登录看板→DEMO BOM/KPI（§3.8） |
 | 移动审批 | mobile-app | 同 API | — | 📄 | ✅ UI 登录→待审→通过（§3.7）；修 K-025 后 |
@@ -62,8 +62,12 @@ cd apps/web-admin; npx tsc --noEmit -p tsconfig.json
 node scripts/ui/run-viewport-core-lists.mjs
 # 结果：logs/viewport-core-lists-out.txt（含 /approvals）
 
+# UX-006 多角色 Dashboard 卡门禁（trialadmin/finance01/sales01/workshop01）
+node scripts/ui/run-dashboard-role-cards.mjs
+# 结果：logs/dashboard-role-cards-out.txt
+
 # UX-001/002/006 静态钉：
-.\.venv\Scripts\python.exe -m pytest -q tests/test_ux_menu_and_dashboard_static.py
+cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_ux_menu_and_dashboard_static.py
 ```
 
 口令勿入库；本地可用 `logs/trial-passwords.local.env`（已 gitignore）。
@@ -71,11 +75,9 @@ node scripts/ui/run-viewport-core-lists.mjs
 ### 本批 UI 缺口（诚实）
 
 - DataGrid **列级 `align` 已落地**；采购/对客报价/审批金额列已 `align:"right"`（K-028/K-030）。
-- 视口：`node scripts/ui/run-viewport-core-lists.mjs`（报价/采购/财务/**审批**）。
-  - 审批：待办为空时无金额单元格属预期；列右齐由 `check-ui-batch` 静态保证。
-- UX-001/002：侧栏隐藏机型/对客入口 — 静态测 ✅；合并 Tab / 产品详情深链人工 ☐。
-- UX-006：置顶待办 + 财务/审批/工单卡权限门禁 — 静态测 ✅；多角色浏览器对照整页布局 ☐（K-006）。
+- 视口列表：`run-viewport-core-lists.mjs` → `RESULT=PASS`（报价/采购/财务金额右齐；审批壳层 OK）。
+- UX-006 / K-006：**四角色 Dashboard 卡显隐** headless `RESULT=PASS`（API 权限与 DOM 一致；证据 `logs/dashboard-role-cards-out.txt` + `viewport-dashboard-*.png`）。「整套按角色换布局」仍 ☐。
+- UX-002：侧栏 hidden + 报价中心页内深链 ✅；**合并 Tab 暂缓**（两套模型，非小补丁）。
+- 审批金额视口：本机 inbox=0；**未**新建待办样例（避免盲种业务审批流）；静态 `align:right` + `check-ui-batch`；见 `logs/approvals-money-align-note.txt`。
 - **未改**试用种子「默认开记账」策略（待负责人决策）。
-- K-030：采购列表 `response_model` 已修；K-029 登录兜底仍保留。
-- E2E：根 `playwright-core@1.51.1`；**未**装 `@playwright/test`。
-- 本机 `.env` 默认 `:5432` 常不可达；试用/视口显式 `55432`（README / `.env.example` 已注释）。
+- K-030 / K-029 既有修复仍保留；E2E 仍用 `playwright-core`（无 `@playwright/test`）。
