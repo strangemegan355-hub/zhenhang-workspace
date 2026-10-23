@@ -292,7 +292,7 @@ export default function AccountingLedgerPage() {
             <Link href="/business-settings" className={`mx-1 ${linkActionClass}`}>
               业务设置
             </Link>
-            中开启「记账功能」。
+            中开启「记账功能」。试用环境请用 trialadmin 等具备业务设置权限的账号开启；开启后在此查看客户应收，勿重复手填客户。
           </p>
         </IndustrialPanel>
       </IndustrialPage>

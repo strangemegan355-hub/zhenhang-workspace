@@ -286,6 +286,24 @@ export default function ProcurementPage() {
 
       {transferMsg ? <p className={messageBannerClass}>{transferMsg}</p> : null}
       {formError && !showCreate ? <p className={messageBannerClass}>{formError}</p> : null}
+      {!materialsQuery.isLoading && materialOptions.length === 0 ? (
+        <p className={messageBannerClass}>
+          尚无材料主数据，请先在
+          <Link href="/materials" className={`mx-1 ${linkActionClass}`}>
+            材料库
+          </Link>
+          维护后再建请购（避免在本页空选）。
+        </p>
+      ) : null}
+      {!suppliersQuery.isLoading && supplierOptions.length === 0 ? (
+        <p className={messageBannerClass}>
+          尚无供应商，请先在
+          <Link href="/suppliers" className={`mx-1 ${linkActionClass}`}>
+            供应商
+          </Link>
+          维护；提交应付后金额与供应商会带入财务，无需重复录入。
+        </p>
+      ) : null}
 
       <MasterListPage<ProcurementRow & { materialLabel: string; supplierLabel: string }>
         embedded

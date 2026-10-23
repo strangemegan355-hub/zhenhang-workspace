@@ -1,5 +1,5 @@
 /**
- * Viewport smoke for quotes / procurement / accounting (no @playwright/test required).
+ * Viewport smoke for quotes / procurement / accounting / approvals (no @playwright/test required).
  * Usage (repo root; Chromium via playwright / playwright-core):
  *   node scripts/ui/run-viewport-core-lists.mjs
  *   node logs/run-viewport-core-lists.mjs
@@ -293,6 +293,7 @@ async function main() {
       { path: "/quotes", titleHints: ["报价中心", "报价"], waitQuotes: true },
       { path: "/procurement", titleHints: ["采购预备", "采购"] },
       { path: "/accounting", titleHints: ["财务", "账目", "应收", "应付"] },
+      { path: "/approvals", titleHints: ["审批中心", "审批"], moneyOptionalEmpty: true },
     ];
 
     for (const r of routes) {
@@ -318,6 +319,8 @@ async function main() {
       if (money.found === 0) {
         if (r.path === "/procurement") {
           log(`${r.path}: NOTE 采购库无试用行（materials/entries=0），浏览器无法验金额列；非对齐缺陷`);
+        } else if (r.path === "/approvals" || r.moneyOptionalEmpty) {
+          log(`${r.path}: NOTE 待办为空时无金额单元格；列 align:right 由 check-ui-batch 静态断言`);
         } else {
           log(`${r.path}: NOTE empty/loading — money align not asserted`);
         }

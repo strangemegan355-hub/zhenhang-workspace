@@ -10,7 +10,7 @@
 | K-003 | P2 | UI 主色与任务书目标不一致（曾用 Frappe 黑灰 `#171717`，目标 `#1677ff`） | 品牌与现代化方向偏差 | **已修复**（2026-10-23） | `globals.css` + `app-shell` 深蓝侧栏 |
 | K-004 | P2 | `menu.ts` 注释称部分菜单「隐藏」，但 BOM/机型等仍在侧栏展示 | 信息架构文档与 UI 不一致 | **已修复**（2026-10-23） | 机型/BOM/选项组/验收/安装标 `hidden` |
 | K-005 | P1 | **产品库 vs 机型管理** 双轨：报价可关联 product_id 或 machine_id | 员工不知选哪条路径、数据重复维护风险 | **部分修复**：侧栏默认仅产品库；字段保留兼容 | quotes 模型 + menu V2.1 |
-| K-006 | P2 | 首页 Dashboard 多卡片/图表，是否均接真实 API 未在本轮点击验证 | 可能展示空数据或低价值指标 | 部分改进；浏览器验收 ☐ | UX-006 去掉低优先级卡；`test_page_data_use` |
+| K-006 | P2 | 首页 Dashboard 多卡片/图表，是否均接真实 API 未在本轮点击验证 | 可能展示空数据或低价值指标 | **部分改进**：置顶待办 + 财务/审批/工单卡权限门禁；静态测 ✅；多角色浏览器对照 ☐ | UX-006；`test_ux_menu_and_dashboard_static` |
 | K-007 | P3 | 后端无 enforced ruff/mypy（pyproject 自述） | 风格与类型漂移 | 已知 | `pyproject.toml` 注释 |
 | K-008 | P1 | 集成测试与 E2E 未在本轮执行 | 财务/权限/事务回归风险 | **已跑**：integration **44 passed / 3 xfailed**；浏览器 E2E 仍以 API+关键 UI 证据为主 | `logs/integration-pytest.txt` |
 | K-009 | P2 | 本机 API / ready 不可用 | 无法试运行验收 | **已缓解**：API 已起；ready 已通 | live/ready 200 |
@@ -34,6 +34,7 @@
 | K-027 | P1 | prod Web 构建时 `NEXT_PUBLIC_API_BASE_URL` 为空仍回退到 `http://127.0.0.1:8000`，登录打到本机开发库 →「密码不正确」 | 用 prod 口令无法登录管理端 | **已修复**（2026-10-23） | `providers`/`http-client`：空串=同源；web 镜像重建 |
 | K-028 | P2 | 核心列表页（报价/采购/财务）曾各自手写页头与筛选，金额列对齐不一致 | 操作路径跳变、金额难扫读 | **已修复（代码）/ 视口验证报价金额**（2026-10-23） | DataGrid 列级 `align`；视口 `logs/viewport-core-lists-out.txt` → `RESULT=PASS`，报价 `money=right=4/4`。采购库无试用材料/计划行，浏览器无法验采购金额列（诚实缺口，非对齐缺陷）。财务页若未开「记账功能」则无金额单元格 |
 | K-029 | P2 | Playwright/headless 登录无 `/auth/login`；报价列表长期「加载报价列表…」 | 纯 UI E2E 不可用；视口金额扫读失败 | **已修复**（2026-10-23） | **根因 1：** Next 16 默认拦截 `127.0.0.1` 访问 `/_next/*` → 客户端不 hydration（`allowedDevOrigins`）。**根因 2：** 报价 `loading` 误绑 `customersQuery`（boss 无 `master:customer:read` 时 403 重试拖死列表）。**根因 3：** admin layout 在 zustand persist 水合前误跳登录。修复：`next.config.ts` `allowedDevOrigins`；登录 FormData+hydration 门闩；报价 `loading` 仅 `listQuery`；layout 等 `persist.hasHydrated`。视口仍保留 API+localStorage 注入兜底；`playwright-core` 已装，**未**装 `@playwright/test`（脚本不依赖它） |
+| K-030 | P1 | `GET /procurement-entries` `response_model` 误为 `PageResponse[AccountingEntryRead]`；空列表时无校验、有行则 FastAPI 500 | 采购页无法展示试用/真实请购金额；视口采购金额不可验 | **已修复**（2026-10-23） | 改为 `PageResponse[ProcurementEntryRead]`；静态单测 `test_procurement_list_response_model`；试用种子 `seed_trial_money_viewport.py` 开记账 + TRIAL 材料/请购/draft 账；视口 `RESULT=PASS` 采购 `right=9/9`、财务 `right=3/3` |
 
 ### 安全类（详见 `SECURITY_REVIEW.md`）
 

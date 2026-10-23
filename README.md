@@ -116,6 +116,14 @@ python scripts/run_local_api.py
 
 **演示数据（DEMO_QUOTE）：** 完成上述初始化后，在 `backend` 目录执行 `python scripts/seed_demo_quote.py`，将创建 1 个客户、1 个机型、24 行 BOM 物料、1 张 draft 报价（单号 `DEMO-Q-001`）。Windows 本地请确保 `backend/.env` 中 `DATABASE_URL` 使用 `127.0.0.1` 而非 `localhost`。
 
+**本机 Postgres 端口：** `docker compose` 默认映射 `5432`；集成测试栈（`backend/integration_tests/docker-compose.integration.yml`）映射 **`55432`**。若本机 API 实际连的是 55432 库，迁移/种子/视口脚本须显式设置同一 URL（勿把密钥写进仓库），例如 PowerShell：
+
+```powershell
+$env:DATABASE_URL="postgresql+psycopg://erp:erp@127.0.0.1:55432/erp_db"
+```
+
+详见 `backend/.env.example` 注释。
+
 **异步 Worker（导出 PDF/Excel、事件重试）：** 另开终端，在 `backend` 目录执行：
 
 ```bash

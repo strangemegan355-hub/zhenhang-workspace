@@ -7,6 +7,7 @@ const files = [
   "apps/web-admin/src/app/(admin)/(supply)/procurement/page.tsx",
   "apps/web-admin/src/app/(admin)/(quotes)/quotes/page.tsx",
   "apps/web-admin/src/app/(admin)/(quotes)/quotes/customer/page.tsx",
+  "apps/web-admin/src/app/(admin)/(platform)/approvals/page.tsx",
   "packages/ui/src/components/layout/filter-bar.tsx",
   "packages/ui/src/index.ts",
   "apps/web-admin/src/lib/form-styles.ts",
@@ -34,6 +35,11 @@ for (const f of files) {
     if (!t.includes("hideInternalHeader")) checks.push("no hideInternalHeader");
     if (!t.includes('align: "right"')) checks.push("no money/qty align:right");
     if (!t.includes("planAmount")) checks.push("no planAmount column");
+    if (!t.includes('href="/materials"')) checks.push("no empty-materials guidance link");
+  }
+  if (f.includes("approvals")) {
+    if (!t.includes("PageHeader")) checks.push("no PageHeader");
+    if (!t.includes('align: "right"')) checks.push("no amount align:right");
   }
   if (f.includes("quotes/page") || f.includes("quotes\\page") || f.includes("quotes/customer")) {
     if (!t.includes("PageHeader")) checks.push("no PageHeader");

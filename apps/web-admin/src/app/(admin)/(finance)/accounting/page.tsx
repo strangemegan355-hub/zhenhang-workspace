@@ -287,7 +287,7 @@ export default function AccountingPage() {
             <Link href="/business-settings" className={`mx-1 ${linkActionClass}`}>
               业务设置
             </Link>
-            中开启「记账功能」。
+            中开启「记账功能」。试用环境需具备业务设置权限的账号（如 trialadmin）操作；开启后本页直接登记账目，无需另开台账入口。
           </p>
         </IndustrialPanel>
       </IndustrialPage>

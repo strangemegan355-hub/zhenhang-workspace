@@ -102,7 +102,7 @@ export default function ApprovalsPage() {
         <>
           <PageHeader
             title="审批中心"
-            subtitle={`待办 ${items.length} 条 · 类型：应收优惠 / 报价审批 / 采购应付；处理后请刷新确认结果`}
+            subtitle={`待办 ${items.length} 条 · 在此通过/驳回即可，无需再到报价或采购页重复录入金额；详情链回原单据核对。`}
           />
           {actionError ? <p className="mb-2 text-xs text-[var(--color-danger)]">{actionError}</p> : null}
         </>
@@ -114,8 +114,8 @@ export default function ApprovalsPage() {
         { key: "type", title: "类型", canView: true, fixed: "left", width: 110 },
         { key: "title", title: "标题", canView: true },
         { key: "submitter", title: "提交人", canView: true, width: 110 },
-        { key: "amount", title: "金额", canView: true, width: 120 },
-        { key: "discount", title: "优惠", canView: true, width: 150 },
+        { key: "amount", title: "金额 (CNY)", canView: true, width: 120, align: "right" },
+        { key: "discount", title: "优惠 (CNY)", canView: true, width: 150, align: "right" },
         { key: "submittedAt", title: "提交时间", canView: true, width: 140 },
       ]}
       rows={rows}

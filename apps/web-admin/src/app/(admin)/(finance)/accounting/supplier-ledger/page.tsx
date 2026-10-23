@@ -190,7 +190,7 @@ export default function SupplierLedgerPage() {
           <p className="text-sm text-[var(--color-text-muted)]">
             请先在
             <Link href="/business-settings" className={`mx-1 ${linkActionClass}`}>业务设置</Link>
-            中开启「记账功能」。
+            中开启「记账功能」。试用环境请用 trialadmin 开启；采购页「提交应付」后在此跟进，无需再录供应商。
           </p>
         </IndustrialPanel>
       </IndustrialPage>
