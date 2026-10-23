@@ -17,12 +17,14 @@ from app.config.settings import settings
 from app.models.customer import Customer
 from app.models.machine import Machine, MachineBom, MachineBomItem, MachineCategory
 from app.models.permission import Permission
+from app.models.product import Product
 from app.models.quote import ApprovalNode, ApprovalTemplate, Quote, QuoteItem, QuoteVersion
 from app.models.role import Role
 from app.models.user import User
 
 DEMO_CUSTOMER_CODE = "DEMO-CUST-001"
 DEMO_MACHINE_CODE = "DEMO-MCH-001"
+DEMO_PRODUCT_CODE = "DEMO-PRD-001"
 DEMO_BOM_VERSION = "V1.0"
 DEMO_QUOTE_NO = "DEMO-Q-001"
 DEMO_TEMPLATE_CODE = "DEMO-APPROVAL"
@@ -175,6 +177,23 @@ def seed() -> None:
                 )
             )
 
+        # K-005: seed quote carries product_id (API create path also requires it).
+        product = Product(
+            code=DEMO_PRODUCT_CODE,
+            name="演示产品 · ZH-500",
+            spec="ZH-500",
+            unit="EA",
+            status="active",
+            reference_cost=bom_total,
+            reference_price=(bom_total * Decimal("1.25")).quantize(Decimal("0.0001")),
+            machine_id=machine.id,
+            default_bom_id=bom.id,
+            remark="由 seed_demo_quote.py 生成",
+            created_by=admin.id,
+        )
+        db.add(product)
+        db.flush()
+
         template = ApprovalTemplate(
             code=DEMO_TEMPLATE_CODE,
             name="演示报价审批",
@@ -201,6 +220,7 @@ def seed() -> None:
             quote_no=DEMO_QUOTE_NO,
             title="演示报价 · ZH-500 加工中心",
             customer_id=customer.id,
+            product_id=product.id,
             machine_id=machine.id,
             bom_id=bom.id,
             approval_template_id=template.id,

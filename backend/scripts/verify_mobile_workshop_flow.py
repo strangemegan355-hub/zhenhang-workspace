@@ -92,6 +92,14 @@ def _pick_machine(client: ApiClient) -> str:
     return str(items[0]["id"])
 
 
+def _pick_product(client: ApiClient) -> str:
+    page = client._request("GET", "/api/v1/products", params={"page": 1, "page_size": 5})
+    items = page.get("items") or []
+    if not items:
+        raise RuntimeError("no products — cannot create quote (K-005 requires product_id)")
+    return str(items[0]["id"])
+
+
 def _ensure_reviewing_quote(client: ApiClient) -> dict:
     page = client._request("GET", "/api/v1/quotes", params={"page": 1, "page_size": 50})
     for item in page.get("items") or []:
@@ -114,6 +122,7 @@ def _ensure_reviewing_quote(client: ApiClient) -> dict:
                 return {"id": quote_id, "quote_no": item.get("quote_no"), "workflow_state": state}
 
     customer_id = _pick_customer(client)
+    product_id = _pick_product(client)
     machine_id = _pick_machine(client)
     suffix = uuid.uuid4().hex[:8].upper()
     quote_no = f"MW-{suffix}"
@@ -124,6 +133,7 @@ def _ensure_reviewing_quote(client: ApiClient) -> dict:
             "quote_no": quote_no,
             "title": f"Mobile/Workshop verify {suffix}",
             "customer_id": customer_id,
+            "product_id": product_id,
             "machine_id": machine_id,
             "currency": "CNY",
         },

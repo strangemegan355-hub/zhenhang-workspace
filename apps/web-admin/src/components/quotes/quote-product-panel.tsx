@@ -334,8 +334,8 @@ export function QuoteProductPanel({
                   creating ||
                   !createForm.title.trim() ||
                   !createForm.customerId ||
-                  // 标准路径必须选产品；仅在展开高级并选手型时才允许无产品
-                  !(createForm.productId || (showAdvancedMachine && createForm.machineId))
+                  // K-005: product_id required; machine/BOM advanced is optional only
+                  !createForm.productId
                 }
                 onClick={onCreateSubmit}
                 className="flex-1 rounded-lg bg-[var(--color-primary)] py-2 text-xs font-medium text-white hover:bg-[var(--color-primary-hover)] disabled:opacity-50"

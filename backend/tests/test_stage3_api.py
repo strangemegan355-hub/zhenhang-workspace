@@ -34,7 +34,8 @@ def test_quote_create_endpoint(monkeypatch):
             "quote_no": "Q20260520-0001",
             "title": payload["title"],
             "customer_id": str(payload["customer_id"]),
-            "machine_id": str(payload["machine_id"]),
+            "product_id": str(payload["product_id"]),
+            "machine_id": payload.get("machine_id"),
             "bom_id": None,
                 "approval_template_id": payload.get("approval_template_id"),
                 "current_approval_order": 0,
@@ -57,6 +58,7 @@ def test_quote_create_endpoint(monkeypatch):
             json={
                 "title": "注塑机报价单",
                 "customer_id": str(uuid4()),
+                "product_id": str(uuid4()),
                 "machine_id": str(uuid4()),
                 "bom_id": None,
                 "currency": "CNY",

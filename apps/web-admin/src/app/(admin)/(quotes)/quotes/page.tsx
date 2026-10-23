@@ -325,15 +325,19 @@ function QuotesPageContent() {
 
   const handleCreateSubmit = async () => {
     setCreateError(undefined);
+    if (!createForm.productId) {
+      setCreateError("请选择产品（新建报价必须提供 product_id，K-005）");
+      return;
+    }
     try {
       const body: Record<string, unknown> = {
         title: createForm.title.trim(),
         customer_id: createForm.customerId,
+        product_id: createForm.productId,
         currency: createForm.currency,
         remark: createForm.remark || null,
         seed_from_product: createForm.seedFromProduct,
       };
-      if (createForm.productId) body.product_id = createForm.productId;
       if (createForm.machineId) body.machine_id = createForm.machineId;
       if (createForm.costTemplateId) body.cost_template_id = createForm.costTemplateId;
       if (createForm.priceTemplateId) body.price_template_id = createForm.priceTemplateId;
@@ -348,7 +352,17 @@ function QuotesPageContent() {
       if (id) selectQuote(id);
       pushToast({ id: nextToastId("create"), title: "报价已创建", description: createForm.title });
     } catch (e) {
-      setCreateError(e instanceof Error ? e.message : "创建失败");
+      // Surface FastAPI validation / K-005 detail when present (422/400).
+      const ax = e as { response?: { data?: { detail?: unknown } }; message?: string };
+      const detail = ax.response?.data?.detail;
+      let msg = "创建失败";
+      if (typeof detail === "string") msg = detail;
+      else if (Array.isArray(detail)) {
+        msg = detail
+          .map((d) => (typeof d === "object" && d && "msg" in d ? String((d as { msg: unknown }).msg) : String(d)))
+          .join("; ");
+      } else if (e instanceof Error) msg = e.message;
+      setCreateError(msg);
     }
   };
 

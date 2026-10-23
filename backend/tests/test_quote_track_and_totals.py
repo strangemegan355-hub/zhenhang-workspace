@@ -1,4 +1,4 @@
-"""K-005 product/machine track helpers + server-side quote total authority."""
+"""K-005 product/machine track: enforce product_id on create + server-side totals."""
 
 from __future__ import annotations
 
@@ -43,13 +43,94 @@ def test_strip_client_quote_totals():
     assert cleaned["title"] == "x"
 
 
-def test_quote_create_schema_prefers_product_message():
-    from app.schemas.quote import QuoteCreate
+def test_quote_create_schema_requires_product_id():
+    from app.schemas.quote import QuoteCreate, QuoteWizardCreate
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError) as exc:
         QuoteCreate(title="t", customer_id=uuid4())
     assert "product_id" in str(exc.value)
+
+    with pytest.raises(ValidationError) as exc2:
+        QuoteCreate(title="t", customer_id=uuid4(), machine_id=uuid4())
+    assert "product_id" in str(exc2.value)
+    assert "K-005" in str(exc2.value)
+
+    # product_id alone is enough; machine_id optional (filled from product defaults later)
+    ok = QuoteCreate(title="t", customer_id=uuid4(), product_id=uuid4())
+    assert ok.product_id is not None
+
+    with pytest.raises(ValidationError) as exc3:
+        QuoteWizardCreate(title="t", customer_id=uuid4(), machine_id=uuid4())
+    assert "product_id" in str(exc3.value)
+
+
+@pytest.mark.asyncio
+async def test_create_quote_rejects_machine_only_with_400():
+    """Service-layer K-005 guard: machine_id-only create -> HTTP 400."""
+    from app.domains.quote.application import quote_application_service as svc
+    from app.domains.quote.application.quote_track_helpers import PRODUCT_ID_REQUIRED_DETAIL
+    from fastapi import HTTPException
+
+    class FakeUser:
+        id = uuid4()
+        department_id = None
+
+    class FakeDb:
+        async def commit(self):
+            return None
+
+        async def refresh(self, _obj):
+            return None
+
+    with pytest.raises(HTTPException) as exc:
+        await svc.create_quote(
+            FakeDb(),
+            {
+                "title": "legacy machine only",
+                "customer_id": uuid4(),
+                "machine_id": uuid4(),
+            },
+            FakeUser(),
+        )
+    assert exc.value.status_code == 400
+    assert "product_id" in str(exc.value.detail)
+    assert "K-005" in str(exc.value.detail)
+    assert exc.value.detail == PRODUCT_ID_REQUIRED_DETAIL
+
+
+def test_require_product_id_helper_allows_product():
+    from app.domains.quote.application.quote_track_helpers import require_product_id_for_create
+
+    require_product_id_for_create({"product_id": uuid4(), "machine_id": None})
+
+
+def test_legacy_machine_only_quote_read_still_ok():
+    """K-005: historical machine-only rows remain readable via QuoteRead (no product_id)."""
+    from datetime import UTC, datetime
+
+    from app.domains.quote.application.quote_track_helpers import classify_quote_track
+    from app.schemas.quote import QuoteRead
+
+    legacy = QuoteRead(
+        id=uuid4(),
+        quote_no="LEGACY-M-001",
+        title="historical machine-only",
+        customer_id=uuid4(),
+        machine_id=uuid4(),
+        product_id=None,
+        bom_id=None,
+        current_approval_order=0,
+        workflow_state="draft",
+        currency="CNY",
+        total_amount=Decimal("0"),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+        is_deleted=False,
+    )
+    assert legacy.product_id is None
+    assert legacy.machine_id is not None
+    assert classify_quote_track(legacy.product_id, legacy.machine_id) == "machine_legacy"
 
 
 @pytest.mark.asyncio

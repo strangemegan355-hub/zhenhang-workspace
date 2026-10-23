@@ -1,6 +1,6 @@
 ﻿# 已知问题与风险清单
 
-> 更新时间：2026-10-23（NONUI-MORE-2：ruff 清零、mypy 18 files、401/403 不计入 error_rate；K-005 双轨保留 / DECISION-NEEDED；误提交的 product_id enforce 已回退）  
+> 更新时间：2026-10-24（K-005 新建报价强制 product_id，owner 已拍板；NONUI-MORE-2 lint/metrics 保留）  
 > 优先级：**P0** 严重 · **P1** 核心业务 · **P2** 体验/维护 · **P3** 一般优化
 
 | ID | 级别 | 问题 | 影响 | 状态 | 证据 |
@@ -9,7 +9,7 @@
 | K-002 | P2 | 工作区大量未提交修改，来源不明 | 协作/回滚困难 | **已缓解**：交付检查点 `a60c81c`（2026-10-23） | `git log -1` |
 | K-003 | P2 | UI 主色与任务书目标不一致（曾用 Frappe 黑灰 `#171717`，目标 `#1677ff`） | 品牌与现代化方向偏差 | **已修复**（2026-10-23） | `globals.css` + `app-shell` 深蓝侧栏 |
 | K-004 | P2 | `menu.ts` 注释称部分菜单「隐藏」，但 BOM/机型等仍在侧栏展示 | 信息架构文档与 UI 不一致 | **已修复**（2026-10-23） | 机型/BOM/选项组/验收/安装标 `hidden` |
-| K-005 | P1 | **产品库 vs 机型管理** 双轨：报价可关联 product_id 或 machine_id | 员工不知选哪条路径、数据重复维护风险 | **双轨兼容保留**（owner 未决，不 enforce product_id、不关闭本项）：helpers+schema 偏好 product；machine-only 仍可建。是否禁止新建 machine-only → **DECISION-NEEDED** | `quote_track_helpers.py`；UX-001 |
+| K-005 | P1 | **产品轨 vs 机型轨**：新建工业报价必须 `product_id`；禁止仅 `machine_id` 创建（HTTP 400/422） | 员工勿只选机型建报价 | **已强制 / 已关闭**（2026-10-23 23:36 owner 拍板）：schema `QuoteCreate`/`QuoteWizardCreate` + `require_product_id_for_create`；历史机型报价只读兼容；对客报价 `customer` 仍用 machine_lines | `quote_track_helpers.py`；`test_quote_track_and_totals`；UX-001 |
 | K-006 | P2 | 首页 Dashboard 多卡片/图表，是否均接真实 API 未在本轮点击验证 | 可能展示空数据或低价值指标 | **门禁已验**：财务/审批/工单卡按权限显隐；静态矩阵 + 四角色 headless `RESULT=PASS`（trialadmin/finance/sales/workshop）。「按角色换整套布局」仍 ☐ | UX-006；`logs/dashboard-role-cards-out.txt`；`run-dashboard-role-cards.mjs` |
 | K-007 | P3 | 后端无 enforced ruff/mypy（pyproject 自述） | 风格与类型漂移 | **非阻塞推进**：ruff check **0**；mypy scoped **18 files / 0 errors**（全 `app/core`+helpers/workers）；未进 CI fail | K-007；`logs/ruff-backend-baseline.txt` |
 | K-008 | P1 | 集成测试与 E2E 未在本轮执行 | 财务/权限/事务回归风险 | **已跑**：MinIO AbortIncomplete（#16120）对齐 lifecycle no-op；integration xfails 消除；浏览器 E2E 仍以 API+局部 UI 为主 | `logs/nonui-smoke-*.txt`；`logs/minio-lifecycle-align.txt` |
