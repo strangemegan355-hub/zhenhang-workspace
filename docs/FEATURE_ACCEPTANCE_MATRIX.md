@@ -3,7 +3,7 @@
 > **说明**：本矩阵区分证据类型，避免把「有代码」写成「已验收」。  
 > 图例：✅ 运行验证 · 📄 代码/静态测试 · ☐ 未验证 · ⚠️ 部分/存疑
 
-最后更新：2026-10-23（UX-006 四角色 Dashboard 卡门禁 headless PASS；UX-002 Tab 评估暂缓；审批金额视口仍无待办样本；勿改种子默认记账策略）
+最后更新：2026-10-23（UX-006 四角色 Dashboard 卡门禁 headless PASS；UX-002 Tab 评估暂缓；审批金额视口仍无待办样本；记账种子策略见 43896d6 负责人决策）
 
 ---
 
@@ -79,5 +79,5 @@ cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_ux_menu_and_dashb
 - UX-006 / K-006：**四角色 Dashboard 卡显隐** headless `RESULT=PASS`（API 权限与 DOM 一致；证据 `logs/dashboard-role-cards-out.txt` + `viewport-dashboard-*.png`）。「整套按角色换布局」仍 ☐。
 - UX-002：侧栏 hidden + 报价中心页内深链 ✅；**合并 Tab 暂缓**（两套模型，非小补丁）。
 - 审批金额视口：本机 inbox=0；**未**新建待办样例（避免盲种业务审批流）；静态 `align:right` + `check-ui-batch`；见 `logs/approvals-money-align-note.txt`。
-- **未改**试用种子「默认开记账」策略（待负责人决策）。
+- 试用记账种子：`43896d6` 已按负责人决策锁定 `seed_trial_money_viewport` 本地库强制开记账 + 非本地拒绝（`--allow-non-local`）。
 - K-030 / K-029 既有修复仍保留；E2E 仍用 `playwright-core`（无 `@playwright/test`）。

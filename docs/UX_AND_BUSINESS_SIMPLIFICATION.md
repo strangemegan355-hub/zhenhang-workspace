@@ -28,7 +28,7 @@
 | 不合理处 | 员工不知从何进入；可能重复创建 |
 | 建议 | 合并入口：列表内 Tab「内部 / 对客」；或将对客作为报价详情的一种视图 |
 | 涉及 | `menu.ts`、`/quotes/customer` |
-| 状态 | **代码完成 / 静态验收**（2026-10-23）：对客侧栏 `hidden`；报价中心页内入口保留；`test_ux_menu_and_dashboard_static` 钉住；合并为 Tab 的进一步简化 ☐ |
+| 状态 | **部分完成**（2026-10-23）：对客侧栏 `hidden`；报价中心 `PageHeader` 链到 `/quotes/customer`；静态测钉住。**合并 Tab 评估**：内部报价与对客报价是两套模型/页面（wizard vs customer lines），并成 Tab 非「小补丁」，本批不实施；保持深链入口，待产品确认后再做 |
 
 ---
 
@@ -70,7 +70,7 @@
 | 当前设计 | 多 KPI/图表卡片 |
 | 建议 | 角色化：销售见待办报价/审批；财务见待收付；生产见工单；去掉无 API 支撑的图 |
 | 涉及 | `dashboard/page.tsx`、各 Card |
-| 状态 | **部分验收**（2026-10-23）：审批/通知/财务置顶；去掉 WorkflowProgress/RecentFiles；财务/审批/工单卡按 `hasPermission` 门禁；静态测 `test_ux_menu_and_dashboard_static`。完整「按角色换整套布局」与多角色浏览器对比 ☐（K-006） |
+| 状态 | **门禁验收**（2026-10-23）：置顶卡 + `hasPermission`；静态种子矩阵 + 四角色 headless `run-dashboard-role-cards.mjs` PASS（trialadmin 无财务/审批/工单卡；finance 全有；sales 有财务+工单无审批；workshop 仅工单）。「按角色换整套布局」仍 ☐（K-006） |
 
 ---
 

@@ -68,4 +68,5 @@ PageHeader（含状态 Badge）
 - [x] 金额列 `moneyCellClass`（财务三页）；DataGrid 列级 `align:"right"`（采购单价/计划金额、对客报价含税总额）（K-028）  
 - [ ] 操作成功/失败 toast 或 inline 错误（各页既有，未本批统一）  
 - [ ] 对应 API 404 已在 route 对齐测试中覆盖  
-- [x] 浏览器视口冒烟（`scripts/ui/run-viewport-core-lists.mjs` PASS；报价/采购/财务金额右齐 + 审批页壳层；待办空时审批金额靠静态 `align:right`；试用种子见 K-030）
+- [x] 浏览器视口冒烟（`run-viewport-core-lists.mjs` PASS；金额右齐 + 审批壳层；待办空见 `logs/approvals-money-align-note.txt`）  
+- [x] Dashboard 权限卡门禁四角色对照（`run-dashboard-role-cards.mjs` PASS；K-006 门禁部分）
