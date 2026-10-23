@@ -63,8 +63,9 @@ PageHeader（含状态 Badge）
 
 ## 7. 验收检查表（每页发布前）
 
-- [ ] PageHeader 一致  
-- [ ] 列表筛选/分页行为与其他列表页一致  
-- [ ] 金额/日期格式符合 `UI_DESIGN_SYSTEM.md`  
-- [ ] 操作成功/失败 toast 或 inline 错误  
+- [x] PageHeader 一致（2026-10-23：报价中心/对客报价、采购预备、财务三页已统一）  
+- [x] 列表筛选用 `FilterBar` + `filterFieldClass`（财务三页）；采购/报价列表仍走 MasterList / 工作区自有筛选  
+- [x] 金额列 `moneyCellClass`（财务三页）；DataGrid 列级 `align:"right"`（采购单价/计划金额、对客报价含税总额）（K-028）  
+- [ ] 操作成功/失败 toast 或 inline 错误（各页既有，未本批统一）  
 - [ ] 对应 API 404 已在 route 对齐测试中覆盖  
+- [x] 浏览器视口冒烟（本批：`logs/run-viewport-core-lists.mjs` PASS；报价列表 loading / 采购空数据导致金额单元格未全断言，见 K-028/K-029）

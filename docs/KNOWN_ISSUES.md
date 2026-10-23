@@ -32,6 +32,8 @@
 | K-025 | P1 | `@zhenhang/http-client` 顶层读 `process.env`，Vite 浏览器无 `process` → Mobile/Workshop 白屏 | §3.7/§3.8 无法登录 | **已修复**（2026-10-23） | `packages/http-client`：`resolveDefaultApiBaseUrl` 守卫 `typeof process` |
 | K-026 | P2 | prod web 构建：lightningcss musl / 缺根 tsconfig / Field `type` 拓宽；postgres 挂 `.gitkeep` 导致 initdb 失败；CORS 需 JSON；`QuoteCreate` 自引用注解；maintenance 缺 MINIO_SECRET_KEY；worker healthcheck 依赖 pgrep | §2 启动连环失败 | **已修复**（2026-10-23） | Dockerfile/compose/quote.py/acceptance+installation；栈 healthy |
 | K-027 | P1 | prod Web 构建时 `NEXT_PUBLIC_API_BASE_URL` 为空仍回退到 `http://127.0.0.1:8000`，登录打到本机开发库 →「密码不正确」 | 用 prod 口令无法登录管理端 | **已修复**（2026-10-23） | `providers`/`http-client`：空串=同源；web 镜像重建 |
+| K-028 | P2 | 核心列表页（报价/采购/财务）曾各自手写页头与筛选，金额列对齐不一致 | 操作路径跳变、金额难扫读 | **已修复（代码）/ 视口部分验证**（2026-10-23） | DataGrid 列级 `align` + 采购/对客报价金额列 `align:"right"`；财务 `moneyCellClass`；对客报价去重页头主操作。静态 `check-ui-batch`+`tsc` OK。视口：`logs/run-viewport-core-lists.mjs` → `RESULT=PASS`（财务金额表头右齐）；报价列表 headless 仍「加载报价列表…」、采购库空无金额单元格，故浏览器金额扫读未全覆盖。UI 表单登录在 headless 未发出 `/auth/login` XHR，改用 API+localStorage 注入（记 K-029） |
+| K-029 | P2 | Playwright/headless 下登录页 `#username/#password` 可填、点「登录」后无 `/auth/login` 请求 | 纯 UI E2E 登录路径不可用 | **已知/绕过**（2026-10-23） | 视口脚本改 API login + `zhenhang-web-admin-auth` 注入；人工浏览器登录仍可用。根因待查（RHF submit / CORS / 自动化事件） |
 
 ### 安全类（详见 `SECURITY_REVIEW.md`）
 

@@ -3,7 +3,7 @@
 > **说明**：本矩阵区分证据类型，避免把「有代码」写成「已验收」。  
 > 图例：✅ 运行验证 · 📄 代码/静态测试 · ☐ 未验证 · ⚠️ 部分/存疑
 
-最后更新：2026-10-23（+ prod compose §2 / Mobile+Workshop UI / prod export MinIO）
+最后更新：2026-10-23（K-028 DataGrid `align` + 采购/对客报价金额右齐；视口 `run-viewport-core-lists` PASS；`check-ui-batch` + `tsc` ✅）
 
 ---
 
@@ -13,13 +13,13 @@
 |---|---|---|---|---|---|
 | 登录/会话 | `/login` | `/auth/*` | User | 📄 `test_token_types` 等 | ✅ 6 试用账号 `smoke_trial_login`；K-020 防 GET 泄密已修 |
 | 运营看板 | `/dashboard` | `/dashboard/*` | 多表聚合 | 📄 `test_dashboard_*` | ✅ 浏览器可开（销售会话） |
-| 报价中心 | `/quotes`, `/quotes/customer` | `/quotes/*` | Quote… | 📄 | ✅ 场景 A API；浏览器「报价中心」可开 |
+| 报价中心 | `/quotes`, `/quotes/customer` | `/quotes/*` | Quote… | 📄 PageHeader；对客列表金额 `align:right` + 明细 `moneyCellClass`；去重页头主操作；`check-ui-batch`+`tsc` OK | ✅ 场景 A API；视口页头可见；列表 loading 未断言金额（K-028） |
 | 项目 | `/projects`… | `/projects/*` | Project… | 📄 | ✅ 场景 B API；浏览器「项目台账」可开 |
 | 产品库 | `/products` | `/products/*` | Product | 📄 | ✅ sales 列表 200 |
 | 机型/BOM | `/machines`, `/boms` | … | Machine… | 📄 | ☐（侧栏隐藏） |
 | 主数据 | customers 等 | … | … | 📄 | ✅ customers 列表 200 |
-| 采购 | `/procurement` | … | … | 📄 | ✅ 场景 C API；浏览器 ☐ |
-| 财务 | `/accounting*` | `/accounting/*` | … | 📄 | ✅ 场景 C/D API；浏览器「财务中心 · 收支台账」+ 子导航可开 |
+| 采购 | `/procurement` | … | … | 📄 PageHeader + 主操作 + DataGrid 金额/数量 `align:right`；`check-ui-batch` OK | ✅ 场景 C API；视口页头/主操作可见；库空无金额单元格 |
+| 财务 | `/accounting*` | `/accounting/*` | … | 📄 三页 FilterBar + `moneyCellClass`；`check-ui-batch`+`tsc` OK | ✅ 场景 C/D API；视口金额表头右齐 ✅（`viewport-core-lists-out.txt`） |
 | 审批 | `/approvals` | `/approvals/*` | … | 📄 | ✅ 浏览器「审批中心」可开（sales 待办 0，预期） |
 | 权限 | 菜单+按钮 | `require_permissions` | Role… | ✅ | ✅ `verify_permissions` + 角色冒烟 |
 | 车间 | `/workshop` + workshop-terminal | `/workshop` | … | 📄 | ✅ API board + UI 登录看板→DEMO BOM/KPI（§3.8） |
@@ -48,6 +48,23 @@ cd D:\cursorxiangmu\shengtaixitong\backend
 .\.venv\Scripts\python.exe scripts\verify_permissions.py
 # 需 TRIAL_*_PASSWORD：
 .\.venv\Scripts\python.exe scripts\smoke_trial_login.py
+
+# UI 布局静态冒烟（报价/采购/财务 + DataGrid align）
+cd D:\cursorxiangmu\shengtaixitong
+node logs/check-ui-batch.mjs
+cd apps/web-admin; npx tsc --noEmit -p tsconfig.json
+
+# 视口冒烟（需本机 web:3000 + api:8000；口令见 trial-passwords.local.env）
+# 先确保 Chromium：npx playwright@1.51.1 install chromium
+node logs/run-viewport-core-lists.mjs
+# 结果：logs/viewport-core-lists-out.txt
 ```
 
 口令勿入库；本地可用 `logs/trial-passwords.local.env`（已 gitignore）。
+
+### 本批 UI 缺口（诚实）
+
+- DataGrid **列级 `align` 已落地**；采购/对客报价金额列已 `align:"right"`（K-028 代码侧关闭）。
+- 视口已跑：`logs/run-viewport-core-lists.mjs` → `RESULT=PASS`（财务金额表头右齐；报价列表 headless 长期「加载报价列表…」；采购无数据无金额单元格）。
+- UI 表单自动登录未发出 XHR（K-029）；视口用 API+localStorage 注入绕过。
+- 作废账目 / 付款核销等**不可逆财务操作**未在本批改口径，仍按既有 confirm 对话框。

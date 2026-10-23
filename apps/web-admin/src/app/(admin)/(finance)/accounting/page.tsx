@@ -13,6 +13,7 @@ import {
   useVoidAccountingEntryMutation,
 } from "@zhenhang/query-hooks";
 import {
+  FilterBar,
   IndustrialPage,
   IndustrialPanel,
   PageHeader,
@@ -25,8 +26,11 @@ import {
   dangerActionClass,
   fieldInputClass,
   fieldLabelClass,
+  filterCheckClass,
+  filterFieldClass,
   formPanelClass,
   linkActionClass,
+  moneyCellClass,
   tableBodyRowClass,
   tableHeaderRowClass,
 } from "@/lib/form-styles";
@@ -299,7 +303,10 @@ export default function AccountingPage() {
           <>
             <WorkspaceToolbarButton onClick={handleExport}>导出CSV</WorkspaceToolbarButton>
             {canBackfill ? (
-              <WorkspaceToolbarButton onClick={() => setShowBackfill((v) => !v)}>
+              <WorkspaceToolbarButton
+                variant="primary"
+                onClick={() => setShowBackfill((v) => !v)}
+              >
                 {showBackfill ? "取消补录" : "补录账目"}
               </WorkspaceToolbarButton>
             ) : null}
@@ -426,8 +433,8 @@ export default function AccountingPage() {
       ) : null}
 
       <IndustrialPanel title="账目列表">
-        <div className="mb-3 flex flex-wrap items-end gap-3">
-          <label className="block space-y-1 text-xs">
+        <FilterBar>
+          <label className={filterFieldClass}>
             <span className={fieldLabelClass}>客户</span>
             <select
               className={fieldInputClass}
@@ -445,7 +452,7 @@ export default function AccountingPage() {
               ))}
             </select>
           </label>
-          <label className="block space-y-1 text-xs">
+          <label className={filterFieldClass}>
             <span className={fieldLabelClass}>供应商</span>
             <select
               className={fieldInputClass}
@@ -463,7 +470,7 @@ export default function AccountingPage() {
               ))}
             </select>
           </label>
-          <label className="block space-y-1 text-xs">
+          <label className={filterFieldClass}>
             <span className={fieldLabelClass}>类型</span>
             <select
               className={fieldInputClass}
@@ -481,7 +488,7 @@ export default function AccountingPage() {
               ))}
             </select>
           </label>
-          <label className="block space-y-1 text-xs">
+          <label className={filterFieldClass}>
             <span className={fieldLabelClass}>日期从</span>
             <input
               type="date"
@@ -490,7 +497,7 @@ export default function AccountingPage() {
               onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
             />
           </label>
-          <label className="block space-y-1 text-xs">
+          <label className={filterFieldClass}>
             <span className={fieldLabelClass}>日期至</span>
             <input
               type="date"
@@ -499,7 +506,7 @@ export default function AccountingPage() {
               onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
             />
           </label>
-          <label className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+          <label className={filterCheckClass}>
             <input
               type="checkbox"
               checked={showVoid}
@@ -510,7 +517,7 @@ export default function AccountingPage() {
             />
             显示作废账目
           </label>
-        </div>
+        </FilterBar>
 
         <div className="overflow-auto">
           <table className="min-w-full text-xs">
@@ -522,7 +529,7 @@ export default function AccountingPage() {
                 <th className="px-2 py-2 text-left font-normal">摘要</th>
                 <th className="px-2 py-2 text-left font-normal">发生日</th>
                 <th className="px-2 py-2 text-left font-normal">入账日</th>
-                <th className="px-2 py-2 text-right font-normal">金额</th>
+                <th className={`${moneyCellClass} font-normal`}>金额</th>
                 <th className="px-2 py-2 text-left font-normal">状态</th>
                 {canConfirm ? <th className="px-2 py-2 text-left font-normal">操作</th> : null}
               </tr>
@@ -554,7 +561,7 @@ export default function AccountingPage() {
                     <td className="px-2 py-2">{row.title}</td>
                     <td className="px-2 py-2">{row.occurredOn}</td>
                     <td className="px-2 py-2">{row.bookedOn}</td>
-                    <td className="px-2 py-2 text-right">{row.amount}</td>
+                    <td className={moneyCellClass}>{row.amount}</td>
                     <td className="px-2 py-2">{STATUS_LABEL[row.status] ?? row.status}</td>
                     {canConfirm ? (
                       <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
@@ -586,8 +593,8 @@ export default function AccountingPage() {
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 text-xs">
               <div><span className="text-[var(--color-text-muted)]">类型：</span>{KIND_LABEL[String(detail.entry_kind)] ?? String(detail.entry_kind)}</div>
               <div><span className="text-[var(--color-text-muted)]">状态：</span>{STATUS_LABEL[String(detail.status)] ?? String(detail.status)}</div>
-              <div><span className="text-[var(--color-text-muted)]">金额：</span>{money(detail.amount as number)}</div>
-              <div><span className="text-[var(--color-text-muted)]">已核销：</span>{money(detail.settled_amount as number)}</div>
+              <div><span className="text-[var(--color-text-muted)]">金额：</span><span className="tabular-nums">{money(detail.amount as number)}</span></div>
+              <div><span className="text-[var(--color-text-muted)]">已核销：</span><span className="tabular-nums">{money(detail.settled_amount as number)}</span></div>
               <div><span className="text-[var(--color-text-muted)]">发生日：</span>{String(detail.occurred_on ?? "")}</div>
               <div><span className="text-[var(--color-text-muted)]">入账日：</span>{String(detail.booked_on ?? "")}</div>
               <div><span className="text-[var(--color-text-muted)]">到期日：</span>{String(detail.due_date ?? "—")}</div>
@@ -599,7 +606,7 @@ export default function AccountingPage() {
                 <div className="overflow-auto rounded border border-[var(--color-border)]">
                   <table className="min-w-full text-xs">
                     <thead><tr className={tableHeaderRowClass}>
-                      <th className="px-2 py-1 text-left">产品/项目</th><th className="px-2 py-1 text-left">规格</th><th className="px-2 py-1 text-left">单位</th><th className="px-2 py-1 text-right">数量</th><th className="px-2 py-1 text-right">单价</th><th className="px-2 py-1 text-right">行金额</th>
+                      <th className="px-2 py-1 text-left">产品/项目</th><th className="px-2 py-1 text-left">规格</th><th className="px-2 py-1 text-left">单位</th><th className="px-2 py-1 text-right tabular-nums">数量</th><th className={`${moneyCellClass} !py-1`}>单价</th><th className={`${moneyCellClass} !py-1`}>行金额</th>
                     </tr></thead>
                     <tbody>
                       {(detail.lines as Array<Record<string, unknown>>).map((line, i) => (
@@ -607,9 +614,9 @@ export default function AccountingPage() {
                           <td className="px-2 py-1">{String(line.item_name ?? "—")}</td>
                           <td className="px-2 py-1 text-[var(--color-text-muted)]">{String(line.spec ?? "—")}</td>
                           <td className="px-2 py-1">{String(line.unit ?? "—")}</td>
-                          <td className="px-2 py-1 text-right">{String(line.qty ?? "—")}</td>
-                          <td className="px-2 py-1 text-right">{money(line.unit_price as number)}</td>
-                          <td className="px-2 py-1 text-right font-medium">{money(line.line_amount as number)}</td>
+                          <td className="px-2 py-1 text-right tabular-nums">{String(line.qty ?? "—")}</td>
+                          <td className={`${moneyCellClass} !py-1`}>{money(line.unit_price as number)}</td>
+                          <td className={`${moneyCellClass} !py-1 font-medium`}>{money(line.line_amount as number)}</td>
                         </tr>
                       ))}
                     </tbody>

@@ -1,12 +1,16 @@
 import * as React from "react";
 import type { CSSProperties, ReactNode } from "react";
 
+export type GridColumnAlign = "left" | "right" | "center";
+
 export type GridColumn<T> = {
   key: keyof T & string;
   title: string;
   canView?: boolean;
   fixed?: "left";
   width?: number;
+  /** Cell/header text alignment; use `"right"` for money/qty columns */
+  align?: GridColumnAlign;
 };
 
 type Props<T extends Record<string, unknown>> = {
@@ -43,6 +47,12 @@ function cellStyle(width?: number): CSSProperties {
 
 function fixedColStyle(width?: number): CSSProperties {
   return { ...cellStyle(width), left: CHECKBOX_COL_WIDTH };
+}
+
+function alignClass(align?: GridColumnAlign): string {
+  if (align === "right") return "text-right tabular-nums";
+  if (align === "center") return "text-center";
+  return "text-left";
 }
 
 export function DataGrid<T extends Record<string, unknown>>({
@@ -203,7 +213,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                       onDragStart={dragStart(col.key)}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={dragDrop(col.key)}
-                      className={`h-9 truncate px-2 py-1 text-sm font-medium text-[var(--color-text-muted)] ${col.fixed === "left" ? "sticky z-30 bg-[var(--color-surface-soft)]" : ""}`}
+                      className={`h-9 truncate px-2 py-1 text-sm font-medium text-[var(--color-text-muted)] ${alignClass(col.align)} ${col.fixed === "left" ? "sticky z-30 bg-[var(--color-surface-soft)]" : ""}`}
                       style={col.fixed === "left" ? fixedColStyle(col.width) : cellStyle(col.width)}
                       title={col.title}
                     >
@@ -243,7 +253,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                       {visible.map((col) => (
                         <td
                           key={col.key}
-                          className={`h-9 truncate px-2 py-1 ${col.fixed === "left" ? "sticky z-10 bg-[var(--color-surface)]" : ""}`}
+                          className={`h-9 truncate px-2 py-1 ${alignClass(col.align)} ${col.fixed === "left" ? "sticky z-10 bg-[var(--color-surface)]" : ""}`}
                           style={col.fixed === "left" ? fixedColStyle(col.width) : cellStyle(col.width)}
                           title={String(row[col.key] ?? "")}
                         >

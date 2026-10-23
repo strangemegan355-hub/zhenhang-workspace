@@ -183,7 +183,7 @@ export function QuoteProductPanel({
                       />
                     </div>
                     <p className="mt-0.5 truncate text-[11px] text-[var(--color-text-muted)]">{row.title}</p>
-                    <p className="mt-0.5 text-[11px] font-medium tabular-nums text-[var(--color-text)]">
+                    <p className="mt-0.5 text-right text-[11px] font-medium tabular-nums text-[var(--color-text)]">
                       ¥{row.amount.toLocaleString("zh-CN")}
                     </p>
                   </button>

@@ -32,6 +32,7 @@ export type { IndustrialShortcut } from "./hooks/use-industrial-shortcuts";
 
 export { IndustrialPage } from "./components/layout/industrial-page";
 export { PageHeader } from "./components/layout/page-header";
+export { FilterBar } from "./components/layout/filter-bar";
 
 export { InlineLoadingBar } from "./components/loading/inline-loading-bar";
 export { ProcessingOverlay } from "./components/loading/processing-overlay";

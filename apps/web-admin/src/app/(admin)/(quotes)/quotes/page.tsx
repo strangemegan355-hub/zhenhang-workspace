@@ -27,7 +27,14 @@ import {
   useWorkflowActionsQuery,
 } from "@zhenhang/query-hooks";
 import { useToastStore } from "@zhenhang/realtime";
-import { EmptyState, IndustrialPage, StatusBadge, typography, workflowStateToStatus } from "@zhenhang/ui";
+import {
+  EmptyState,
+  IndustrialPage,
+  PageHeader,
+  StatusBadge,
+  WorkspaceToolbarButton,
+  workflowStateToStatus,
+} from "@zhenhang/ui";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useRef, useState } from "react";
@@ -496,18 +503,16 @@ function QuotesPageContent() {
   return (
     <IndustrialPage fill className="!gap-0 !p-0">
       <div className="flex h-full min-h-0 flex-col">
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
-          <div>
-            <h1 className={`${typography.pageTitle} text-base`}>报价中心</h1>
-            <p className="text-[11px] text-[var(--color-text-muted)]">默认选产品库出报价；左选产品 · 中编明细 · 右看成本利润</p>
-          </div>
-          <Link
-            href="/quotes/customer"
-            className="shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-primary-soft)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-primary)] hover:border-[var(--color-primary)]"
-          >
-            对客报价视图
-          </Link>
-        </header>
+        <PageHeader
+          className="!mb-0 shrink-0"
+          title="报价中心"
+          subtitle="默认选产品库出报价；左选产品 · 中编明细 · 右看成本利润。新建已并入本页，无需另开路由。"
+          actions={
+            <Link href="/quotes/customer" className="btn-default h-8 px-3 text-xs">
+              对客报价视图
+            </Link>
+          }
+        />
 
         <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_300px]">
           <QuoteProductPanel
@@ -548,7 +553,7 @@ function QuotesPageContent() {
                 <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--color-border)] px-4 py-2.5">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-sm font-semibold text-[#0f1a2e] dark:text-[#f1f5f9]">
+                      <span className="font-mono text-sm font-semibold text-[var(--color-text)]">
                         {String(detail?.quote_no ?? "—")}
                       </span>
                       <StatusBadge
@@ -557,42 +562,42 @@ function QuotesPageContent() {
                         compact
                       />
                     </div>
-                    <p className="truncate text-xs text-[#8896a8]">{String(detail?.title ?? "")}</p>
+                    <p className="truncate text-xs text-[var(--color-text-muted)]">{String(detail?.title ?? "")}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {!readOnly ? (
-                      <button
-                        type="button"
+                      <WorkspaceToolbarButton
+                        variant="primary"
                         disabled={saveVersionMut.isPending || !lines.length}
+                        loading={saveVersionMut.isPending}
                         onClick={handleSaveVersion}
-                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                       >
                         {saveVersionMut.isPending ? "保存中…" : "保存版本"}
-                      </button>
+                      </WorkspaceToolbarButton>
                     ) : null}
                     {centerWorkflowActions.map((a) => (
-                      <button
+                      <WorkspaceToolbarButton
                         key={a.action_code}
-                        type="button"
                         disabled={transitionMut.isPending}
-                        onClick={() => handleTransition(a.action_code)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${
+                        loading={transitionMut.isPending}
+                        variant={
                           a.action_code === "reject"
-                            ? "border border-red-200 text-red-600 hover:bg-red-50"
+                            ? "danger"
                             : a.action_code === "approve"
-                              ? "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
-                              : "border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-soft)]"
-                        }`}
+                              ? "primary"
+                              : "default"
+                        }
+                        onClick={() => handleTransition(a.action_code)}
                       >
                         {a.action_name}
-                      </button>
+                      </WorkspaceToolbarButton>
                     ))}
                   </div>
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-auto p-3">
                   {detailQuery.isLoading && !detail ? (
-                    <p className="text-xs text-[#8896a8]">加载报价明细…</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">加载报价明细…</p>
                   ) : detailQuery.isError ? (
                     <div className="space-y-2 text-center">
                       <EmptyState message="加载报价详情失败" hint="请重试或选择其他报价单" />

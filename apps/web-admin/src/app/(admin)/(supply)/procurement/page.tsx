@@ -2,7 +2,7 @@
 
 import { MasterCreateForm } from "@/components/master/master-create-form";
 import { MasterListPage } from "@/components/master/master-list-page";
-import { inlineBtnClass, inlineBtnDangerClass, messageBannerClass } from "@/lib/form-styles";
+import { inlineBtnClass, inlineBtnDangerClass, linkActionClass, messageBannerClass } from "@/lib/form-styles";
 import { hasPermission } from "@/lib/access";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -17,7 +17,8 @@ import {
   useSuppliersQuery,
   useTransferProcurementArrivedMutation,
 } from "@zhenhang/query-hooks";
-import { IndustrialPage, WorkspaceToolbarButton } from "@zhenhang/ui";
+import { IndustrialPage, PageHeader, WorkspaceToolbarButton } from "@zhenhang/ui";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 type ProcurementRow = {
@@ -213,6 +214,23 @@ export default function ProcurementPage() {
 
   return (
     <IndustrialPage gap="md" fill>
+      <PageHeader
+        title="采购预备"
+        subtitle="关联项目与材料建请购；推进到货后转实际成本；提交应付后在财务中心跟进，无需重复录入供应商。"
+        actions={
+          <>
+            {payableEnabled ? (
+              <Link href="/accounting/supplier-ledger" className="btn-default h-8 px-3 text-xs">
+                供应商应付
+              </Link>
+            ) : null}
+            <WorkspaceToolbarButton variant="primary" onClick={() => setShowCreate(true)}>
+              新增计划
+            </WorkspaceToolbarButton>
+          </>
+        }
+      />
+
       {showCreate ? (
         <MasterCreateForm
           title="新增采购计划"
@@ -238,7 +256,7 @@ export default function ProcurementPage() {
               options: supplierOptions,
             },
             { key: "qty", label: "数量", required: true, placeholder: "如 10" },
-            { key: "unit_price", label: "单价", required: true, placeholder: "如 125.50" },
+            { key: "unit_price", label: "单价 (CNY)", required: true, placeholder: "如 125.50" },
             { key: "lead_days", label: "交期(天)", placeholder: "默认 7" },
             { key: "need_date", label: "需求日期", type: "date" },
             { key: "remark", label: "备注", placeholder: "用途、规格补充等" },
@@ -267,9 +285,11 @@ export default function ProcurementPage() {
       ) : null}
 
       {transferMsg ? <p className={messageBannerClass}>{transferMsg}</p> : null}
+      {formError && !showCreate ? <p className={messageBannerClass}>{formError}</p> : null}
 
       <MasterListPage<ProcurementRow & { materialLabel: string; supplierLabel: string }>
         embedded
+        hideInternalHeader
         title="采购预备"
         persistenceKey="procurement-v1"
         exportFilename="procurement"
@@ -278,9 +298,9 @@ export default function ProcurementPage() {
           { key: "projectLabel", title: "项目", canView: true, width: 140 },
           { key: "materialLabel", title: "材料", canView: true, width: 160 },
           { key: "supplierLabel", title: "供应商", canView: true, width: 120 },
-          { key: "qty", title: "数量", canView: true, width: 70 },
-          { key: "unitPrice", title: "单价", canView: true, width: 90 },
-          { key: "planAmount", title: "计划金额", canView: true, width: 100 },
+          { key: "qty", title: "数量", canView: true, width: 70, align: "right" },
+          { key: "unitPrice", title: "单价 (CNY)", canView: true, width: 100, align: "right" },
+          { key: "planAmount", title: "计划金额 (CNY)", canView: true, width: 120, align: "right" },
           { key: "statusLabel", title: "状态", canView: true, width: 80 },
           ...(payableEnabled
             ? [{ key: "payableLabel" as const, title: "应付", canView: true, width: 90 }]
@@ -313,10 +333,15 @@ export default function ProcurementPage() {
                 提交应付
               </button>
             ) : null}
+            {payableEnabled && (row.payableStatus === "pending" || row.payableStatus === "posted") ? (
+              <Link href="/accounting/supplier-ledger" className={linkActionClass}>
+                查看应付
+              </Link>
+            ) : null}
             {row.status !== "arrived" && !row.transferred.startsWith("已") ? (
               <button
                 type="button"
-                className="rounded border border-[var(--color-border)] px-2 py-0.5 text-[11px] text-[var(--color-text)] hover:bg-[var(--color-surface-soft)]"
+                className={inlineBtnClass}
                 disabled={advanceMutation.isPending}
                 onClick={() => void advanceMutation.mutateAsync(row.id).then(() => query.refetch())}
               >
@@ -328,7 +353,10 @@ export default function ProcurementPage() {
                 type="button"
                 className={inlineBtnDangerClass}
                 disabled={deleteMutation.isPending}
-                onClick={() => void deleteMutation.mutateAsync(row.id).then(() => query.refetch())}
+                onClick={() => {
+                  if (!window.confirm(`确定删除请购单「${row.requestNo}」吗？`)) return;
+                  void deleteMutation.mutateAsync(row.id).then(() => query.refetch());
+                }}
               >
                 删除
               </button>
@@ -336,16 +364,15 @@ export default function ProcurementPage() {
           </div>
         )}
         toolbarExtra={
-          <>
-            <WorkspaceToolbarButton onClick={() => setShowCreate(true)}>新增计划</WorkspaceToolbarButton>
-            <WorkspaceToolbarButton
-              onClick={() => void handleTransfer()}
-              disabled={transferMutation.isPending}
-            >
-              已到货转实际成本
-            </WorkspaceToolbarButton>
-          </>
+          <WorkspaceToolbarButton
+            onClick={() => void handleTransfer()}
+            disabled={transferMutation.isPending}
+            loading={transferMutation.isPending}
+          >
+            已到货转实际成本
+          </WorkspaceToolbarButton>
         }
+        emptyHint="暂无采购计划。点击「新增计划」关联项目与材料；单价可从材料主数据带出。"
       />
     </IndustrialPage>
   );

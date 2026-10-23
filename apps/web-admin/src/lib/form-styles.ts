@@ -22,6 +22,16 @@ export const tableHeaderRowClass = "border-b border-[var(--color-border)] text-s
 
 export const tableBodyRowClass = "border-b border-[var(--color-border-soft)] text-sm";
 
+/** Money cells: right-aligned tabular nums (UI_DESIGN_SYSTEM §5) */
+export const moneyCellClass = "px-2 py-2 text-right tabular-nums";
+
+/** FilterBar field: consistent min width + label stack (PAGE_LAYOUT_STANDARD §1) */
+export const filterFieldClass = "block min-w-[160px] space-y-1 text-xs";
+
+/** FilterBar checkbox aligned to control row height */
+export const filterCheckClass =
+  "flex h-10 items-center gap-2 text-xs text-[var(--color-text-muted)]";
+
 export const formPanelClass =
   "rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4";
 

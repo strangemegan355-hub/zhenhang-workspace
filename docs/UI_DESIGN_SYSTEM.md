@@ -52,18 +52,21 @@
 
 | 组件 | 用途 |
 |---|---|
-| `PageHeader` | 标题 + 描述 + 主操作（已在 packages/ui 有布局组件） |
+| `PageHeader` | 标题 + 描述 + 主操作（`packages/ui`；页内仅一个 `primary` 主操作） |
+| `FilterBar` | 列表筛选行（`role="search"`；搜索 + 2–4 高频筛选项） |
 | `IndustrialPage` | 页面纵向节奏 |
-| MasterListPage / data-grid | 列表、筛选、分页 |
+| MasterListPage / data-grid | 列表、筛选、分页；金额/数量列用 `GridColumn.align: "right"`（`tabular-nums`） |
 | `StatusBadge` | 统一状态色 |
 | 表单分组区块（Form section） | 表单分组 |
 | `btn-primary` / `btn-secondary` | 全局按钮类（globals.css） |
+| `moneyCellClass`（`form-styles.ts`） | 金额列：右对齐 + `tabular-nums` |
+| `filterFieldClass` / `filterCheckClass` | FilterBar 字段最小宽度与勾选行高对齐 |
 
 ---
 
 ## 5. 数据展示
 
-- 金额：右对齐、千分位、`CNY` 前缀或列标题注明  
+- 金额：右对齐、千分位、`tabular-nums`（优先用 `moneyCellClass`）；`CNY` 前缀或列标题注明  
 - 日期：`YYYY-MM-DD` 展示，存储 ISO  
 - 空态：说明原因 + 主操作按钮（如「新建报价」）  
 - 加载：表格 skeleton，禁止长时间无反馈  

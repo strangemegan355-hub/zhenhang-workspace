@@ -12,6 +12,7 @@ import {
   type PaymentPayload,
 } from "@zhenhang/query-hooks";
 import {
+  FilterBar,
   IndustrialPage,
   IndustrialPanel,
   PageHeader,
@@ -23,8 +24,11 @@ import { FinanceSubNav } from "@/components/finance/finance-sub-nav";
 import {
   fieldInputClass,
   fieldLabelClass,
+  filterCheckClass,
+  filterFieldClass,
   formPanelClass,
   linkActionClass,
+  moneyCellClass,
   tableBodyRowClass,
   tableHeaderRowClass,
 } from "@/lib/form-styles";
@@ -195,31 +199,41 @@ export default function SupplierLedgerPage() {
 
   return (
     <IndustrialPage gap="md" fill>
-      <PageHeader title="财务中心 · 供应商应付" subtitle="管理供应商应付与付款" />
+      <PageHeader
+        title="财务中心 · 供应商应付"
+        subtitle="管理供应商应付与付款；采购提交应付后可在此跟进，无需重复录入。"
+        actions={
+          <WorkspaceToolbarButton
+            variant="primary"
+            onClick={() => { setShowRegister(true); void suppliersQuery.refetch(); }}
+          >
+            登记供应商
+          </WorkspaceToolbarButton>
+        }
+      />
       <FinanceSubNav />
 
       <IndustrialPanel title="供应商应付汇总">
-        <div className="mb-3 flex flex-wrap items-end gap-3">
-          <label className="block space-y-1 text-xs">
+        <FilterBar>
+          <label className={`${filterFieldClass} min-w-[220px] flex-1`}>
             <span className={fieldLabelClass}>搜索</span>
             <input className={fieldInputClass} value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="供应商名称/编码" />
           </label>
-          <label className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+          <label className={filterCheckClass}>
             <input type="checkbox" checked={outstandingOnly} onChange={(e) => { setOutstandingOnly(e.target.checked); setPage(1); }} />
             仅显示有欠款
           </label>
-          <WorkspaceToolbarButton onClick={() => { setShowRegister(true); void suppliersQuery.refetch(); }}>登记供应商</WorkspaceToolbarButton>
-        </div>
+        </FilterBar>
 
         <div className="overflow-auto">
           <table className="min-w-full text-xs">
             <thead>
               <tr className={tableHeaderRowClass}>
                 <th className="px-2 py-2 text-left font-normal">供应商</th>
-                <th className="px-2 py-2 text-left font-normal">应付总额</th>
-                <th className="px-2 py-2 text-left font-normal">已付</th>
-                <th className="px-2 py-2 text-left font-normal">欠款</th>
-                <th className="px-2 py-2 text-left font-normal">未结单数</th>
+                <th className={`${moneyCellClass} font-normal`}>应付总额</th>
+                <th className={`${moneyCellClass} font-normal`}>已付</th>
+                <th className={`${moneyCellClass} font-normal`}>欠款</th>
+                <th className={`${moneyCellClass} font-normal`}>未结单数</th>
                 <th className="px-2 py-2 text-left font-normal">操作</th>
               </tr>
             </thead>
@@ -231,10 +245,10 @@ export default function SupplierLedgerPage() {
                       {row.name} {row.code ? `(${row.code})` : ""}
                     </button>
                   </td>
-                  <td className="px-2 py-2">{row.payableTotal}</td>
-                  <td className="px-2 py-2">{row.paidTotal}</td>
-                  <td className="px-2 py-2 font-semibold text-[var(--color-danger)]">{row.outstanding}</td>
-                  <td className="px-2 py-2">{row.openBills}</td>
+                  <td className={moneyCellClass}>{row.payableTotal}</td>
+                  <td className={moneyCellClass}>{row.paidTotal}</td>
+                  <td className={`${moneyCellClass} font-semibold text-[var(--color-danger)]`}>{row.outstanding}</td>
+                  <td className={moneyCellClass}>{row.openBills}</td>
                   <td className="px-2 py-2">
                     {!row.registered ? (
                       <button type="button" className={linkActionClass} onClick={() => handleRegister(row.id)}>登记</button>
@@ -332,12 +346,12 @@ export default function SupplierLedgerPage() {
       {selectedSupplierId && detail ? (
         <IndustrialPanel title={`${supplierNameMap.get(selectedSupplierId) ?? ""} 应付明细`}>
           <div className="mb-3 grid grid-cols-3 gap-4 text-xs">
-            <div><span className="text-[var(--color-text-muted)]">应付总额：</span><span className="font-semibold text-[var(--color-danger)]">{money(detail.payable_total as number)}</span></div>
-            <div><span className="text-[var(--color-text-muted)]">已付：</span>{money(detail.paid_total as number)}</div>
-            <div><span className="text-[var(--color-text-muted)]">欠款：</span><span className="font-semibold text-[var(--color-danger)]">{money(detail.outstanding_total as number)}</span></div>
+            <div><span className="text-[var(--color-text-muted)]">应付总额：</span><span className="font-semibold tabular-nums text-[var(--color-danger)]">{money(detail.payable_total as number)}</span></div>
+            <div><span className="text-[var(--color-text-muted)]">已付：</span><span className="tabular-nums">{money(detail.paid_total as number)}</span></div>
+            <div><span className="text-[var(--color-text-muted)]">欠款：</span><span className="font-semibold tabular-nums text-[var(--color-danger)]">{money(detail.outstanding_total as number)}</span></div>
           </div>
           <div className="mb-3 flex gap-2">
-            <WorkspaceToolbarButton onClick={() => { setShowPayable(true); setFormError(null); }}>录入应付</WorkspaceToolbarButton>
+            <WorkspaceToolbarButton variant="primary" onClick={() => { setShowPayable(true); setFormError(null); }}>录入应付</WorkspaceToolbarButton>
             <WorkspaceToolbarButton onClick={() => { setShowPayment(true); setFormError(null); }}>录入付款</WorkspaceToolbarButton>
           </div>
           <div className="overflow-auto">
@@ -347,9 +361,9 @@ export default function SupplierLedgerPage() {
                   <th className="px-2 py-2 text-left font-normal">单号</th>
                   <th className="px-2 py-2 text-left font-normal">类型</th>
                   <th className="px-2 py-2 text-left font-normal">摘要</th>
-                  <th className="px-2 py-2 text-left font-normal">金额</th>
-                  <th className="px-2 py-2 text-left font-normal">已付</th>
-                  <th className="px-2 py-2 text-left font-normal">未付</th>
+                  <th className={`${moneyCellClass} font-normal`}>金额</th>
+                  <th className={`${moneyCellClass} font-normal`}>已付</th>
+                  <th className={`${moneyCellClass} font-normal`}>未付</th>
                   <th className="px-2 py-2 text-left font-normal">发生日</th>
                 </tr>
               </thead>
@@ -359,9 +373,9 @@ export default function SupplierLedgerPage() {
                     <td className="px-2 py-2">{String(e.entry_no ?? "")}</td>
                     <td className="px-2 py-2">{String(e.entry_kind) === "payable" ? "应付" : "付款"}</td>
                     <td className="px-2 py-2">{String(e.title ?? "")}</td>
-                    <td className="px-2 py-2">{money(e.amount as number)}</td>
-                    <td className="px-2 py-2">{money(e.settled_amount as number)}</td>
-                    <td className="px-2 py-2 font-semibold text-[var(--color-danger)]">{money(e.open_amount as number)}</td>
+                    <td className={moneyCellClass}>{money(e.amount as number)}</td>
+                    <td className={moneyCellClass}>{money(e.settled_amount as number)}</td>
+                    <td className={`${moneyCellClass} font-semibold text-[var(--color-danger)]`}>{money(e.open_amount as number)}</td>
                     <td className="px-2 py-2">{String(e.occurred_on ?? "").slice(0, 10)}</td>
                   </tr>
                 ))}

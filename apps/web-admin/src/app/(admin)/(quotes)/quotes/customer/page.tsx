@@ -21,7 +21,7 @@ import {
   type CustomerQuoteLine,
   type CustomerQuotePayload,
 } from "@zhenhang/query-hooks";
-import { IndustrialPage, IndustrialPanel, WorkspaceToolbarButton, typography } from "@zhenhang/ui";
+import { IndustrialPage, IndustrialPanel, PageHeader, WorkspaceToolbarButton } from "@zhenhang/ui";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
@@ -29,6 +29,7 @@ import {
   fieldInputClass,
   fieldLabelClass,
   linkActionClass,
+  moneyCellClass,
   tableBodyRowClass,
   tableHeaderRowClass,
 } from "@/lib/form-styles";
@@ -508,34 +509,37 @@ export default function CustomerQuotePage() {
 
     return (
       <IndustrialPage gap="md" fill>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className={typography.pageTitle}>{editId ? "编辑对客报价" : "新建对客报价"}</h2>
-          <div className="flex gap-2">
-            <WorkspaceToolbarButton onClick={backToList}>返回列表</WorkspaceToolbarButton>
-            <button
-              type="button"
-              disabled={createMutation.isPending || updateMutation.isPending}
-              onClick={() => void handleSave()}
-              className="btn-primary h-8 px-4 text-xs disabled:opacity-60"
-            >
-              {createMutation.isPending || updateMutation.isPending ? "保存中..." : "保存报价"}
-            </button>
-          </div>
-        </div>
-
-        <p className="text-xs text-[var(--color-text-muted)]">
-          选择产品后自动带出参考单价；「产品单价」「电机单价」均可手动调低。保存后点「申请生成应收」；优惠率超过老板设定上限（当前 {salesMaxDiscountPct}%）时进入审批中心待批。
-          {!projectId ? (
+        <PageHeader
+          title={editId ? "编辑对客报价" : "新建对客报价"}
+          subtitle={
             <>
-              {" "}
-              未关联项目时可前往
-              <Link href="/projects" className={`mx-1 ${linkActionClass}`}>
-                项目管理
-              </Link>
-              创建项目后再回填。
+              选择产品后自动带出参考单价；保存后可申请生成应收。优惠超限（当前 {salesMaxDiscountPct}%）进审批中心。
+              {!projectId ? (
+                <>
+                  {" "}
+                  未关联项目时可前往
+                  <Link href="/projects" className={`mx-1 ${linkActionClass}`}>
+                    项目台账
+                  </Link>
+                  创建后再回填，避免重复录入客户。
+                </>
+              ) : null}
             </>
-          ) : null}
-        </p>
+          }
+          actions={
+            <>
+              <WorkspaceToolbarButton onClick={backToList}>返回列表</WorkspaceToolbarButton>
+              <WorkspaceToolbarButton
+                variant="primary"
+                disabled={createMutation.isPending || updateMutation.isPending}
+                loading={createMutation.isPending || updateMutation.isPending}
+                onClick={() => void handleSave()}
+              >
+                {createMutation.isPending || updateMutation.isPending ? "保存中..." : "保存报价"}
+              </WorkspaceToolbarButton>
+            </>
+          }
+        />
         {formError ? <p className={`text-xs ${dangerActionClass}`}>{formError}</p> : null}
 
         <IndustrialPanel title="基本信息">
@@ -613,10 +617,10 @@ export default function CustomerQuotePage() {
                   <th className="px-2 py-2 text-left font-normal">规格型号</th>
                   <th className="px-2 py-2 text-left font-normal">单位</th>
                   <th className="px-2 py-2 text-left font-normal">功率</th>
-                  <th className="min-w-[120px] px-2 py-2 text-left font-normal">产品单价</th>
-                  <th className="min-w-[120px] px-2 py-2 text-left font-normal">电机单价</th>
-                  <th className="px-2 py-2 text-left font-normal">数量</th>
-                  <th className="px-2 py-2 text-left font-normal">金额</th>
+                  <th className={`min-w-[120px] font-normal ${moneyCellClass}`}>产品单价</th>
+                  <th className={`min-w-[120px] font-normal ${moneyCellClass}`}>电机单价</th>
+                  <th className={`font-normal ${moneyCellClass}`}>数量</th>
+                  <th className={`font-normal ${moneyCellClass}`}>金额</th>
                   <th className="px-2 py-2 text-left font-normal">操作</th>
                 </tr>
               </thead>
@@ -676,12 +680,12 @@ export default function CustomerQuotePage() {
                           ))}
                         </select>
                       </td>
-                      <td className="px-2 py-1 align-top">
+                      <td className={`${moneyCellClass} align-top`}>
                         <input
                           type="number"
                           min={0}
                           step="0.01"
-                          className={`${fieldInputClass} min-w-[108px]`}
+                          className={`${fieldInputClass} min-w-[108px] text-right`}
                           value={line.unit_price}
                           disabled={!line.product_id}
                           title={line.product_id ? "可手动调低产品单价" : "请先选择规格型号"}
@@ -700,12 +704,12 @@ export default function CustomerQuotePage() {
                           <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">选规格后可改价</div>
                         )}
                       </td>
-                      <td className="px-2 py-1 align-top">
+                      <td className={`${moneyCellClass} align-top`}>
                         <input
                           type="number"
                           min={0}
                           step="0.01"
-                          className={`${fieldInputClass} min-w-[108px]`}
+                          className={`${fieldInputClass} min-w-[108px] text-right`}
                           value={line.motor_unit_price || 0}
                           disabled={!line.motor_product_id}
                           title={line.motor_product_id ? "可手动调低电机单价" : "选配电机后可改价"}
@@ -724,15 +728,15 @@ export default function CustomerQuotePage() {
                           <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">未选电机</div>
                         )}
                       </td>
-                      <td className="px-2 py-1">
+                      <td className={moneyCellClass}>
                         <input
                           type="number"
-                          className={fieldInputClass}
+                          className={`${fieldInputClass} text-right`}
                           value={line.quantity}
                           onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) || 1 })}
                         />
                       </td>
-                      <td className="px-2 py-1 text-[var(--color-text)] align-top">
+                      <td className={`${moneyCellClass} text-[var(--color-text)] align-top`}>
                         <div>{money(lineAmount(line))}</div>
                         {rowDiscount > 0 ? (
                           <div className="text-[10px] text-amber-600">行优惠 {money(rowDiscount)}</div>
@@ -853,22 +857,31 @@ export default function CustomerQuotePage() {
 
   return (
     <IndustrialPage gap="md" fill>
-      <div className="flex items-center justify-between text-sm text-[var(--color-text-muted)]">
-        <span>对客报价面向客户销售，产品明细联动产品库名称、规格、单位与配套电机。</span>
-        <Link href="/quotes" className={linkActionClass}>
-          返回内部报价/BOM
-        </Link>
-      </div>
+      <PageHeader
+        title="对客报价"
+        subtitle="面向客户销售；明细联动产品库名称、规格、单位与配套电机。主入口在报价中心亦可到达。"
+        actions={
+          <>
+            <Link href="/quotes" className="btn-default h-8 px-3 text-xs">
+              返回报价中心
+            </Link>
+            <WorkspaceToolbarButton variant="primary" onClick={openCreate}>
+              新建对客报价
+            </WorkspaceToolbarButton>
+          </>
+        }
+      />
       <MasterListPage<ListRow>
         embedded
         fill
+        hideInternalHeader
         title="对客报价"
         persistenceKey="customer-quotes-v1"
         exportFilename="customer-quotes"
         columns={[
           { key: "quoteNo", title: "报价编号", canView: true, fixed: "left", width: 160 },
           { key: "title", title: "标题", canView: true, width: 200 },
-          { key: "finalTotal", title: "含税总额", canView: true },
+          { key: "finalTotal", title: "含税总额 (CNY)", canView: true, width: 120, align: "right" },
           { key: "receivableStatus", title: "应收", canView: true, width: 100 },
           { key: "status", title: "状态", canView: true, width: 80 },
         ]}
@@ -890,8 +903,7 @@ export default function CustomerQuotePage() {
             </button>
           </div>
         )}
-        toolbarExtra={<WorkspaceToolbarButton onClick={openCreate}>新建对客报价</WorkspaceToolbarButton>}
-        emptyHint="暂无对客报价，点击右上角新建，从产品库选择名称与规格型号。"
+        emptyHint="暂无对客报价，点击页头「新建对客报价」，从产品库选择名称与规格型号。"
       />
     </IndustrialPage>
   );

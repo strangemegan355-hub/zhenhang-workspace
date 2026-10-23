@@ -12,6 +12,7 @@ import {
   type LedgerEntry,
 } from "@zhenhang/query-hooks";
 import {
+  FilterBar,
   IndustrialPage,
   IndustrialPanel,
   PageHeader,
@@ -22,8 +23,11 @@ import { useMemo, useState } from "react";
 import {
   fieldInputClass,
   fieldLabelClass,
+  filterCheckClass,
+  filterFieldClass,
   formPanelClass,
   linkActionClass,
+  moneyCellClass,
   tableBodyRowClass,
   tableHeaderRowClass,
 } from "@/lib/form-styles";
@@ -556,8 +560,8 @@ export default function AccountingLedgerPage() {
                   <th className="px-3 py-2">单号</th>
                   <th className="px-3 py-2">来源</th>
                   <th className="px-3 py-2">摘要</th>
-                  <th className="px-3 py-2 text-right">账单金额</th>
-                  <th className="px-3 py-2 text-right">未收</th>
+                  <th className={`${moneyCellClass} !px-3`}>账单金额</th>
+                  <th className={`${moneyCellClass} !px-3`}>未收</th>
                   <th className="px-3 py-2">状态</th>
                 </tr>
               </thead>
@@ -581,8 +585,8 @@ export default function AccountingLedgerPage() {
                       <td className="px-3 py-2 font-mono text-[11px]">{row.entryNo}</td>
                       <td className="px-3 py-2">{row.sourceLabel}</td>
                       <td className="px-3 py-2">{row.title}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{row.amount}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-[var(--color-warning)]">{row.openAmount}</td>
+                      <td className={`${moneyCellClass} !px-3`}>{row.amount}</td>
+                      <td className={`${moneyCellClass} !px-3 text-[var(--color-warning)]`}>{row.openAmount}</td>
                       <td className="px-3 py-2">{row.paymentStatus}</td>
                     </tr>
                   ))
@@ -601,8 +605,8 @@ export default function AccountingLedgerPage() {
                   <th className="px-3 py-2">单号</th>
                   <th className="px-3 py-2">类型</th>
                   <th className="px-3 py-2">摘要</th>
-                  <th className="px-3 py-2 text-right">金额</th>
-                  <th className="px-3 py-2 text-right">未收</th>
+                  <th className={`${moneyCellClass} !px-3`}>金额</th>
+                  <th className={`${moneyCellClass} !px-3`}>未收</th>
                   <th className="px-3 py-2">支付状态</th>
                 </tr>
               </thead>
@@ -627,8 +631,8 @@ export default function AccountingLedgerPage() {
                           </div>
                         ) : null}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums">{row.amount}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{row.entryKind === "receivable" ? row.openAmount : "—"}</td>
+                      <td className={`${moneyCellClass} !px-3`}>{row.amount}</td>
+                      <td className={`${moneyCellClass} !px-3`}>{row.entryKind === "receivable" ? row.openAmount : "—"}</td>
                       <td className="px-3 py-2">{row.paymentStatus}</td>
                     </tr>
                   ))
@@ -648,7 +652,10 @@ export default function AccountingLedgerPage() {
         subtitle="按客户汇总应收、已收与欠款；可手动添加客户并录入账单"
         actions={
           canCreate ? (
-            <WorkspaceToolbarButton onClick={() => { setShowAddCustomer((v) => !v); setFormError(null); }}>
+            <WorkspaceToolbarButton
+              variant="primary"
+              onClick={() => { setShowAddCustomer((v) => !v); setFormError(null); }}
+            >
               {showAddCustomer ? "取消添加" : "添加客户"}
             </WorkspaceToolbarButton>
           ) : null
@@ -674,8 +681,13 @@ export default function AccountingLedgerPage() {
                 ))}
               </select>
             </label>
-            <WorkspaceToolbarButton onClick={() => void handleAddCustomer()} disabled={registerMutation.isPending}>
-              {registerMutation.isPending ? "添加中…" : "确认添加"}
+            <WorkspaceToolbarButton
+              variant="primary"
+              onClick={() => void handleAddCustomer()}
+              disabled={registerMutation.isPending}
+              loading={registerMutation.isPending}
+            >
+              确认添加
             </WorkspaceToolbarButton>
           </div>
           {addableCustomers.length === 0 ? (
@@ -686,8 +698,8 @@ export default function AccountingLedgerPage() {
       ) : null}
 
       <IndustrialPanel>
-        <div className="mb-4 flex flex-wrap items-end gap-3">
-          <label className="block space-y-1 text-xs">
+        <FilterBar>
+          <label className={`${filterFieldClass} min-w-[220px] flex-1`}>
             <span className={fieldLabelClass}>客户搜索</span>
             <input
               className={fieldInputClass}
@@ -699,7 +711,7 @@ export default function AccountingLedgerPage() {
               }}
             />
           </label>
-          <label className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+          <label className={filterCheckClass}>
             <input
               type="checkbox"
               checked={outstandingOnly}
@@ -710,7 +722,7 @@ export default function AccountingLedgerPage() {
             />
             仅显示有欠款客户
           </label>
-        </div>
+        </FilterBar>
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-xs">
@@ -718,10 +730,10 @@ export default function AccountingLedgerPage() {
               <tr className={tableHeaderRowClass}>
                 <th className="px-3 py-2">客户</th>
                 <th className="px-3 py-2">编码</th>
-                <th className="px-3 py-2 text-right">应收合计</th>
-                <th className="px-3 py-2 text-right">已收合计</th>
-                <th className="px-3 py-2 text-right">欠款</th>
-                <th className="px-3 py-2 text-right">未结清</th>
+                <th className={`${moneyCellClass} !px-3`}>应收合计</th>
+                <th className={`${moneyCellClass} !px-3`}>已收合计</th>
+                <th className={`${moneyCellClass} !px-3`}>欠款</th>
+                <th className={`${moneyCellClass} !px-3`}>未结清</th>
                 <th className="px-3 py-2">最近业务日</th>
                 <th className="px-3 py-2" />
               </tr>
@@ -738,10 +750,10 @@ export default function AccountingLedgerPage() {
                   <tr key={row.id} className={tableBodyRowClass}>
                     <td className="px-3 py-2">{row.name}</td>
                     <td className="px-3 py-2 font-mono text-[11px]">{row.code || "—"}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{row.receivableTotal}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{row.receivedTotal}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-[var(--color-warning)]">{row.outstandingTotal}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{row.openBillCount}</td>
+                    <td className={`${moneyCellClass} !px-3`}>{row.receivableTotal}</td>
+                    <td className={`${moneyCellClass} !px-3`}>{row.receivedTotal}</td>
+                    <td className={`${moneyCellClass} !px-3 text-[var(--color-warning)]`}>{row.outstandingTotal}</td>
+                    <td className={`${moneyCellClass} !px-3`}>{row.openBillCount}</td>
                     <td className="px-3 py-2">{row.lastDate}</td>
                     <td className="px-3 py-2">
                       <button type="button" className={linkActionClass} onClick={() => openDetail(row.id, row.name)}>
