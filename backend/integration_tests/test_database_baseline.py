@@ -94,7 +94,6 @@ async def test_every_model_table_exists_in_the_database(integration_db_engine):
 async def test_the_readiness_probe_answers_against_the_real_stack():
     """One call proves the app, the database and Redis are wired to each other."""
     import httpx
-
     from app.main import app
 
     transport = httpx.ASGITransport(app=app)

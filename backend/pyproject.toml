@@ -52,10 +52,21 @@ warn_unused_ignores = false
 warn_return_any = false
 check_untyped_defs = false
 pretty = true
-# Incremental adopt: start with core packages; expand later.
+# Incremental adopt: only report errors in `files`; imported deps are silent.
+follow_imports = "silent"
 files = [
   "app/domains/quote/application/quote_track_helpers.py",
   "app/domains/file/infrastructure/minio_client.py",
+  "app/core/enterprise_metrics.py",
+  "app/core/exceptions.py",
+  "app/core/money.py",
+  "app/core/response.py",
+  "app/core/rbac.py",
+  "app/core/monitoring.py",
+  "app/core/redis_client.py",
+  "app/core/data_scope.py",
+  "app/core/security.py",
+  "app/core/__init__.py",
 ]
 exclude = [
   "alembic/versions/",

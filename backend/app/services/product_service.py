@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import TypeVar
 from uuid import UUID
 
@@ -9,14 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.repositories import product_repository as repo
 from app.schemas.common import PageResponse
+from app.schemas.common import page_response as _page
 from app.schemas.product import (
     ProductCategoryRead,
     ProductCostTemplateRead,
     ProductPriceTemplateRead,
-    ProductQuotePayload,
     ProductRead,
 )
-from app.schemas.common import page_response as _page
 
 T = TypeVar("T", bound=BaseModel)
 

@@ -23,8 +23,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 REPO = Path(__file__).resolve().parents[2]
 HOOKS = REPO / "packages" / "query-hooks" / "src"
 

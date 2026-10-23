@@ -1,5 +1,6 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.audit_service import write_audit_log
 

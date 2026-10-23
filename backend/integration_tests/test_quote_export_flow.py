@@ -28,8 +28,6 @@ from uuid import UUID
 os.environ.setdefault("SECRET_KEY", "integration-baseline-secret-key-32chars")
 
 import pytest  # noqa: E402
-from sqlalchemy import delete, select  # noqa: E402
-
 from app.db.session import AsyncSessionLocal  # noqa: E402
 from app.domains.events.event_handlers.quote_export_handlers import (  # noqa: E402
     handle_quote_export_requested,
@@ -38,6 +36,7 @@ from app.models.customer import Customer  # noqa: E402
 from app.models.file_center import FileObject  # noqa: E402
 from app.models.machine import Machine  # noqa: E402
 from app.models.quote import Quote, QuoteExportTask, QuoteItem, QuoteVersion  # noqa: E402
+from sqlalchemy import delete, select  # noqa: E402
 
 
 @pytest.mark.asyncio

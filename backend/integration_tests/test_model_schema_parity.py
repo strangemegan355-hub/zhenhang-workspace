@@ -14,7 +14,6 @@ Measured in round 192 against the integration database (see `MODELS_DECLARE_BUT_
 from __future__ import annotations
 
 import importlib
-import os
 import pkgutil
 import sys
 from pathlib import Path
@@ -24,9 +23,8 @@ import pytest
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
-from sqlalchemy import text  # noqa: E402
-
 from app.db.session import AsyncSessionLocal  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
 # Measured in round 192: **zero**, in both tables and columns. A model declaring a column the database lacks would break
 # the application on a fresh clone, which is what the P0 unblock proved does not happen — this keeps it that way.

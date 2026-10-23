@@ -7,10 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.common import PageResponse
+from app.schemas.common import PageResponse, page_response
 from app.schemas.equipment_unit import EquipmentUnitCreate, EquipmentUnitRead, EquipmentUnitUpdate
 from app.services import equipment_unit_service as svc
-from app.schemas.common import page_response
 
 router = APIRouter()
 

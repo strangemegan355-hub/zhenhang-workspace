@@ -16,6 +16,8 @@ from app.schemas.quote import (
     ApprovalTemplateDetailRead,
     ApprovalTemplateRead,
     ApprovalTemplateWithNodesCreate,
+    CustomerQuoteCreate,
+    CustomerQuoteUpdate,
     QuoteActionPayload,
     QuoteApprovalRead,
     QuoteCreate,
@@ -27,11 +29,7 @@ from app.schemas.quote import (
     QuoteVersionCreate,
     QuoteVersionRead,
     QuoteWizardCreate,
-    CustomerQuoteCreate,
-    CustomerQuoteUpdate,
 )
-from app.schemas.quote import ApprovalTemplateRead
-from app.schemas.quote import QuoteRead
 
 router = APIRouter()
 

@@ -7,8 +7,6 @@ every route. These cases need no database.
 
 from __future__ import annotations
 
-import pytest
-
 from app.core.security import (
     create_access_token,
     create_realtime_ticket,
@@ -70,9 +68,8 @@ def test_token_without_a_type_claim_is_rejected() -> None:
     """Tokens minted before the type check existed must not be grandfathered in."""
     from datetime import UTC, datetime, timedelta
 
-    from jose import jwt
-
     from app.config.settings import settings
+    from jose import jwt
 
     legacy = jwt.encode(
         {"sub": SUBJECT, "exp": datetime.now(UTC) + timedelta(minutes=5)},

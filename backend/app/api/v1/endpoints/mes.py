@@ -1,4 +1,5 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.models.user import User
-from app.services.mes_integration_service import ingest_equipment_signal, list_recent_signals, record_oee_snapshot
+from app.services.mes_integration_service import (
+    ingest_equipment_signal,
+    list_recent_signals,
+    record_oee_snapshot,
+)
 
 router = APIRouter()
 

@@ -344,11 +344,10 @@ async def _set_trial_sales_project_delete(granted: bool) -> None:
     **`granted=False` must be called in a `finally`**: `trial_sales` is default data rather than test data, so a grant
     left behind would leak into every later test and make this suite order-dependent.
     """
-    from sqlalchemy import delete, select
-
     from app.db.session import AsyncSessionLocal
     from app.models.permission import Permission
     from app.models.role import Role, role_permission_association
+    from sqlalchemy import delete, select
 
     async with AsyncSessionLocal() as session:
         role = (await session.execute(select(Role).where(Role.code == "trial_sales"))).scalar_one_or_none()

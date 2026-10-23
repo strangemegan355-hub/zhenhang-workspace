@@ -1,7 +1,7 @@
-from contextlib import asynccontextmanager
 import asyncio
 import json
 import sys
+from contextlib import asynccontextmanager
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -11,11 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api.v1.router import api_router
 from app import __version__
+from app.api.v1.router import api_router
 from app.config.settings import settings
-from app.core.exceptions import BusinessException
 from app.core.enterprise_metrics import enterprise_metrics
+from app.core.exceptions import BusinessException
 from app.core.monitoring import now_perf
 from app.core.redis_client import close_redis
 from app.core.response import error_response, success_response

@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.models.user import User
+from app.schemas.admin import PermissionRead
 from app.schemas.common import PageResponse
 from app.services import admin_service as svc
-from app.schemas.admin import PermissionRead
 
 router = APIRouter()
 

@@ -10,7 +10,6 @@ from app.models.user import User
 from app.schemas.admin import RoleCreate, RolePermissionUpdate, RoleRead, RoleUpdate
 from app.schemas.common import PageResponse
 from app.services import admin_service as svc
-from app.schemas.admin import RoleRead
 
 router = APIRouter()
 

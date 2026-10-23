@@ -8,16 +8,14 @@ _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
 from app.core.security import get_password_hash
 from app.db.session import AsyncSessionLocal
 from app.models.department import Department
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
-
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 MIN_PASSWORD_LENGTH = 12
 

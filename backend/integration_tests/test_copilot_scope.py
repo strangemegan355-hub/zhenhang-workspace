@@ -14,10 +14,8 @@ unscoped part.** This test pins the corrected behaviour at that boundary.
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
-from uuid import uuid4
 
 import pytest
 
@@ -31,14 +29,13 @@ MARKER = "it-copilot-scope"
 
 async def _seed_two_departments_with_quotes():
     """Two departments, each with a quote on the SAME machine — the condition the panel selects on."""
-    from sqlalchemy import select
-
     from app.db.session import AsyncSessionLocal
     from app.models.customer import Customer
     from app.models.department import Department
     from app.models.machine import Machine
     from app.models.quote import Quote
     from app.models.user import User
+    from sqlalchemy import select
 
     async with AsyncSessionLocal() as session:
         # `customer_id` is NOT NULL on quotes; any existing customer serves, since the panel under test selects by
@@ -63,13 +60,12 @@ async def _seed_two_departments_with_quotes():
 
 
 async def _teardown():
-    from sqlalchemy import delete
-
     from app.db.session import AsyncSessionLocal
     from app.models.department import Department
     from app.models.machine import Machine
     from app.models.quote import Quote
     from app.models.user import User
+    from sqlalchemy import delete
 
     async with AsyncSessionLocal() as session:
         await session.execute(delete(Quote).where(Quote.quote_no.like(f"{MARKER}%")))
@@ -80,12 +76,10 @@ async def _teardown():
 
 
 async def test_similar_panels_exclude_quotes_outside_the_callers_scope():
-    from sqlalchemy import select
-
     from app.db.session import AsyncSessionLocal
     from app.domains.quote.application.industrial_copilot import build_industrial_copilot_analysis
-    from app.models.department import Department
     from app.models.user import User
+    from sqlalchemy import select
 
     _, rival_quote_id, owner_id, mine_id, _ = await _seed_two_departments_with_quotes()
     try:
@@ -110,10 +104,9 @@ async def test_similar_panels_exclude_quotes_outside_the_callers_scope():
 
 
 async def _my_quote_id():
-    from sqlalchemy import select
-
     from app.db.session import AsyncSessionLocal
     from app.models.quote import Quote
+    from sqlalchemy import select
 
     async with AsyncSessionLocal() as session:
         return (await session.execute(select(Quote.id).where(Quote.quote_no == f"{MARKER}-MINE"))).scalar_one()

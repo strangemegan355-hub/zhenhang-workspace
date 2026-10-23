@@ -1,5 +1,5 @@
-from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.audit import AuditLogQuery, AuditLogRead
+from app.schemas.auth import LoginRequest, TokenResponse
 from app.schemas.common import PageParams, PageResponse
 from app.schemas.config import SystemConfigCreate, SystemConfigRead, SystemConfigUpdate
 from app.schemas.customer import (
@@ -36,7 +36,6 @@ from app.schemas.machine import (
     MachineRead,
     MachineUpdate,
 )
-from app.schemas.user import UserPublic
 from app.schemas.quote import (
     ApprovalNodeCreate,
     ApprovalTemplateCreate,
@@ -52,6 +51,7 @@ from app.schemas.quote import (
     QuoteVersionDiffQuery,
     QuoteVersionRead,
 )
+from app.schemas.user import UserPublic
 from app.schemas.workflow import (
     WorkflowActionPayload,
     WorkflowStateCreate,

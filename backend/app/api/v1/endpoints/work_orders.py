@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.models.user import User
+from app.schemas.accounting import PostExpensePayload
 from app.schemas.common import PageResponse
 from app.schemas.work_order import (
     WorkOrderChainResult,
@@ -17,9 +18,8 @@ from app.schemas.work_order import (
     WorkOrderSummary,
     WorkOrderUpdate,
 )
-from app.schemas.accounting import PostExpensePayload
-from app.services import work_order_service as svc
 from app.services import accounting_service as acct_svc
+from app.services import work_order_service as svc
 
 router = APIRouter()
 

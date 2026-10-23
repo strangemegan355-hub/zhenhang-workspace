@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
 from app.core.deps import get_current_active_user, require_realtime_ticket
+from app.core.enterprise_metrics import enterprise_metrics
 from app.core.security import (
     create_realtime_ticket,
     decode_access_token,
@@ -16,10 +17,14 @@ from app.core.security import (
 )
 from app.db.session import get_db
 from app.models.user import User
-from app.realtime.acl import RealtimeACLContext, build_acl_context, can_deliver_envelope, filter_subscribed_channels
+from app.realtime.acl import (
+    RealtimeACLContext,
+    build_acl_context,
+    can_deliver_envelope,
+    filter_subscribed_channels,
+)
 from app.realtime.envelope import build_heartbeat_envelope, build_subscribe_ack
 from app.realtime.hub import get_realtime_hub
-from app.core.enterprise_metrics import enterprise_metrics
 from app.realtime.retention import max_hot_sequence
 from app.realtime.store import replay_events
 from app.repositories.user_repository import get_user_by_id

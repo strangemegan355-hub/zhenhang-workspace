@@ -19,13 +19,8 @@ from collections import defaultdict
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
 from uuid import UUID
 
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session, sessionmaker
-
-from _script_utils import BACKEND_ROOT, database_url, parse_bool
 from app.core.security import get_password_hash
 from app.models.customer import Customer
 from app.models.department import Department
@@ -33,6 +28,10 @@ from app.models.machine import Machine, MachineBom, MachineBomItem, MachineCateg
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session, sessionmaker
+
+from _script_utils import BACKEND_ROOT, database_url, parse_bool
 
 IMPORT_ORDER = ("customers", "machines", "boms", "bom_items", "users")
 FILE_MAP = {

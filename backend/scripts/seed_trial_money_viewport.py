@@ -27,10 +27,6 @@ import sys
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session, sessionmaker
-
-from _script_utils import database_url, print_db_target
 from app.models.accounting_entry import AccountingEntry
 from app.models.customer import Customer
 from app.models.material import Material
@@ -39,7 +35,15 @@ from app.models.procurement_payable_request import ProcurementPayableRequest
 from app.models.supplier import Supplier
 from app.models.system_config import SystemConfig
 from app.models.user import User
-from app.services.business_settings_service import CONFIG_GROUP, CONFIG_KEY, default_business_settings
+from app.services.business_settings_service import (
+    CONFIG_GROUP,
+    CONFIG_KEY,
+    default_business_settings,
+)
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session, sessionmaker
+
+from _script_utils import print_db_target
 
 TRIAL_MATERIAL_CODE = "TRIAL-MAT-001"
 TRIAL_SUPPLIER_CODE = "TRIAL-SUP-001"

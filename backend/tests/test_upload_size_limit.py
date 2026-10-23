@@ -38,7 +38,6 @@ class _User:
 
 
 async def _upload(size: int, monkeypatch, limit: int):
-    from types import SimpleNamespace
 
     from app.domains.file.application import file_application_service as svc
 

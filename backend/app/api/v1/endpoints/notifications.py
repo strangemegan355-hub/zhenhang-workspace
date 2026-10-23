@@ -11,9 +11,8 @@ from app.db.session import get_db
 from app.models.notification import Notification
 from app.models.user import User
 from app.notifications import notification_service as notify_svc
-from app.schemas.common import PageResponse
+from app.schemas.common import PageResponse, page_response
 from app.schemas.notification import NotificationRead, NotificationUnreadCount
-from app.schemas.common import page_response
 
 router = APIRouter()
 

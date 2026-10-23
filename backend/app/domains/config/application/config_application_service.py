@@ -5,10 +5,9 @@ from app.core.exceptions import UniqueViolationException
 from app.domains.config.policies.data_scope_policy import owner_scope_user_id
 from app.domains.config.repositories import config_repository as repo
 from app.domains.events.application.event_bus import event_bus
-from app.schemas.common import PageResponse
-from app.services.audit_service import write_audit_log
-from app.schemas.config import SystemConfigRead
 from app.schemas.common import page_response
+from app.schemas.config import SystemConfigRead
+from app.services.audit_service import write_audit_log
 
 
 async def create_config(db: AsyncSession, payload: dict, current_user):

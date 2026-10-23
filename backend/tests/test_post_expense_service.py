@@ -18,10 +18,9 @@ from uuid import uuid4
 os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-long-enough-32")
 
 import pytest  # noqa: E402
-from fastapi import HTTPException  # noqa: E402
-
 from app.schemas.accounting import PostExpensePayload  # noqa: E402
 from app.services import accounting_service as svc  # noqa: E402
+from fastapi import HTTPException  # noqa: E402
 
 
 class _ReadStub:

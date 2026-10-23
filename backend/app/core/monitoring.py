@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from time import perf_counter
 
 

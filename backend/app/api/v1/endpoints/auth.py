@@ -1,6 +1,7 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
 
 from app.core.security import create_access_token, create_refresh_token, decode_refresh_token
 from app.db.session import get_db

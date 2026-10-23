@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_active_user, require_permissions
+from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.common import PageResponse

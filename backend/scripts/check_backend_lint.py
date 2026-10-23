@@ -84,7 +84,8 @@ def main() -> int:
     lines.append(out.rstrip() or "(clean)")
 
     if not args.skip_mypy:
-        mcode, mout = _run([py, "-m", "mypy", "."])
+        # No path args → mypy uses [tool.mypy] files= from pyproject (scoped adopt).
+        mcode, mout = _run([py, "-m", "mypy"])
         if "No module named mypy" in mout or "No module named 'mypy'" in mout:
             lines.append("mypy: NOT_INSTALLED")
         else:

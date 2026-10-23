@@ -28,7 +28,6 @@ os.environ.setdefault("SECRET_KEY", "integration-baseline-secret-key-32chars")
 
 import httpx  # noqa: E402
 import pytest  # noqa: E402
-
 from app.main import app  # noqa: E402
 
 ENVELOPE_KEYS = {"code", "message", "data"}
@@ -90,7 +89,6 @@ async def test_a_missing_route_and_a_missing_token_use_the_same_envelope():
 async def test_a_domain_error_keeps_its_own_code_and_message():
     """Business exceptions must NOT be flattened into `HTTP_ERROR`; that is the whole point of the handler."""
     from app.core.exceptions import UniqueViolationException
-
     from app.main import business_exception_handler
 
     response = await business_exception_handler(None, UniqueViolationException("machine.machine_code", "INJ2-0001"))

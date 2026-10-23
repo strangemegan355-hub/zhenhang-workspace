@@ -15,7 +15,7 @@ from app.notifications.notification_service import create_notification
 from app.repositories import accounting_repository as accounting_repo
 from app.repositories import procurement_payable_repository as ppr_repo
 from app.repositories import procurement_repository as procurement_repo
-from app.schemas.accounting import AccountingEntryRead, ProcurementPayableRequestRead
+from app.schemas.accounting import ProcurementPayableRequestRead
 from app.schemas.common import PageResponse
 from app.services.accounting_service import require_accounting_enabled
 

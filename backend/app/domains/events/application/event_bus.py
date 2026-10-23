@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.events.repositories.domain_event_repository import (
     create_domain_event,
     get_domain_event,
-    list_pending_events,
     list_events_for_replay,
+    list_pending_events,
     mark_domain_event_dead_letter,
     mark_domain_event_failed,
     mark_domain_event_processed,

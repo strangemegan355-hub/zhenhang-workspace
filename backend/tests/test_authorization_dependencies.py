@@ -21,10 +21,6 @@ from datetime import timedelta
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
-from jose import jwt
-
 from app.config.settings import settings
 from app.core.deps import (
     get_current_active_user,
@@ -41,6 +37,9 @@ from app.core.security import (
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
+from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
+from jose import jwt
 
 
 def _user(*codes: str, is_superuser: bool = False, is_active: bool = True, roles: list[Role] | None = None) -> User:

@@ -19,7 +19,6 @@ os.environ.setdefault(
 os.environ["MINIO_ENDPOINT"] = os.getenv("INTEGRATION_MINIO_ENDPOINT", "127.0.0.1:59000")
 
 import pytest
-
 from app.domains.file.infrastructure import minio_client  # noqa: E402
 
 BUCKET = "erp-files-integration"

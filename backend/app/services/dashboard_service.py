@@ -4,8 +4,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.data_scope import DataScope, resolve_data_scope
-from app.domains.quote.public.queries import owner_scope_user_id
 from app.domains.quote.public import queries as quote_repo
+from app.domains.quote.public.queries import owner_scope_user_id
 from app.models.notification import Notification
 from app.models.quote import Quote, QuoteExportTask
 from app.models.user import User

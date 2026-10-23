@@ -10,7 +10,6 @@ from app.models.user import User
 from app.schemas.common import PageResponse
 from app.schemas.project_actual_cost import ProjectActualCostCreate, ProjectActualCostRead
 from app.services import actual_cost_service as svc
-from app.schemas.project_actual_cost import ProjectActualCostRead
 
 router = APIRouter()
 

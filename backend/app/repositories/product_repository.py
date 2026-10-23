@@ -14,7 +14,6 @@ from app.models.product import (
 )
 from app.repositories.common_repository import get_by_id, paginate_query
 
-
 # --- Categories ---
 
 

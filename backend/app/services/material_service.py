@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.repositories import material_repository as repo
 from app.schemas.common import PageResponse
-from app.schemas.material import MaterialRead
 from app.schemas.common import page_response as _page
+from app.schemas.material import MaterialRead
 
 T = TypeVar("T", bound=BaseModel)
 

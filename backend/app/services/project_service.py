@@ -12,6 +12,7 @@ from app.models.user import User
 from app.repositories import project_actual_cost_repository as actual_cost_repo
 from app.repositories import project_repository as repo
 from app.schemas.common import PageResponse
+from app.schemas.common import page_response as _page
 from app.schemas.project import (
     ProjectLinkedCostEstimate,
     ProjectLinkedQuote,
@@ -23,7 +24,6 @@ from app.schemas.project import (
     ProjectSummaryRead,
 )
 from app.services.project_profit_snapshot import build_project_profit_snapshot
-from app.schemas.common import page_response as _page
 
 T = TypeVar("T", bound=BaseModel)
 

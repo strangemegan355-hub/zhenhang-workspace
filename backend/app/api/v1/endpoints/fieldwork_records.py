@@ -15,7 +15,6 @@ from app.schemas.fieldwork_record import (
     FieldworkRecordUpdate,
     FieldworkSummary,
 )
-from app.schemas.accounting import AccountingEntryRead
 from app.services import fieldwork_receivable_service as fwr_svc
 from app.services import fieldwork_service as svc
 

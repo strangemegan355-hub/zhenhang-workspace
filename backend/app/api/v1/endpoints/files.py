@@ -1,7 +1,6 @@
 from typing import Annotated
-from uuid import UUID
-
 from urllib.parse import quote
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from fastapi.responses import Response

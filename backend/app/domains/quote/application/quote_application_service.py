@@ -6,17 +6,21 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
-from app.domains.events.application.event_bus import event_bus
 from app.core.data_scope import scope_predicate
+from app.domains.events.application.event_bus import event_bus
+from app.domains.quote.application.industrial_copilot import build_industrial_copilot_analysis
 from app.domains.quote.repositories import quote_repository as repo
 from app.models.quote import Quote
 from app.notifications.notification_service import create_notification
+from app.realtime.publish import (
+    push_quote_export_status,
+    push_quote_updated,
+    push_workflow_transition,
+)
 from app.schemas.common import PageResponse
 from app.schemas.quote import ApprovalTemplateRead, QuoteItemRead, QuoteRead, QuoteVersionRead
-from app.realtime.publish import push_quote_export_status, push_quote_updated, push_workflow_transition
-from app.services.business_settings_service import get_business_settings_dict
 from app.services.audit_service import write_audit_log
-from app.domains.quote.application.industrial_copilot import build_industrial_copilot_analysis
+from app.services.business_settings_service import get_business_settings_dict
 from app.services.quote_template_engine import list_template_catalog
 from app.services.workflow_service import get_next_state_code
 

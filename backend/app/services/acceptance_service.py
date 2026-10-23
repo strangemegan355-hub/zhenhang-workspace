@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories import acceptance_repository as repo
 
-
 # ── Templates ──
 
 async def list_templates(db: AsyncSession, machine_id: UUID | None = None) -> list[dict]:

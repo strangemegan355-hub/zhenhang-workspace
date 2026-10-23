@@ -19,7 +19,6 @@ os.environ.setdefault("SECRET_KEY", "integration-baseline-secret-key-32chars")
 
 import httpx  # noqa: E402
 import pytest  # noqa: E402
-
 from app.core.response import error_response, success_response  # noqa: E402
 from app.main import app  # noqa: E402
 

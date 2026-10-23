@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -6,7 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.quote_receivable_request import QuoteReceivableRequest
-from app.repositories.base import commit_session
+
+# Re-export for service call sites (`qrr_repo.commit_session`); do not inline-delete.
+from app.repositories.base import commit_session as commit_session
 
 
 async def get_request(db: AsyncSession, request_id: UUID) -> QuoteReceivableRequest | None:

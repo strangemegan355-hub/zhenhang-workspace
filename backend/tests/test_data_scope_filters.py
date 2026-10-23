@@ -17,9 +17,6 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-chars-long!!")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://erp:erp@localhost:5432/erp_db")
 os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/0")
 
-from sqlalchemy import select  # noqa: E402
-from sqlalchemy.dialects import postgresql  # noqa: E402
-
 from app.core import data_scope  # noqa: E402
 from app.core.data_scope import (  # noqa: E402
     DataScope,
@@ -28,6 +25,8 @@ from app.core.data_scope import (  # noqa: E402
     scope_predicate,
 )
 from app.models.quote import Quote  # noqa: E402
+from sqlalchemy import select  # noqa: E402
+from sqlalchemy.dialects import postgresql  # noqa: E402
 
 
 def make_user(scope: str, *, department_id=None, is_superuser: bool = False):
@@ -124,10 +123,9 @@ def test_quote_list_pushes_the_scope_into_sql(monkeypatch):
 
 def test_quote_detail_fetches_through_the_scope(monkeypatch):
     """An out-of-scope quote must look absent, not forbidden: 404 leaks nothing."""
-    from fastapi import HTTPException
-
     from app.domains.quote.application import quote_application_service as svc
     from app.domains.quote.repositories import quote_repository as quote_repo
+    from fastapi import HTTPException
 
     captured: dict = {}
 

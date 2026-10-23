@@ -6,7 +6,6 @@ from sqlalchemy.orm import joinedload
 
 from app.models.acceptance import AcceptanceRecord, AcceptanceTemplate, PunchListItem
 
-
 # ── Templates ──
 
 async def list_templates(db: AsyncSession, machine_id: UUID | None = None) -> list[AcceptanceTemplate]:

@@ -28,8 +28,9 @@ def _make_client():
 
 def test_due_date_in_create(monkeypatch):
     """due_date is accepted in create payload."""
-    from app.services import accounting_service as svc
     from uuid import UUID
+
+    from app.services import accounting_service as svc
 
     async def _fake_create(db, payload, current_user, *, allow_backfill):
         assert getattr(payload, "due_date", None) is not None, "due_date should be set"
@@ -96,11 +97,12 @@ def test_date_filter_in_list(monkeypatch):
 
 def test_export_csv(monkeypatch):
     """GET /entries/export returns CSV."""
-    from app.services import accounting_service as svc
-    from app.schemas.accounting import AccountingEntryRead
     from datetime import date
     from decimal import Decimal
     from uuid import UUID
+
+    from app.schemas.accounting import AccountingEntryRead
+    from app.services import accounting_service as svc
 
     fake = AccountingEntryRead(
         id=UUID("00000000-0000-0000-0000-000000000001"),
@@ -161,10 +163,11 @@ def test_supplier_ledger_list(monkeypatch):
 
 def test_supplier_ledger_detail(monkeypatch):
     """GET /ledger/suppliers/{id} returns detail."""
-    from app.services import supplier_ledger_service as sls
-    from app.schemas.accounting import SupplierLedgerDetailRead
     from decimal import Decimal
     from uuid import UUID
+
+    from app.schemas.accounting import SupplierLedgerDetailRead
+    from app.services import supplier_ledger_service as sls
 
     sid = UUID("00000000-0000-0000-0000-000000000010")
     fake = SupplierLedgerDetailRead(
@@ -193,9 +196,10 @@ def test_supplier_ledger_detail(monkeypatch):
 
 def test_supplier_ledger_register(monkeypatch):
     """POST /ledger/suppliers registers a supplier."""
-    from app.services import supplier_ledger_service as sls
-    from app.schemas.accounting import SupplierLedgerDetailRead
     from decimal import Decimal
+
+    from app.schemas.accounting import SupplierLedgerDetailRead
+    from app.services import supplier_ledger_service as sls
 
     sid = str(uuid4())
 
@@ -227,8 +231,9 @@ def test_supplier_payment(monkeypatch):
     from app.services import supplier_ledger_service as sls
 
     async def _fake(db, payload, uid, current_user=None):
-        from app.schemas.accounting import LedgerEntryRead
         from decimal import Decimal
+
+        from app.schemas.accounting import LedgerEntryRead
         return LedgerEntryRead(
             id=uuid4(), entry_no="PY-001", entry_kind="payment", status="confirmed",
             customer_id=None, amount=Decimal("5000"), settled_amount=Decimal("0"),
@@ -255,21 +260,12 @@ def test_supplier_payment(monkeypatch):
 
 def test_all_new_modules_import():
     """Verify all B1 modules import without error."""
-    from app.models.supplier_ledger_account import SupplierLedgerAccount
-    from app.services.supplier_ledger_service import (
-        register_supplier, get_supplier_ledger_summaries,
-        get_supplier_ledger_detail, create_manual_payable,
-        create_payment_with_allocations,
-    )
-    from app.schemas.accounting import (
-        SupplierLedgerSummaryRead, SupplierLedgerDetailRead, PaymentCreatePayload,
-    )
-    from app.repositories.accounting_repository import (
-        list_entries, get_supplier_ledger_account,
-        register_supplier_ledger_account, supplier_ledger_rows,
-    )
-    from app.models.accounting_entry import AccountingEntry
     import inspect
+
+    from app.models.accounting_entry import AccountingEntry
+    from app.repositories.accounting_repository import (
+        list_entries,
+    )
 
     cols = [c.name for c in AccountingEntry.__table__.columns]
     assert "due_date" in cols

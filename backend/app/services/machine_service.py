@@ -9,6 +9,7 @@ from app.core.exceptions import UniqueViolationException
 from app.models.user import User
 from app.repositories import machine_repository as repo
 from app.schemas.common import PageResponse
+from app.schemas.common import page_response as _page
 from app.schemas.machine import (
     MachineBomItemRead,
     MachineBomRead,
@@ -19,7 +20,6 @@ from app.schemas.machine import (
 )
 from app.services.audit_service import write_audit_log
 from app.services.workflow_service import get_next_state_code
-from app.schemas.common import page_response as _page
 
 T = TypeVar("T", bound=BaseModel)
 

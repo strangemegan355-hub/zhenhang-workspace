@@ -7,9 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.data_scope import build_created_by_filter
 from app.models.audit import AuditLog
 from app.repositories.audit_repository import create_audit_log, query_audit_logs
-from app.schemas.common import PageResponse
 from app.schemas.audit import AuditLogRead
-from app.schemas.common import page_response
+from app.schemas.common import PageResponse, page_response
 
 
 def _json_safe(value: object) -> object:

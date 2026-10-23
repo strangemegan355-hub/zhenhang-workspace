@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
 from app.core.data_scope import scope_predicate
-from app.models.work_order import WorkOrder
 from app.domains.quote.public.queries import owner_scope_user_id
 from app.models.machine import Machine
 from app.models.quote import Quote, QuoteExportTask
+from app.models.work_order import WorkOrder
 from app.repositories import work_order_repository as work_order_repo
 from app.services import work_order_service as work_order_svc
 from app.services.mes_integration_service import latest_oee_by_line, list_recent_signals

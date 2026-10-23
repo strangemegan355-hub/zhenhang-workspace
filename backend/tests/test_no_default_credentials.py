@@ -93,9 +93,8 @@ def test_password_environment_lookups_have_no_default():
 
 
 def test_production_settings_refuse_shipped_defaults():
-    from pydantic import ValidationError
-
     from app.config.settings import Settings
+    from pydantic import ValidationError
 
     base = {
         "secret_key": "a-real-production-secret-key-value-32chars",

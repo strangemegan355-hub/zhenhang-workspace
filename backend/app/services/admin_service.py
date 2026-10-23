@@ -13,9 +13,9 @@ from app.repositories import admin_repository as repo
 from app.repositories.user_repository import get_user_by_username
 from app.schemas.admin import DepartmentRead, PermissionRead, RoleRead, TenantRead
 from app.schemas.common import PageResponse
+from app.schemas.common import page_response as _page
 from app.schemas.user import UserAdminRead
 from app.services.audit_service import write_audit_log
-from app.schemas.common import page_response as _page
 
 # The admin plane is the only place that changes who may do what, so every mutation here is
 # audited, and the two association-writing operations carry their own escalation guards. The

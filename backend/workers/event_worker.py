@@ -4,8 +4,8 @@ from uuid import UUID
 
 from app.core.enterprise_metrics import enterprise_metrics
 from app.db.session import AsyncSessionLocal
-from app.domains.events.application.register_handlers import register_default_event_handlers
 from app.domains.events.application.event_bus import event_bus
+from app.domains.events.application.register_handlers import register_default_event_handlers
 from app.domains.events.repositories.task_queue_repository import (
     mark_task_done,
     mark_task_failed,

@@ -1,7 +1,8 @@
 """Pure project profit KPI calculation — no DB access."""
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 from typing import Literal, TypedDict
+
 from app.core.money import money as _money
 
 _TWOPLACES = Decimal("0.01")

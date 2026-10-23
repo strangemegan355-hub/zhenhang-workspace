@@ -16,7 +16,6 @@ rather than in a gap between two green checks.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parents[1]

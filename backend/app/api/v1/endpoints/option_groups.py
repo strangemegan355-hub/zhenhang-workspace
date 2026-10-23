@@ -8,7 +8,6 @@ from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.option_group import (
-    MachineOptionsRead,
     OptionGroupCreate,
     OptionGroupRead,
     OptionGroupUpdate,

@@ -18,8 +18,6 @@ from uuid import UUID, uuid4
 os.environ.setdefault("SECRET_KEY", "integration-baseline-secret-key-32chars")
 
 import pytest  # noqa: E402
-from sqlalchemy import delete, func, select, text  # noqa: E402
-
 from app.db.session import AsyncSessionLocal  # noqa: E402
 from app.domains.events.application import event_bus  # noqa: E402
 from app.domains.events.application.register_handlers import (  # noqa: E402
@@ -31,6 +29,7 @@ from app.domains.events.repositories.task_queue_repository import (  # noqa: E40
     pick_pending_tasks,
 )
 from app.models.audit import AuditLog  # noqa: E402
+from sqlalchemy import delete, func, select, text  # noqa: E402
 
 ACTION = "domain_event.quote_created"
 

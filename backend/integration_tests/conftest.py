@@ -4,7 +4,6 @@ import sys
 
 import pytest
 from redis.asyncio import Redis
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 # psycopg's async mode cannot run on Windows' default ProactorEventLoop ("Psycopg cannot use the

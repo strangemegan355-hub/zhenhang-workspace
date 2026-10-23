@@ -15,7 +15,6 @@ for `create_table('x'`, which the migrations wrap across lines; the generated DD
 
 from __future__ import annotations
 
-import glob
 import os
 import re
 import subprocess

@@ -21,7 +21,6 @@ column and no listed reason — a typo, a field somebody meant to add to the mod
 from __future__ import annotations
 
 import ast
-import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]

@@ -22,11 +22,10 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-chars-long!!")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://erp:erp@localhost:5432/erp_db")
 os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/0")
 
-from fastapi import HTTPException  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-
 from app.repositories import admin_repository as repo  # noqa: E402
 from app.services import admin_service as svc  # noqa: E402
+from fastapi import HTTPException  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 
 def make_user(*codes: str, is_superuser: bool = False, department_id=None, user_id=None):

@@ -13,17 +13,16 @@ from __future__ import annotations
 import argparse
 import os
 import secrets
-import sys
 
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session, selectinload, sessionmaker
-
-from _script_utils import BACKEND_ROOT, database_url, print_db_target  # noqa: F401
 from app.core.security import get_password_hash
 from app.models.department import Department
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session, selectinload, sessionmaker
+
+from _script_utils import BACKEND_ROOT, database_url, print_db_target  # noqa: F401
 
 # (code, name, data_scope, permissions[(code, name, resource, action)])
 TRIAL_ROLE_DEFS: list[tuple[str, str, str, list[tuple[str, str, str, str]]]] = [

@@ -10,13 +10,13 @@ from __future__ import annotations
 
 import sys
 
+from app.core.rbac import collect_permission_codes
+from app.models.role import Role
+from app.models.user import User
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import selectinload, sessionmaker
 
 from _script_utils import BACKEND_ROOT, database_url, print_db_target  # noqa: F401
-from app.core.rbac import collect_permission_codes
-from app.models.role import Role
-from app.models.user import User
 
 FORBIDDEN_FOR_TRIAL = frozenset(
     {

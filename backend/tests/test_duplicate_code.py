@@ -20,7 +20,6 @@ from __future__ import annotations
 import ast
 import hashlib
 import re
-import sys
 from collections import defaultdict
 from pathlib import Path
 

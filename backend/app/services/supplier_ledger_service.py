@@ -5,19 +5,17 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.data_scope import scope_predicate
+from app.models.accounting_entry import AccountingEntry
 from app.models.supplier import Supplier
 from app.models.supplier_ledger_account import SupplierLedgerAccount
-from app.models.accounting_entry import AccountingEntry
-from app.models.accounting_settlement import AccountingSettlement
-from app.core.data_scope import scope_predicate
 from app.models.user import User
 from app.repositories import accounting_repository as repo
 from app.schemas.accounting import (
     LedgerEntryRead,
-    LedgerSupplierRegisterPayload,
     LedgerPayableCreatePayload,
+    LedgerSupplierRegisterPayload,
     PaymentCreatePayload,
-    PaymentAllocationItem,
     SupplierLedgerDetailRead,
     SupplierLedgerSummaryRead,
 )

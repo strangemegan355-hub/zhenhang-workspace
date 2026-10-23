@@ -1,11 +1,10 @@
 import asyncio
 
-from sqlalchemy import select
-
 from app.config.settings import settings
 from app.db.session import AsyncSessionLocal
 from app.models.tenant import Tenant
 from app.models.user import User
+from sqlalchemy import select
 
 
 async def seed() -> None:

@@ -22,7 +22,12 @@ os.environ.setdefault("SECRET_KEY", "unit-test-secret-key-32-characters")
 
 from app.domains.config.application import config_application_service as config_svc  # noqa: E402
 from app.models.user import User  # noqa: E402
-from app.services import accounting_service, fieldwork_service, procurement_service, work_order_service  # noqa: E402
+from app.services import (  # noqa: E402
+    accounting_service,
+    fieldwork_service,
+    procurement_service,
+    work_order_service,
+)
 
 
 class _Recorder:

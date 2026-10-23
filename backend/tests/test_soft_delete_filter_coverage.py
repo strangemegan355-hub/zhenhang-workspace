@@ -26,7 +26,6 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
-import pytest  # noqa: E402
 
 
 def _soft_delete_models() -> set[str]:

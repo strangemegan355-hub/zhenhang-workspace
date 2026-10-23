@@ -5,10 +5,9 @@ import asyncio
 from app.config.settings import settings
 from app.core.enterprise_metrics import enterprise_metrics
 from app.db.session import AsyncSessionLocal
+from app.models.tasking import TaskQueue
 from app.realtime.retention import count_hot_and_archive, run_retention_cycle
 from sqlalchemy import func, select
-
-from app.models.tasking import TaskQueue
 
 
 async def run_maintenance_once() -> dict:

@@ -7,8 +7,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-
 _TEMPLATES_ROOT = Path(__file__).resolve().parents[2] / "templates" / "quote"
 
 EXPORT_TEMPLATES: dict[str, dict[str, Any]] = {

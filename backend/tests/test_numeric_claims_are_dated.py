@@ -23,8 +23,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 REPO = Path(__file__).resolve().parents[2]
 
 # Built by walking the repository rather than enumerated by hand: round 168 listed the roots it knew about, and round 169

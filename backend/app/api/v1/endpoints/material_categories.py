@@ -8,7 +8,11 @@ from app.core.deps import require_permissions
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.common import PageResponse
-from app.schemas.material_category import MaterialCategoryCreate, MaterialCategoryRead, MaterialCategoryUpdate
+from app.schemas.material_category import (
+    MaterialCategoryCreate,
+    MaterialCategoryRead,
+    MaterialCategoryUpdate,
+)
 from app.services import material_category_service as svc
 
 router = APIRouter()
