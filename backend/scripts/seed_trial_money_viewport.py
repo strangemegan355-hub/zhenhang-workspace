@@ -1,13 +1,19 @@
 """
 Seed trial material/supplier/procurement + enable accounting flags for viewport money checks.
 
+Policy (2026-10-23, owner): for **local trial DB only**, this seed **always** turns on
+accounting_enabled / quote_receivable_enabled / procurement_approval_enabled.
+It is NOT an optional viewport switch. Never blind-run against production.
+
 Idempotent: re-run skips existing TRIAL-* codes / request_nos / entry_nos.
 Does NOT weaken permissions or confirm/void finance entries — only draft sample rows + business.settings flags.
 
-Usage (backend venv; point DATABASE_URL at the live API DB — local trial often 55432):
+Usage (backend venv; local trial often 55432):
   $env:DATABASE_URL="postgresql+psycopg://erp:erp@127.0.0.1:55432/erp_db"
   python -u scripts/seed_trial_money_viewport.py
   python -u scripts/seed_trial_money_viewport.py --dry-run
+  # non-local URL refused unless:
+  python -u scripts/seed_trial_money_viewport.py --allow-non-local
 """
 
 from __future__ import annotations
@@ -221,12 +227,34 @@ def _ensure_accounting(
     return created
 
 
+def _is_local_db_url(url: str) -> bool:
+    hostpart = url.split("@")[-1].lower()
+    return (
+        "127.0.0.1" in hostpart
+        or "localhost" in hostpart
+        or hostpart.startswith("/")
+        or "@localhost" in url.lower()
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--allow-non-local",
+        action="store_true",
+        help="Override local-only guard (never use on production without explicit intent).",
+    )
     args = parser.parse_args()
 
     url = database_url()
+    if not _is_local_db_url(url) and not args.allow_non_local:
+        print(
+            "REFUSED: seed_trial_money_viewport is local-trial only "
+            "(always enables accounting flags). Pass --allow-non-local to override.",
+            file=sys.stderr,
+        )
+        return 2
     print(f"seed_trial_money_viewport db={url.split('@')[-1]} dry_run={args.dry_run}")
     engine = create_engine(url, connect_args={"connect_timeout": 8})
     SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
