@@ -32,12 +32,10 @@ def _quote_prefix() -> str:
 async def create_quote(db: AsyncSession, payload: dict, current_user):
     from app.domains.quote.application.quote_track_helpers import (
         apply_product_machine_defaults,
-        require_product_id_for_create,
         strip_client_quote_totals,
     )
 
     quote_payload = strip_client_quote_totals(dict(payload))
-    require_product_id_for_create(quote_payload)
     await apply_product_machine_defaults(db, quote_payload)
     seq = await repo.next_quote_sequence(db, _quote_prefix())
     quote_no = f"{_quote_prefix()}{seq:04d}"

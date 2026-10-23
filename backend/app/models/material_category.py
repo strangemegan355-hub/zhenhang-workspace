@@ -26,10 +26,10 @@ class MaterialCategory(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", server_default="active")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    parent: Mapped["MaterialCategory | None"] = relationship(
+    parent: Mapped[MaterialCategory | None] = relationship(
         remote_side="MaterialCategory.id",
         foreign_keys=[parent_id],
         back_populates="children",
     )
-    children: Mapped[list["MaterialCategory"]] = relationship(back_populates="parent")
-    creator: Mapped["User | None"] = relationship(foreign_keys="MaterialCategory.created_by", lazy="joined")
+    children: Mapped[list[MaterialCategory]] = relationship(back_populates="parent")
+    creator: Mapped[User | None] = relationship(foreign_keys="MaterialCategory.created_by", lazy="joined")

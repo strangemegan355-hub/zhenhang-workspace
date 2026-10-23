@@ -28,4 +28,4 @@ class DomainEvent(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Bas
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="DomainEvent.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="DomainEvent.created_by", lazy="joined")

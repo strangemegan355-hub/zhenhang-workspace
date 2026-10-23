@@ -87,7 +87,7 @@ def test_only_the_users_table_actually_holds_a_tenant(carrying: set[str]) -> Non
         if count:
             populated.add(table)
 
-    assert TABLES_WITH_A_TENANT_SET <= populated, (
+    assert populated >= TABLES_WITH_A_TENANT_SET, (
         f"at least {sorted(TABLES_WITH_A_TENANT_SET)} should hold a tenant, but only {sorted(populated)} do; "
         "the seeding that attaches users to the tenant may have stopped running"
     )

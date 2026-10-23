@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,7 +67,7 @@ async def create_record(db: AsyncSession, data: dict, current) -> dict:
     if not template:
         raise ValueError(f"验收模板 {data['template_id']} 不存在")
     prefix = template.template_type.upper()
-    date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+    date_str = datetime.now(UTC).strftime("%Y%m%d")
     # Count existing records today for sequential number
     existing = await repo.list_records(db, data["equipment_unit_id"])
     today_count = sum(1 for r in existing if r.record_no and r.record_no.startswith(f"{prefix}-{date_str}"))

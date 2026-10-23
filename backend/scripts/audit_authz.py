@@ -55,7 +55,8 @@ def extract_seeded_codes(backend: str) -> tuple[dict[str, list[str]], list[str]]
     trial = os.path.join(backend, "scripts/setup_trial_users.py")
     if os.path.isfile(trial):
         scanned.append("scripts/setup_trial_users.py")
-        tree = ast.parse(open(trial, encoding="utf-8").read(), filename=trial)
+        with open(trial, encoding="utf-8") as fh:
+            tree = ast.parse(fh.read(), filename=trial)
         for node in ast.walk(tree):
             if not isinstance(node, ast.AnnAssign):
                 continue
@@ -71,13 +72,17 @@ def extract_seeded_codes(backend: str) -> tuple[dict[str, list[str]], list[str]]
     bootstrap = os.path.join(backend, "scripts/bootstrap_admin.py")
     if os.path.isfile(bootstrap):
         scanned.append("scripts/bootstrap_admin.py")
-        tree = ast.parse(open(bootstrap, encoding="utf-8").read(), filename=bootstrap)
+        with open(bootstrap, encoding="utf-8") as fh:
+            tree = ast.parse(fh.read(), filename=bootstrap)
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "Permission":
                 for keyword in node.keywords:
-                    if keyword.arg == "code" and isinstance(keyword.value, ast.Constant):
-                        if isinstance(keyword.value.value, str):
-                            seeded[keyword.value.value].append("bootstrap_admin.py")
+                    if (
+                        keyword.arg == "code"
+                        and isinstance(keyword.value, ast.Constant)
+                        and isinstance(keyword.value.value, str)
+                    ):
+                        seeded[keyword.value.value].append("bootstrap_admin.py")
 
     return seeded, scanned
 
@@ -95,7 +100,8 @@ def extract_policy_forbidden(backend: str) -> dict[str, list[str]]:
     path = os.path.join(backend, "scripts/verify_permissions.py")
     if not os.path.isfile(path):
         return forbidden
-    tree = ast.parse(open(path, encoding="utf-8").read(), filename=path)
+    with open(path, encoding="utf-8") as fh:
+        tree = ast.parse(fh.read(), filename=path)
     for node in ast.walk(tree):
         if not isinstance(node, ast.Assign):
             continue
@@ -106,9 +112,12 @@ def extract_policy_forbidden(backend: str) -> dict[str, list[str]]:
         # `elts` off the assignment value. This set holds permission codes only, so every
         # colon-separated literal inside it is a code.
         for inner in ast.walk(node.value):
-            if isinstance(inner, ast.Constant) and isinstance(inner.value, str):
-                if CODE_RE.match(inner.value):
-                    forbidden[inner.value].append("FORBIDDEN_FOR_TRIAL")
+            if (
+                isinstance(inner, ast.Constant)
+                and isinstance(inner.value, str)
+                and CODE_RE.match(inner.value)
+            ):
+                forbidden[inner.value].append("FORBIDDEN_FOR_TRIAL")
     return forbidden
 
 

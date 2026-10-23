@@ -51,7 +51,7 @@ def _path_keyed_dicts() -> list[tuple[str, str, list[tuple[str, str]]]]:
             if not names or not isinstance(value, ast.Dict) or not value.keys:
                 continue
             entries: list[tuple[str, str]] = []
-            for key, val in zip(value.keys, value.values):
+            for key, val in zip(value.keys, value.values, strict=False):
                 if not (isinstance(key, ast.Constant) and isinstance(key.value, str)):
                     continue
                 if not (isinstance(val, ast.Constant) and isinstance(val.value, str)):

@@ -34,4 +34,4 @@ class Department(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="parent",
         cascade="save-update, merge",
     )
-    users: Mapped[list["User"]] = relationship(back_populates="department")
+    users: Mapped[list[User]] = relationship(back_populates="department")

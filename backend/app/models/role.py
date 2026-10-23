@@ -22,11 +22,11 @@ class Role(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     data_scope: Mapped[str] = mapped_column(String(32), nullable=False, default="self", server_default="self")
 
-    users: Mapped[list["User"]] = relationship(
+    users: Mapped[list[User]] = relationship(
         secondary=user_role_association,
         back_populates="roles",
     )
-    permissions: Mapped[list["Permission"]] = relationship(
+    permissions: Mapped[list[Permission]] = relationship(
         secondary=role_permission_association,
         back_populates="roles",
     )

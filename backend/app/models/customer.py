@@ -29,7 +29,7 @@ class Customer(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
 
     contacts: Mapped[list[CustomerContact]] = relationship(back_populates="customer")
     followups: Mapped[list[CustomerFollowup]] = relationship(back_populates="customer")
-    creator: Mapped["User | None"] = relationship(foreign_keys="Customer.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="Customer.created_by", lazy="joined")
 
 
 class CustomerContact(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -45,7 +45,7 @@ class CustomerContact(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin,
 
     customer: Mapped[Customer] = relationship(back_populates="contacts")
     followups: Mapped[list[CustomerFollowup]] = relationship(back_populates="contact")
-    creator: Mapped["User | None"] = relationship(foreign_keys="CustomerContact.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="CustomerContact.created_by", lazy="joined")
 
 
 class CustomerFollowup(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -64,4 +64,4 @@ class CustomerFollowup(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin
 
     customer: Mapped[Customer] = relationship(back_populates="followups")
     contact: Mapped[CustomerContact | None] = relationship(back_populates="followups")
-    creator: Mapped["User | None"] = relationship(foreign_keys="CustomerFollowup.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="CustomerFollowup.created_by", lazy="joined")

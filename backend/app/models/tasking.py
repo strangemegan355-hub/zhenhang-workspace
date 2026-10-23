@@ -28,7 +28,7 @@ class TaskQueue(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="TaskQueue.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="TaskQueue.created_by", lazy="joined")
 
 
 class JobExecution(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -42,4 +42,4 @@ class JobExecution(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Ba
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="JobExecution.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="JobExecution.created_by", lazy="joined")

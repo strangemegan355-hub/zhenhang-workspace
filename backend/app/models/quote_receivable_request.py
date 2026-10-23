@@ -41,7 +41,7 @@ class QuoteReceivableRequest(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDelet
         nullable=True,
     )
 
-    quote: Mapped["Quote"] = relationship(lazy="joined")
-    requester: Mapped["User"] = relationship(foreign_keys=[requested_by], lazy="joined")
-    approver: Mapped["User | None"] = relationship(foreign_keys=[approved_by], lazy="joined")
-    receivable_entry: Mapped["AccountingEntry | None"] = relationship(lazy="joined")
+    quote: Mapped[Quote] = relationship(lazy="joined")
+    requester: Mapped[User] = relationship(foreign_keys=[requested_by], lazy="joined")
+    approver: Mapped[User | None] = relationship(foreign_keys=[approved_by], lazy="joined")
+    receivable_entry: Mapped[AccountingEntry | None] = relationship(lazy="joined")

@@ -63,17 +63,17 @@ class Quote(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
         index=True,
     )
 
-    customer: Mapped["Customer"] = relationship()
-    project: Mapped["Project | None"] = relationship(foreign_keys=[project_id], lazy="joined")
-    machine: Mapped["Machine | None"] = relationship()
-    product: Mapped["Product | None"] = relationship()
-    bom: Mapped["MachineBom | None"] = relationship()
-    cost_template: Mapped["ProductCostTemplate | None"] = relationship()
-    price_template: Mapped["ProductPriceTemplate | None"] = relationship()
-    approval_template: Mapped["ApprovalTemplate | None"] = relationship()
+    customer: Mapped[Customer] = relationship()
+    project: Mapped[Project | None] = relationship(foreign_keys=[project_id], lazy="joined")
+    machine: Mapped[Machine | None] = relationship()
+    product: Mapped[Product | None] = relationship()
+    bom: Mapped[MachineBom | None] = relationship()
+    cost_template: Mapped[ProductCostTemplate | None] = relationship()
+    price_template: Mapped[ProductPriceTemplate | None] = relationship()
+    approval_template: Mapped[ApprovalTemplate | None] = relationship()
     versions: Mapped[list[QuoteVersion]] = relationship(back_populates="quote")
     approvals: Mapped[list[QuoteApproval]] = relationship(back_populates="quote")
-    creator: Mapped["User | None"] = relationship(foreign_keys="Quote.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="Quote.created_by", lazy="joined")
 
 
 class QuoteVersion(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -100,7 +100,7 @@ class QuoteVersion(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Ba
 
     quote: Mapped[Quote] = relationship(back_populates="versions")
     items: Mapped[list[QuoteItem]] = relationship(back_populates="quote_version")
-    creator: Mapped["User | None"] = relationship(foreign_keys="QuoteVersion.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="QuoteVersion.created_by", lazy="joined")
 
 
 class QuoteItem(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -126,7 +126,7 @@ class QuoteItem(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base)
     selected_options: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     quote_version: Mapped[QuoteVersion] = relationship(back_populates="items")
-    creator: Mapped["User | None"] = relationship(foreign_keys="QuoteItem.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="QuoteItem.created_by", lazy="joined")
 
 
 class QuoteApproval(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -140,8 +140,8 @@ class QuoteApproval(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, B
     acted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     quote: Mapped[Quote] = relationship(back_populates="approvals")
-    approver: Mapped["User"] = relationship(foreign_keys=[approver_id])
-    creator: Mapped["User | None"] = relationship(foreign_keys="QuoteApproval.created_by", lazy="joined")
+    approver: Mapped[User] = relationship(foreign_keys=[approver_id])
+    creator: Mapped[User | None] = relationship(foreign_keys="QuoteApproval.created_by", lazy="joined")
 
 
 class ApprovalTemplate(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -153,8 +153,8 @@ class ApprovalTemplate(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
 
-    nodes: Mapped[list["ApprovalNode"]] = relationship(back_populates="template")
-    creator: Mapped["User | None"] = relationship(foreign_keys="ApprovalTemplate.created_by", lazy="joined")
+    nodes: Mapped[list[ApprovalNode]] = relationship(back_populates="template")
+    creator: Mapped[User | None] = relationship(foreign_keys="ApprovalTemplate.created_by", lazy="joined")
 
 
 class ApprovalNode(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -171,7 +171,7 @@ class ApprovalNode(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Ba
     max_amount: Mapped[float | None] = mapped_column(Numeric(18, 4), nullable=True)
 
     template: Mapped[ApprovalTemplate] = relationship(back_populates="nodes")
-    creator: Mapped["User | None"] = relationship(foreign_keys="ApprovalNode.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="ApprovalNode.created_by", lazy="joined")
 
 
 class ApprovalRecord(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -189,8 +189,8 @@ class ApprovalRecord(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, 
     quote: Mapped[Quote] = relationship()
     template: Mapped[ApprovalTemplate | None] = relationship()
     node: Mapped[ApprovalNode | None] = relationship()
-    approver: Mapped["User"] = relationship(foreign_keys=[approver_id])
-    creator: Mapped["User | None"] = relationship(foreign_keys="ApprovalRecord.created_by", lazy="joined")
+    approver: Mapped[User] = relationship(foreign_keys=[approver_id])
+    creator: Mapped[User | None] = relationship(foreign_keys="ApprovalRecord.created_by", lazy="joined")
 
 
 class QuoteExportTask(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -205,4 +205,4 @@ class QuoteExportTask(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin,
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     quote: Mapped[Quote] = relationship()
-    creator: Mapped["User | None"] = relationship(foreign_keys="QuoteExportTask.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="QuoteExportTask.created_by", lazy="joined")

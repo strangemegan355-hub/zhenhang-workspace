@@ -25,7 +25,7 @@ class FileObject(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base
     preview_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     checksum: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="FileObject.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="FileObject.created_by", lazy="joined")
     relations: Mapped[list[FileRelation]] = relationship(back_populates="file")
 
 
@@ -39,7 +39,7 @@ class FileRelation(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Ba
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     file: Mapped[FileObject] = relationship(back_populates="relations")
-    creator: Mapped["User | None"] = relationship(foreign_keys="FileRelation.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="FileRelation.created_by", lazy="joined")
 
 
 class FilePreviewCache(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -52,7 +52,7 @@ class FilePreviewCache(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin
     expires_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     file: Mapped[FileObject] = relationship()
-    creator: Mapped["User | None"] = relationship(foreign_keys="FilePreviewCache.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="FilePreviewCache.created_by", lazy="joined")
 
 
 class FileLifecyclePolicy(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -73,4 +73,4 @@ class FileLifecyclePolicy(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMi
     delete_after_days: Mapped[int | None] = mapped_column(nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="FileLifecyclePolicy.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="FileLifecyclePolicy.created_by", lazy="joined")

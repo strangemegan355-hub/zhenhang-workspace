@@ -45,12 +45,9 @@ def _assert_envelope(response, expected_status: int) -> dict:
     this file failed on exactly that.
     """
     assert response.status_code == expected_status, getattr(response, "text", "")[:300]
-    if isinstance(response, httpx.Response):
-        body = response.json()
-    else:
-        body = json.loads(response.body)
+    body = response.json() if isinstance(response, httpx.Response) else json.loads(response.body)
     assert isinstance(body, dict), f"the error body is not an object: {body!r}"
-    assert ENVELOPE_KEYS <= set(body), (
+    assert set(body) >= ENVELOPE_KEYS, (
         f"a {expected_status} answer is missing part of the envelope the clients decode: {sorted(body)}"
     )
     assert body["data"] is None

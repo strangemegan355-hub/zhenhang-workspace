@@ -1,14 +1,14 @@
-from datetime import date
-from uuid import UUID
-
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 """Quote export payload assembly, moved out of the flat service layer in round 43.
 
 It was `app/services/quote_export_payload.py`, which forced a legacy->domain import for the
 quote reads and a domain->legacy import in the events handler that calls it.
 """
+
+from datetime import date
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
 from app.domains.quote.repositories import quote_repository as repo

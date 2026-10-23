@@ -60,7 +60,7 @@ class CostEstimate(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Ba
     unit_final: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, default=0, server_default="0")
 
     customer: Mapped[Customer | None] = relationship(lazy="joined")
-    project: Mapped["Project | None"] = relationship(lazy="joined")
+    project: Mapped[Project | None] = relationship(lazy="joined")
     material_lines: Mapped[list[CostEstimateMaterialLine]] = relationship(
         back_populates="cost_estimate",
         cascade="all, delete-orphan",

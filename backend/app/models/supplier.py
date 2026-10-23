@@ -22,4 +22,4 @@ class Supplier(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", server_default="active")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="Supplier.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="Supplier.created_by", lazy="joined")

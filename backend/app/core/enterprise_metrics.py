@@ -14,6 +14,8 @@ class EnterpriseMetrics:
 
     request_total: int = 0
     error_total: int = 0
+    # 401/403 are expected auth challenges; tracked separately so they do not inflate error_rate.
+    auth_challenge_total: int = 0
     last_request_ms: float = 0.0
     request_latency_sum_ms: float = 0.0
 
@@ -40,12 +42,19 @@ class EnterpriseMetrics:
     realtime_events_hot_count: int = 0
     realtime_events_archive_count: int = 0
 
-    def mark_request(self, elapsed_ms: float, is_error: bool) -> None:
+    def mark_request(self, elapsed_ms: float, *, status_code: int) -> None:
+        """Record one HTTP response.
+
+        `error_total` / `error_rate` count status >= 400 excluding 401/403 (auth challenges).
+        401/403 increment `auth_challenge_total` only.
+        """
         with self._lock:
             self.request_total += 1
             self.last_request_ms = elapsed_ms
             self.request_latency_sum_ms += elapsed_ms
-            if is_error:
+            if status_code in (401, 403):
+                self.auth_challenge_total += 1
+            elif status_code >= 400:
                 self.error_total += 1
 
     def inc_connection(self, transport: str, delta: int = 1) -> None:
@@ -113,6 +122,7 @@ class EnterpriseMetrics:
                 "api": {
                     "request_total": self.request_total,
                     "error_total": self.error_total,
+                    "auth_challenge_total": self.auth_challenge_total,
                     "last_request_ms": round(self.last_request_ms, 2),
                     "avg_request_ms": avg_ms,
                     "error_rate": round(self.error_total / max(self.request_total, 1), 4),

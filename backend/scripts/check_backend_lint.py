@@ -11,6 +11,7 @@ on PATH or in the active venv.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -74,10 +75,8 @@ def main() -> int:
         if len(parts) >= 2 and parts[0].isdigit() and parts[1][:1].isalpha():
             issue_count += int(parts[0])
         if plain.strip().startswith("Found ") and " error" in plain:
-            try:
+            with contextlib.suppress(IndexError, ValueError):
                 issue_count = max(issue_count, int(plain.split()[1]))
-            except (IndexError, ValueError):
-                pass
     findings += issue_count
     lines.append(f"ruff_issue_count={issue_count}")
     lines.append("--- ruff check --statistics ---")
@@ -92,10 +91,8 @@ def main() -> int:
             mypy_errors = 0
             for ln in mout.splitlines():
                 if ln.startswith("Found ") and " error" in ln:
-                    try:
+                    with contextlib.suppress(IndexError, ValueError):
                         mypy_errors = int(ln.split()[1])
-                    except (IndexError, ValueError):
-                        pass
             findings += mypy_errors
             lines.append(f"mypy_exit={mcode}")
             lines.append(f"mypy_error_count={mypy_errors}")

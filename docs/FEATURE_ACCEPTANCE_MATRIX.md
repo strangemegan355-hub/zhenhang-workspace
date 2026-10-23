@@ -3,7 +3,7 @@
 > **说明**：本矩阵区分证据类型，避免把「有代码」写成「已验收」。  
 > 图例：✅ 运行验证 · 📄 代码/静态测试 · ☐ 未验证 · ⚠️ 部分/存疑
 
-最后更新：2026-10-23（K-005 新建强制 product_id；NON-UI：MinIO lifecycle / lint / 幂等；种子 43896d6；UI_PHASE_GATE 仍 ON）
+最后更新：2026-10-23（NON-UI：MinIO lifecycle 对齐去 xfail；K-005 quote_track_helpers；K-007 非阻塞 ruff；幂等单测；种子策略 43896d6；UI_PHASE_GATE 仍 ON）
 
 ---
 
@@ -13,10 +13,10 @@
 |---|---|---|---|---|---|
 | 登录/会话 | `/login` | `/auth/*` | User | 📄 `test_token_types` 等 | ✅ 6 试用账号 `smoke_trial_login`；K-020 防 GET 泄密已修 |
 | 运营看板 | `/dashboard` | `/dashboard/*` | 多表聚合 | 📄 `test_dashboard_*` + UX 静态（门禁 + 种子角色矩阵） | ✅ 四角色 headless 卡显隐 PASS（`run-dashboard-role-cards.mjs`）；⚠️「按角色换整套布局」仍 ☐（K-006） |
-| 报价中心 | `/quotes`, `/quotes/customer` | `/quotes/*` | Quote… | 📄 PageHeader；K-005 新建强制 product_id；对客金额 `align:right`；UX-002 侧栏 hidden + 页内深链；合并 Tab ☐（两套模型，非小补丁） | ✅ 场景 A API；视口页头可见；列表 loading 未断言金额（K-028） |
+| 报价中心 | `/quotes`, `/quotes/customer` | `/quotes/*` | Quote… | 📄 PageHeader；对客金额 `align:right`；UX-002 侧栏 hidden + 页内深链；合并 Tab ☐（两套模型，非小补丁） | ✅ 场景 A API；视口页头可见；列表 loading 未断言金额（K-028） |
 | 项目 | `/projects`… | `/projects/*` | Project… | 📄 | ✅ 场景 B API；浏览器「项目台账」可开 |
 | 产品库 | `/products` | `/products/*` | Product | 📄 | ✅ sales 列表 200 |
-| 机型/BOM | `/machines`, `/boms` | ✅ | Machine… | 📄 UX-001 侧栏 `hidden`；**K-005 已强制**新建报价 `product_id`（machine-only → 400） | ✅ URL/权限保留；历史机型报价可读；新建 machine-only 已禁 |
+| 机型/BOM | `/machines`, `/boms` | … | Machine… | 📄 UX-001 侧栏 `hidden`；K-005 `quote_track_helpers` 产品优先 | ⚠️ URL/权限保留；machine-only 新建是否禁止 → DECISION |
 | 主数据 | customers 等 | … | … | 📄 | ✅ customers 列表 200 |
 | 采购 | `/procurement` | … | … | 📄 PageHeader + 主操作 + DataGrid 金额/数量 `align:right`；空材料/供应商引导链；`check-ui-batch` OK | ✅ 场景 C API；视口金额 `right=9/9`（试用 TRIAL-PR-*）；K-030 修列表 500 |
 | 财务 | `/accounting*` | `/accounting/*` | … | 📄 三页 FilterBar + `moneyCellClass`；未开记账提示指向 trialadmin；`check-ui-batch`+`tsc` OK | ✅ 场景 C/D API；视口金额 `right=3/3`（试用种子开记账 + draft 样例） |

@@ -27,5 +27,5 @@ class AccountingSettlement(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteM
     )
     amount: Mapped[float] = mapped_column(Numeric(18, 4), nullable=False)
 
-    receipt_entry: Mapped["AccountingEntry"] = relationship(foreign_keys=[receipt_entry_id], lazy="joined")
-    receivable_entry: Mapped["AccountingEntry"] = relationship(foreign_keys=[receivable_entry_id], lazy="joined")
+    receipt_entry: Mapped[AccountingEntry] = relationship(foreign_keys=[receipt_entry_id], lazy="joined")
+    receivable_entry: Mapped[AccountingEntry] = relationship(foreign_keys=[receivable_entry_id], lazy="joined")

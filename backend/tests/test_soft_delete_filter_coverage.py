@@ -104,11 +104,14 @@ def _scans_missing_the_predicate(path: Path, soft: set[str]) -> list[str]:
             # next one — which is how the first version reported 66 offenders that were all false positives.
             span = node
             for candidate in ast.walk(function):
-                if isinstance(candidate, ast.stmt) and candidate.lineno <= node.lineno <= getattr(
-                    candidate, "end_lineno", candidate.lineno
+                if (
+                    isinstance(candidate, ast.stmt)
+                    and candidate.lineno <= node.lineno <= getattr(
+                        candidate, "end_lineno", candidate.lineno
+                    )
+                    and getattr(candidate, "end_lineno", 0) >= getattr(span, "end_lineno", 0)
                 ):
-                    if getattr(candidate, "end_lineno", 0) >= getattr(span, "end_lineno", 0):
-                        span = candidate
+                    span = candidate
             fragment = "\n".join(lines[span.lineno - 1 : getattr(span, "end_lineno", span.lineno)])
 
             if "is_deleted" in fragment:

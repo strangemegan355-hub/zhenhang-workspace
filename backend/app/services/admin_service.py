@@ -321,9 +321,12 @@ async def get_user_or_404(db: AsyncSession, user_id: UUID, current_user: User) -
     user = await repo.get_user(db, user_id)
     if user is None:
         raise _not_found("User not found")
-    if not _is_superuser(current_user):
-        if user.id != current_user.id and user.department_id != current_user.department_id:
-            raise _forbid("You may only read users of your own department")
+    if (
+        not _is_superuser(current_user)
+        and user.id != current_user.id
+        and user.department_id != current_user.department_id
+    ):
+        raise _forbid("You may only read users of your own department")
     return UserAdminRead.from_user(user)
 
 async def _resolve_roles(db: AsyncSession, role_codes: list[str], current_user: User) -> list[Role]:
@@ -398,9 +401,12 @@ async def update_user(
         raise _not_found("User not found")
     if user.is_superuser and not _is_superuser(current_user):
         raise _forbid("Only a superuser may modify a superuser account")
-    if not _is_superuser(current_user):
-        if user.id != current_user.id and user.department_id != current_user.department_id:
-            raise _forbid("You may only modify users of your own department")
+    if (
+        not _is_superuser(current_user)
+        and user.id != current_user.id
+        and user.department_id != current_user.department_id
+    ):
+        raise _forbid("You may only modify users of your own department")
     if payload.get("is_active") is False and user.id == current_user.id:
         raise _bad_request("You cannot deactivate your own account")
 

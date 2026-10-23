@@ -230,7 +230,6 @@ def render_quote_excel_standard(payload: dict) -> bytes:
         ws[f"B{row}"] = val
         row += 1
     row += 1
-    header_row = row
     for col, title in enumerate(["编码", "名称", "数量", "单价", "小计"], 1):
         cell = ws.cell(row=row, column=col, value=title)
         cell.font = Font(bold=True)

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,14 +38,14 @@ async def update_plan(db: AsyncSession, plan_id: UUID, data: dict) -> dict:
             data = {**data, field: [i.model_dump(by_alias=True) if hasattr(i, "model_dump") else i for i in items]}
     # Auto-set dates on status change
     if "status" in data:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if data["status"] == "in_progress" and p.actual_start_date is None:
             data["actual_start_date"] = now
         elif data["status"] == "completed" and p.actual_end_date is None:
             data["actual_end_date"] = now
     # Auto-set customer_accepted_date
     if data.get("customer_accepted") and p.customer_accepted_date is None:
-        data["customer_accepted_date"] = datetime.now(timezone.utc)
+        data["customer_accepted_date"] = datetime.now(UTC)
     await repo.update_plan(db, p, data)
     return _plan_to_dict(p)
 

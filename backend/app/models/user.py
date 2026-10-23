@@ -41,8 +41,8 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         index=True,
     )
 
-    department: Mapped["Department | None"] = relationship(back_populates="users")
-    roles: Mapped[list["Role"]] = relationship(
+    department: Mapped[Department | None] = relationship(back_populates="users")
+    roles: Mapped[list[Role]] = relationship(
         secondary=user_role_association,
         back_populates="users",
     )

@@ -22,7 +22,7 @@ class QuotePDFTemplate(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="QuotePDFTemplate.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="QuotePDFTemplate.created_by", lazy="joined")
 
 
 class QuoteExcelTemplate(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -35,4 +35,4 @@ class QuoteExcelTemplate(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMix
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="QuoteExcelTemplate.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="QuoteExcelTemplate.created_by", lazy="joined")

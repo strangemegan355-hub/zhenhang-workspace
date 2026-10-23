@@ -1,3 +1,4 @@
+from datetime import UTC
 from uuid import UUID
 
 from sqlalchemy import select
@@ -11,7 +12,7 @@ from app.models.acceptance import AcceptanceRecord, AcceptanceTemplate, PunchLis
 async def list_templates(db: AsyncSession, machine_id: UUID | None = None) -> list[AcceptanceTemplate]:
     stmt = (
         select(AcceptanceTemplate)
-        .where(AcceptanceTemplate.is_deleted == False)
+        .where(AcceptanceTemplate.is_deleted.is_(False))
         .order_by(AcceptanceTemplate.created_at.desc())
     )
     if machine_id is not None:
@@ -23,7 +24,7 @@ async def list_templates(db: AsyncSession, machine_id: UUID | None = None) -> li
 async def get_template_by_id(db: AsyncSession, template_id: UUID) -> AcceptanceTemplate | None:
     stmt = select(AcceptanceTemplate).where(
         AcceptanceTemplate.id == template_id,
-        AcceptanceTemplate.is_deleted == False,
+        AcceptanceTemplate.is_deleted.is_(False),
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
@@ -60,7 +61,7 @@ async def list_records(db: AsyncSession, equipment_unit_id: UUID) -> list[Accept
         .options(joinedload(AcceptanceRecord.punch_items))
         .where(
             AcceptanceRecord.equipment_unit_id == equipment_unit_id,
-            AcceptanceRecord.is_deleted == False,
+            AcceptanceRecord.is_deleted.is_(False),
         )
         .order_by(AcceptanceRecord.created_at.desc())
     )
@@ -72,7 +73,7 @@ async def get_record_by_id(db: AsyncSession, record_id: UUID) -> AcceptanceRecor
     stmt = (
         select(AcceptanceRecord)
         .options(joinedload(AcceptanceRecord.punch_items))
-        .where(AcceptanceRecord.id == record_id, AcceptanceRecord.is_deleted == False)
+        .where(AcceptanceRecord.id == record_id, AcceptanceRecord.is_deleted.is_(False))
     )
     result = await db.execute(stmt)
     return result.unique().scalar_one_or_none()
@@ -105,7 +106,7 @@ async def delete_record(db: AsyncSession, record: AcceptanceRecord) -> None:
 
 async def get_punch_item_by_id(db: AsyncSession, item_id: UUID) -> PunchListItem | None:
     stmt = select(PunchListItem).where(
-        PunchListItem.id == item_id, PunchListItem.is_deleted == False
+        PunchListItem.id == item_id, PunchListItem.is_deleted.is_(False)
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
@@ -124,8 +125,8 @@ async def update_punch_item(db: AsyncSession, item: PunchListItem, data: dict) -
         if value is not None:
             setattr(item, key, value)
     if data.get("status") == "resolved" and item.resolved_at is None:
-        from datetime import datetime, timezone
-        item.resolved_at = datetime.now(timezone.utc)
+        from datetime import datetime
+        item.resolved_at = datetime.now(UTC)
     await db.flush()
     await db.commit()
     return item

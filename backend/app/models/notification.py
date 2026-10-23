@@ -23,7 +23,7 @@ class NotificationProvider(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteM
     config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="NotificationProvider.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="NotificationProvider.created_by", lazy="joined")
 
 
 class Notification(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -45,6 +45,6 @@ class Notification(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Ba
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    receiver: Mapped["User | None"] = relationship(foreign_keys=[receiver_id])
+    receiver: Mapped[User | None] = relationship(foreign_keys=[receiver_id])
     provider: Mapped[NotificationProvider | None] = relationship()
-    creator: Mapped["User | None"] = relationship(foreign_keys="Notification.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="Notification.created_by", lazy="joined")

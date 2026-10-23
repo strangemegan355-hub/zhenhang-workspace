@@ -58,12 +58,18 @@ async def list_machines(db: AsyncSession, page: int, page_size: int, q: str | No
 
 async def update_machine(db: AsyncSession, object_id, payload: dict):
     obj = await _get_or_404(repo.get_machine, db, object_id, "Machine")
-    if "machine_code" in payload and payload["machine_code"]:
-        if await repo.exists_machine_code(db, payload["machine_code"], exclude_id=obj.id):
-            raise UniqueViolationException("machine.machine_code", payload["machine_code"])
-    if "name" in payload and payload["name"]:
-        if await repo.exists_machine_name(db, payload["name"], exclude_id=obj.id):
-            raise UniqueViolationException("machine.name", payload["name"])
+    if (
+        "machine_code" in payload
+        and payload["machine_code"]
+        and await repo.exists_machine_code(db, payload["machine_code"], exclude_id=obj.id)
+    ):
+        raise UniqueViolationException("machine.machine_code", payload["machine_code"])
+    if (
+        "name" in payload
+        and payload["name"]
+        and await repo.exists_machine_name(db, payload["name"], exclude_id=obj.id)
+    ):
+        raise UniqueViolationException("machine.name", payload["name"])
     return await repo.update_machine(db, obj, payload)
 
 async def delete_machine(db: AsyncSession, object_id):
@@ -128,9 +134,12 @@ async def list_machine_boms(db: AsyncSession, page: int, page_size: int, q: str 
 
 async def update_machine_bom(db: AsyncSession, object_id, payload: dict):
     obj = await _get_or_404(repo.get_machine_bom, db, object_id, "Machine BOM")
-    if "version" in payload and payload["version"]:
-        if await repo.exists_bom_version(db, obj.machine_id, payload["version"], exclude_id=obj.id):
-            raise UniqueViolationException("machine_bom.version", payload["version"])
+    if (
+        "version" in payload
+        and payload["version"]
+        and await repo.exists_bom_version(db, obj.machine_id, payload["version"], exclude_id=obj.id)
+    ):
+        raise UniqueViolationException("machine_bom.version", payload["version"])
     if payload.get("is_active") is True:
         await repo.deactivate_other_boms(db, obj.machine_id, obj.id)
     if payload.get("status") and payload["status"] != obj.status:

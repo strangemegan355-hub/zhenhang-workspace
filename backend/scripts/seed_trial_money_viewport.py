@@ -24,7 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from app.models.accounting_entry import AccountingEntry
@@ -397,7 +397,7 @@ def main() -> int:
             print("DRY_RUN done (no commit)")
             return 0
         db.commit()
-        print(f"COMMIT ok at {datetime.now(timezone.utc).isoformat()}")
+        print(f"COMMIT ok at {datetime.now(UTC).isoformat()}")
     return 0
 
 

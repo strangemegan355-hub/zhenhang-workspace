@@ -21,7 +21,7 @@ class Permission(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     action: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    roles: Mapped[list["Role"]] = relationship(
+    roles: Mapped[list[Role]] = relationship(
         secondary=role_permission_association,
         back_populates="permissions",
     )

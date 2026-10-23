@@ -58,12 +58,12 @@ class AccountingEntry(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin,
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    customer: Mapped["Customer | None"] = relationship(lazy="joined")
-    supplier: Mapped["Supplier | None"] = relationship(lazy="joined")
-    project: Mapped["Project | None"] = relationship(lazy="joined")
-    quote: Mapped["Quote | None"] = relationship(lazy="joined")
-    creator: Mapped["User | None"] = relationship(foreign_keys="AccountingEntry.created_by", lazy="joined")
-    lines: Mapped[list["AccountingEntryLine"]] = relationship(
+    customer: Mapped[Customer | None] = relationship(lazy="joined")
+    supplier: Mapped[Supplier | None] = relationship(lazy="joined")
+    project: Mapped[Project | None] = relationship(lazy="joined")
+    quote: Mapped[Quote | None] = relationship(lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="AccountingEntry.created_by", lazy="joined")
+    lines: Mapped[list[AccountingEntryLine]] = relationship(
         back_populates="entry",
         lazy="selectin",
         order_by="AccountingEntryLine.sort_order",

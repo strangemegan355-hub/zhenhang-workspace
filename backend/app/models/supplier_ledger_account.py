@@ -22,4 +22,4 @@ class SupplierLedgerAccount(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDelete
         index=True,
     )
 
-    supplier: Mapped["Supplier"] = relationship(lazy="joined")
+    supplier: Mapped[Supplier] = relationship(lazy="joined")

@@ -37,6 +37,6 @@ class ProjectActualCost(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixi
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
     procurement_ref: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
-    project: Mapped["Project"] = relationship(lazy="joined")
-    supplier: Mapped["Supplier | None"] = relationship(lazy="joined")
-    creator: Mapped["User | None"] = relationship(foreign_keys="ProjectActualCost.created_by", lazy="joined")
+    project: Mapped[Project] = relationship(lazy="joined")
+    supplier: Mapped[Supplier | None] = relationship(lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="ProjectActualCost.created_by", lazy="joined")

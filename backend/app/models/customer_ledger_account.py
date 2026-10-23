@@ -22,4 +22,4 @@ class CustomerLedgerAccount(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDelete
         index=True,
     )
 
-    customer: Mapped["Customer"] = relationship(lazy="joined")
+    customer: Mapped[Customer] = relationship(lazy="joined")

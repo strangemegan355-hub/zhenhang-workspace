@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 from typing import Annotated
 from uuid import UUID
@@ -79,10 +80,8 @@ def _cursor_from_request(
         try:
             event_uuid = UUID(str(event_id_raw))
         except (ValueError, TypeError):
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 after_sequence = int(event_id_raw)
-            except (ValueError, TypeError):
-                pass
     return after_sequence, event_uuid
 
 
@@ -107,10 +106,8 @@ async def realtime_replay(
         try:
             event_uuid = UUID(last_event_id)
         except ValueError:
-            try:
+            with contextlib.suppress(ValueError):
                 after_sequence = int(last_event_id)
-            except ValueError:
-                pass
     requested = filter_subscribed_channels(_parse_channels(channels), ctx)
     from time import perf_counter
 
@@ -204,7 +201,7 @@ async def realtime_sse(
             while True:
                 try:
                     envelope = await asyncio.wait_for(queue.get(), timeout=25.0)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     hb = build_heartbeat_envelope()
                     if "notification" in allowed:
                         yield _format_sse(hb, "notification")
@@ -294,10 +291,8 @@ async def realtime_ws(
                         try:
                             event_uuid = UUID(str(last_id))
                         except ValueError:
-                            try:
+                            with contextlib.suppress(ValueError):
                                 after_seq = int(last_id)
-                            except ValueError:
-                                pass
                     async with AsyncSessionLocal() as db:
                         missed = await replay_events(
                             db,
@@ -327,7 +322,7 @@ async def realtime_ws(
             while True:
                 try:
                     envelope = await asyncio.wait_for(queue.get(), timeout=25.0)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await websocket.send_json(build_heartbeat_envelope())
                     continue
                 if ctx and not can_deliver_envelope(ctx, envelope):
@@ -337,12 +332,10 @@ async def realtime_ws(
                     await websocket.send_json(envelope)
         finally:
             reader_task.cancel()
-    except (WebSocketDisconnect, asyncio.TimeoutError, ValueError):
+    except (TimeoutError, WebSocketDisconnect, ValueError):
         pass
     finally:
         if user_id and queue:
             await get_realtime_hub().unsubscribe(user_id, queue, transport="ws")
-        try:
+        with contextlib.suppress(Exception):
             await websocket.close()
-        except Exception:
-            pass

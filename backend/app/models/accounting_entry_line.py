@@ -33,5 +33,5 @@ class AccountingEntryLine(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMi
     line_amount: Mapped[float] = mapped_column(Numeric(18, 4), nullable=False, default=0, server_default="0")
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
-    entry: Mapped["AccountingEntry"] = relationship(back_populates="lines")
-    product: Mapped["Product | None"] = relationship(lazy="joined")
+    entry: Mapped[AccountingEntry] = relationship(back_populates="lines")
+    product: Mapped[Product | None] = relationship(lazy="joined")

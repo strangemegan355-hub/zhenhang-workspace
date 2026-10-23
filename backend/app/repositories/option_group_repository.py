@@ -11,7 +11,7 @@ async def list_option_groups(db: AsyncSession, machine_id: UUID) -> list[OptionG
     stmt = (
         select(OptionGroup)
         .options(joinedload(OptionGroup.items))
-        .where(OptionGroup.machine_id == machine_id, OptionGroup.is_deleted == False)
+        .where(OptionGroup.machine_id == machine_id, OptionGroup.is_deleted.is_(False))
         .order_by(OptionGroup.sort_order)
     )
     result = await db.execute(stmt)
@@ -22,7 +22,7 @@ async def get_option_group_by_id(db: AsyncSession, group_id: UUID) -> OptionGrou
     stmt = (
         select(OptionGroup)
         .options(joinedload(OptionGroup.items))
-        .where(OptionGroup.id == group_id, OptionGroup.is_deleted == False)
+        .where(OptionGroup.id == group_id, OptionGroup.is_deleted.is_(False))
     )
     result = await db.execute(stmt)
     return result.unique().scalar_one_or_none()
@@ -52,7 +52,7 @@ async def delete_option_group(db: AsyncSession, group: OptionGroup) -> None:
 
 
 async def get_option_item_by_id(db: AsyncSession, item_id: UUID) -> OptionItem | None:
-    stmt = select(OptionItem).where(OptionItem.id == item_id, OptionItem.is_deleted == False)
+    stmt = select(OptionItem).where(OptionItem.id == item_id, OptionItem.is_deleted.is_(False))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -84,7 +84,7 @@ async def get_option_items_by_ids(db: AsyncSession, item_ids: list[UUID]) -> lis
     stmt = (
         select(OptionItem)
         .options(joinedload(OptionItem.option_group).joinedload(OptionGroup.items))
-        .where(OptionItem.id.in_(item_ids), OptionItem.is_deleted == False)
+        .where(OptionItem.id.in_(item_ids), OptionItem.is_deleted.is_(False))
     )
     result = await db.execute(stmt)
     return list(result.unique().scalars().all())

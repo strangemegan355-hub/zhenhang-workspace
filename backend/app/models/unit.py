@@ -19,4 +19,4 @@ class Unit(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", server_default="active")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="Unit.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="Unit.created_by", lazy="joined")

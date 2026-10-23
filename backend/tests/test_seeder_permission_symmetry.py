@@ -32,12 +32,15 @@ def _role_permission_assignment(path: Path) -> str:
     source = path.read_text(encoding="utf-8", errors="replace")
     findings: list[str] = []
     for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-            if node.func.attr in {"append", "extend", "remove", "clear"}:
-                target = node.func.value
-                name = getattr(target, "attr", "")
-                if "permission" in name:
-                    findings.append(f"line {node.lineno}: .{node.func.attr}()")
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"append", "extend", "remove", "clear"}
+        ):
+            target = node.func.value
+            name = getattr(target, "attr", "")
+            if "permission" in name:
+                findings.append(f"line {node.lineno}: .{node.func.attr}()")
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Attribute) and "permission" in target.attr:

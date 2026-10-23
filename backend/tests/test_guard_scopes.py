@@ -59,7 +59,7 @@ def _skip_set(path: Path) -> set[str]:
 def _walks_repository_root(path: Path) -> bool:
     """True when the file globs from `REPO` itself rather than from a subdirectory of it."""
     text = path.read_text(encoding="utf-8", errors="replace")
-    if re.search(rf"REPO\s*\.\s*rglob\(", text):
+    if re.search(r"REPO\s*\.\s*rglob\(", text):
         return True
     # `Path(...).rglob` over a name that is assigned from REPO also counts.
     return bool(re.search(r"^\s*[A-Z_]+\s*=\s*REPO\s*$", text, re.MULTILINE) and re.search(r"\b[A-Z_]+\.rglob\(", text))

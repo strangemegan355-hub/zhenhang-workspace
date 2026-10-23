@@ -39,8 +39,8 @@ def _route_bounds() -> list[tuple[str, int, str, str]]:
         for node in ast.walk(ast.parse(source)):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
-            pairs = list(zip(node.args.args[-len(node.args.defaults) :], node.args.defaults)) if node.args.defaults else []
-            pairs += list(zip(node.args.kwonlyargs, node.args.kw_defaults))
+            pairs = list(zip(node.args.args[-len(node.args.defaults) :], node.args.defaults, strict=False)) if node.args.defaults else []
+            pairs += list(zip(node.args.kwonlyargs, node.args.kw_defaults, strict=False))
             for arg, default in pairs:
                 if default is None or not ROWS.match(arg.arg):
                     continue

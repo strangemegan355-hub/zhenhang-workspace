@@ -44,7 +44,7 @@ class ProcurementEntry(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin
     payable_status: Mapped[str] = mapped_column(String(32), nullable=False, default="none", server_default="none", index=True)
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    project: Mapped["Project | None"] = relationship(lazy="joined")
-    material: Mapped["Material"] = relationship(lazy="joined")
-    supplier: Mapped["Supplier"] = relationship(lazy="joined")
-    creator: Mapped["User | None"] = relationship(foreign_keys="ProcurementEntry.created_by", lazy="joined")
+    project: Mapped[Project | None] = relationship(lazy="joined")
+    material: Mapped[Material] = relationship(lazy="joined")
+    supplier: Mapped[Supplier] = relationship(lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="ProcurementEntry.created_by", lazy="joined")

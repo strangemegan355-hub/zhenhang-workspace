@@ -22,7 +22,7 @@ class WorkflowState(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, B
     is_end: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="WorkflowState.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="WorkflowState.created_by", lazy="joined")
 
 
 class WorkflowTransition(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -37,4 +37,4 @@ class WorkflowTransition(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMix
 
     from_state: Mapped[WorkflowState] = relationship(foreign_keys=[from_state_id])
     to_state: Mapped[WorkflowState] = relationship(foreign_keys=[to_state_id])
-    creator: Mapped["User | None"] = relationship(foreign_keys="WorkflowTransition.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="WorkflowTransition.created_by", lazy="joined")

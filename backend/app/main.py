@@ -70,7 +70,7 @@ class UnifiedResponseMiddleware(BaseHTTPMiddleware):
         started = now_perf()
         response = await call_next(request)
         elapsed_ms = (now_perf() - started) * 1000
-        enterprise_metrics.mark_request(elapsed_ms=elapsed_ms, is_error=response.status_code >= 400)
+        enterprise_metrics.mark_request(elapsed_ms=elapsed_ms, status_code=response.status_code)
 
         if request.method == "OPTIONS":
             return response

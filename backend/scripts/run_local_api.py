@@ -13,7 +13,8 @@ if str(ROOT) not in sys.path:
 
 if sys.platform == "win32":
     if sys.version_info >= (3, 14):
-        _LOOP_FACTORY = lambda: asyncio.SelectorEventLoop(selectors.SelectSelector())
+        def _LOOP_FACTORY():
+            return asyncio.SelectorEventLoop(selectors.SelectSelector())
     else:
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         _LOOP_FACTORY = None

@@ -50,8 +50,6 @@ NOT_A_CODE_SYMBOL = {
     "DELETE",
     # KNOWN_ISSUES K-026: Pydantic schema in backend/app/schemas/quote.py — not a frontend export.
     "QuoteCreate",
-    # K-005: Pydantic wizard DTO in backend/app/schemas/quote.py — not a frontend export.
-    "QuoteWizardCreate",
 }
 
 # Components the docs name that exist and that nothing renders. Reviewed, with the consequence recorded.

@@ -56,7 +56,11 @@ pretty = true
 follow_imports = "silent"
 files = [
   "app/domains/quote/application/quote_track_helpers.py",
+  "app/domains/quote/application/quote_export_payload.py",
   "app/domains/file/infrastructure/minio_client.py",
+  "app/repositories/base.py",
+  "app/schemas/quote.py",
+  "app/core/deps.py",
   "app/core/enterprise_metrics.py",
   "app/core/exceptions.py",
   "app/core/money.py",
@@ -67,6 +71,8 @@ files = [
   "app/core/data_scope.py",
   "app/core/security.py",
   "app/core/__init__.py",
+  "workers/event_worker.py",
+  "workers/maintenance_worker.py",
 ]
 exclude = [
   "alembic/versions/",

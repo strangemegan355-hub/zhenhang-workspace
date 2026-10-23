@@ -47,7 +47,7 @@ async def list_inbox(db: AsyncSession, current_user: User) -> ApprovalInboxRespo
                     status="pending",
                     source_id=req.quote_id,
                     source_no=quote.quote_no if quote else None,
-                    detail_href=f"/quotes/customer",
+                    detail_href="/quotes/customer",
                     can_approve=True,
                 )
             )

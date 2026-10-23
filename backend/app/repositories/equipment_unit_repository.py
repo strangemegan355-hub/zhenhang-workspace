@@ -19,9 +19,9 @@ async def list_equipment_units(
     stmt = (
         select(EquipmentUnit)
         .options(joinedload(EquipmentUnit.machine), joinedload(EquipmentUnit.customer))
-        .where(EquipmentUnit.is_deleted == False)
+        .where(EquipmentUnit.is_deleted.is_(False))
     )
-    count_stmt = select(func.count(EquipmentUnit.id)).where(EquipmentUnit.is_deleted == False)
+    count_stmt = select(func.count(EquipmentUnit.id)).where(EquipmentUnit.is_deleted.is_(False))
 
     if q:
         stmt = stmt.where(EquipmentUnit.serial_number.ilike(f"%{q}%"))
@@ -46,14 +46,14 @@ async def get_equipment_unit_by_id(db: AsyncSession, unit_id: UUID) -> Equipment
     stmt = (
         select(EquipmentUnit)
         .options(joinedload(EquipmentUnit.machine), joinedload(EquipmentUnit.customer))
-        .where(EquipmentUnit.id == unit_id, EquipmentUnit.is_deleted == False)
+        .where(EquipmentUnit.id == unit_id, EquipmentUnit.is_deleted.is_(False))
     )
     return (await db.execute(stmt)).unique().scalar_one_or_none()
 
 
 async def get_equipment_unit_by_serial(db: AsyncSession, serial_number: str) -> EquipmentUnit | None:
     stmt = select(EquipmentUnit).where(
-        EquipmentUnit.serial_number == serial_number, EquipmentUnit.is_deleted == False
+        EquipmentUnit.serial_number == serial_number, EquipmentUnit.is_deleted.is_(False)
     )
     return (await db.execute(stmt)).scalar_one_or_none()
 

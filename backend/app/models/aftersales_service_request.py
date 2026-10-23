@@ -30,7 +30,7 @@ class AfterSalesServiceRequest(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDel
     completed_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     resolution: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    customer: Mapped["Customer"] = relationship(lazy="joined")
-    equipment_unit: Mapped["EquipmentUnit | None"] = relationship(lazy="joined")
-    assignee: Mapped["User | None"] = relationship(foreign_keys=[assigned_to], lazy="joined")
-    creator: Mapped["User | None"] = relationship(foreign_keys="AfterSalesServiceRequest.created_by", lazy="joined")
+    customer: Mapped[Customer] = relationship(lazy="joined")
+    equipment_unit: Mapped[EquipmentUnit | None] = relationship(lazy="joined")
+    assignee: Mapped[User | None] = relationship(foreign_keys=[assigned_to], lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="AfterSalesServiceRequest.created_by", lazy="joined")

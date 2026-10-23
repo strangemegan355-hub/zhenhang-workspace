@@ -174,7 +174,7 @@ def _outside_mentions(name: str) -> set[str]:
         relative = path.relative_to(REPO).as_posix()
         if relative.startswith(directory + "/") or any(part in SKIP for part in path.parts):
             continue
-        if path.suffix not in {".ts", ".tsx", ".mjs", ".js", ".json", ".sh", ".yml", ".yaml", ".md", ".py", ".mjs"}:
+        if path.suffix not in {".ts", ".tsx", ".mjs", ".js", ".json", ".sh", ".yml", ".yaml", ".md", ".py"}:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         if quoted.search(text) or path_form.search(text):

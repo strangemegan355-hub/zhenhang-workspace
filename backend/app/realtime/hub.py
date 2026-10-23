@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from collections import defaultdict
 from uuid import UUID
 
@@ -42,19 +43,15 @@ class UserRealtimeHub:
         async with self._lock:
             targets = list(self._queues.get(user_id, []))
         for q in targets:
-            try:
+            with contextlib.suppress(asyncio.QueueFull):
                 q.put_nowait(envelope)
-            except asyncio.QueueFull:
-                pass
 
     async def publish_all(self, envelope: dict) -> None:
         async with self._lock:
             all_queues = [q for subs in self._queues.values() for q in subs]
         for q in all_queues:
-            try:
+            with contextlib.suppress(asyncio.QueueFull):
                 q.put_nowait(envelope)
-            except asyncio.QueueFull:
-                pass
 
 
 _hub: UserRealtimeHub | None = None

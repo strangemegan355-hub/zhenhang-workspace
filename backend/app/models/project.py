@@ -37,6 +37,6 @@ class Project(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
     remark: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", server_default="active")
 
-    customer: Mapped["Customer | None"] = relationship(lazy="joined")
-    primary_quote: Mapped["Quote | None"] = relationship(foreign_keys=[primary_quote_id], lazy="joined")
-    creator: Mapped["User | None"] = relationship(foreign_keys="Project.created_by", lazy="joined")
+    customer: Mapped[Customer | None] = relationship(lazy="joined")
+    primary_quote: Mapped[Quote | None] = relationship(foreign_keys=[primary_quote_id], lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="Project.created_by", lazy="joined")

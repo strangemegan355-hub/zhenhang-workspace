@@ -78,6 +78,6 @@ async def test_a_paginated_route_nests_the_page_inside_data():
     assert response.status_code == 200, response.text[:300]
     body = response.json()
     assert set(body) == ENVELOPE_KEYS, sorted(body)
-    assert PAGE_KEYS <= set(body["data"]), (
+    assert set(body["data"]) >= PAGE_KEYS, (
         f"the page is not nested under `data`; a client that reads `data.total` would break: {sorted(body['data'])}"
     )

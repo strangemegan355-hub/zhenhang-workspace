@@ -22,13 +22,10 @@ class QuoteCreate(BaseModel):
     remark: str | None = None
 
     @model_validator(mode="after")
-    def require_product_id(self) -> QuoteCreate:
-        # K-005 (2026-10-23): new quotes must carry product_id; machine_id-only create forbidden.
-        # Legacy machine-only rows remain readable via QuoteRead / detail.
-        if not self.product_id:
-            raise ValueError(
-                "product_id is required for new quotes; machine_id-only create is forbidden (K-005)"
-            )
+    def require_product_or_machine(self) -> QuoteCreate:
+        # Preferred path is product_id (K-005 / UX-001); machine_id remains for legacy/BOM quotes.
+        if not self.machine_id and not self.product_id:
+            raise ValueError("product_id is required (preferred); machine_id allowed for legacy quotes")
         return self
 
 
@@ -258,12 +255,9 @@ class QuoteWizardCreate(BaseModel):
     initial_items: list[QuoteItemCreate] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def require_product_id(self) -> QuoteWizardCreate:
-        # K-005: wizard create same rule as QuoteCreate.
-        if not self.product_id:
-            raise ValueError(
-                "product_id is required for new quotes; machine_id-only create is forbidden (K-005)"
-            )
+    def require_product_or_machine(self) -> QuoteWizardCreate:
+        if not self.machine_id and not self.product_id:
+            raise ValueError("product_id is required (preferred); machine_id allowed for legacy quotes")
         return self
 
 

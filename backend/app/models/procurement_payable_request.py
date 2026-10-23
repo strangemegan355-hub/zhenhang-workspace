@@ -39,7 +39,7 @@ class ProcurementPayableRequest(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDe
         nullable=True,
     )
 
-    procurement_entry: Mapped["ProcurementEntry"] = relationship(lazy="joined")
-    requester: Mapped["User"] = relationship(foreign_keys=[requested_by], lazy="joined")
-    approver: Mapped["User | None"] = relationship(foreign_keys=[approved_by], lazy="joined")
-    payable_entry: Mapped["AccountingEntry | None"] = relationship(lazy="joined")
+    procurement_entry: Mapped[ProcurementEntry] = relationship(lazy="joined")
+    requester: Mapped[User] = relationship(foreign_keys=[requested_by], lazy="joined")
+    approver: Mapped[User | None] = relationship(foreign_keys=[approved_by], lazy="joined")
+    payable_entry: Mapped[AccountingEntry | None] = relationship(lazy="joined")

@@ -23,7 +23,7 @@ class AIContext(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base)
     context: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     metadata_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="AIContext.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="AIContext.created_by", lazy="joined")
 
 
 class AIDocument(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -37,7 +37,7 @@ class AIDocument(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", server_default="pending", index=True)
 
     context_ref: Mapped[AIContext] = relationship()
-    creator: Mapped["User | None"] = relationship(foreign_keys="AIDocument.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="AIDocument.created_by", lazy="joined")
 
 
 class AIEmbedding(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -51,7 +51,7 @@ class AIEmbedding(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Bas
     token_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
     document: Mapped[AIDocument] = relationship()
-    creator: Mapped["User | None"] = relationship(foreign_keys="AIEmbedding.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="AIEmbedding.created_by", lazy="joined")
 
 
 class EmbeddingTask(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -65,4 +65,4 @@ class EmbeddingTask(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, B
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     document: Mapped[AIDocument] = relationship()
-    creator: Mapped["User | None"] = relationship(foreign_keys="EmbeddingTask.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="EmbeddingTask.created_by", lazy="joined")

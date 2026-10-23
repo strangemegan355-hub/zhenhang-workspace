@@ -33,7 +33,7 @@ class MachineCategory(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin,
     )
     children: Mapped[list[MachineCategory]] = relationship(back_populates="parent")
     machines: Mapped[list[Machine]] = relationship(back_populates="category")
-    creator: Mapped["User | None"] = relationship(foreign_keys="MachineCategory.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="MachineCategory.created_by", lazy="joined")
 
 
 class Machine(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -59,7 +59,7 @@ class Machine(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
     parameters: Mapped[list[MachineParameter]] = relationship(back_populates="machine")
     images: Mapped[list[MachineImage]] = relationship(back_populates="machine")
     boms: Mapped[list[MachineBom]] = relationship(back_populates="machine")
-    creator: Mapped["User | None"] = relationship(foreign_keys="Machine.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="Machine.created_by", lazy="joined")
 
 
 class MachineParameter(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -74,7 +74,7 @@ class MachineParameter(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin
     remarks: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     machine: Mapped[Machine] = relationship(back_populates="parameters")
-    creator: Mapped["User | None"] = relationship(foreign_keys="MachineParameter.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="MachineParameter.created_by", lazy="joined")
 
 
 class MachineImage(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -86,7 +86,7 @@ class MachineImage(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Ba
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
     machine: Mapped[Machine] = relationship(back_populates="images")
-    creator: Mapped["User | None"] = relationship(foreign_keys="MachineImage.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="MachineImage.created_by", lazy="joined")
 
 
 class MachineBom(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -102,7 +102,7 @@ class MachineBom(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base
 
     machine: Mapped[Machine] = relationship(back_populates="boms")
     items: Mapped[list[MachineBomItem]] = relationship(back_populates="bom")
-    creator: Mapped["User | None"] = relationship(foreign_keys="MachineBom.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="MachineBom.created_by", lazy="joined")
 
 
 class MachineBomItem(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
@@ -123,4 +123,4 @@ class MachineBomItem(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, 
     subsystem: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
 
     bom: Mapped[MachineBom] = relationship(back_populates="items")
-    creator: Mapped["User | None"] = relationship(foreign_keys="MachineBomItem.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="MachineBomItem.created_by", lazy="joined")

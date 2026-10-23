@@ -21,4 +21,4 @@ class SystemConfig(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Ba
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="SystemConfig.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="SystemConfig.created_by", lazy="joined")

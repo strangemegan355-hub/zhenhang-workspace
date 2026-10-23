@@ -23,4 +23,4 @@ class AuditLog(UUIDPrimaryKeyMixin, TimestampMixin, AuditSoftDeleteMixin, Base):
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    creator: Mapped["User | None"] = relationship(foreign_keys="AuditLog.created_by", lazy="joined")
+    creator: Mapped[User | None] = relationship(foreign_keys="AuditLog.created_by", lazy="joined")

@@ -1,11 +1,10 @@
 """Product vs machine dual-track helpers for quotes (K-005 / UX-001).
 
-**Create path (enforced 2026-10-23):** new industrial quotes **must** supply ``product_id``.
-Machine-id-only create is rejected with HTTP 400. ``machine_id`` / ``bom_id`` remain on the
-model for legacy rows and advanced BOM links; historical machine-only quotes stay readable.
+Preferred path: standard sellable **Product** (+ optional price/cost templates).
+``machine_id`` / ``bom_id`` remain for legacy and advanced BOM quotes; fields are never deleted.
 
 When ``product_id`` is set, missing ``machine_id`` / ``bom_id`` are filled from the product's
-linked machine and default BOM when present.
+linked machine and default BOM when present. Machine-only quotes stay valid for historical data.
 """
 
 from __future__ import annotations
@@ -18,27 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 QuoteTrack = Literal["product", "product_with_machine_link", "machine_legacy", "none"]
 
 PREFERRED_QUOTE_TRACK: QuoteTrack = "product"
-
-PRODUCT_ID_REQUIRED_DETAIL = (
-    "新建报价必须提供 product_id；禁止仅用 machine_id 创建（K-005）。历史机型报价仍可查看。"
-)
-
-
-def require_product_id_for_create(quote_payload: dict[str, Any]) -> None:
-    """K-005: reject industrial quote create without product_id (HTTP 400).
-
-    Read/list/detail of legacy machine-only quotes is unaffected. Version create on an
-    existing quote is also unaffected — this guard is only for new quote headers.
-    """
-    if quote_payload.get("product_id"):
-        return
-    from fastapi import HTTPException, status
-
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=PRODUCT_ID_REQUIRED_DETAIL,
-    )
-
 
 
 def classify_quote_track(

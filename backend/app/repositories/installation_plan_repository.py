@@ -11,7 +11,7 @@ async def list_plans(db: AsyncSession, equipment_unit_id: UUID) -> list[Installa
         select(InstallationPlan)
         .where(
             InstallationPlan.equipment_unit_id == equipment_unit_id,
-            InstallationPlan.is_deleted == False,
+            InstallationPlan.is_deleted.is_(False),
         )
         .order_by(InstallationPlan.created_at.desc())
     )
@@ -21,7 +21,7 @@ async def list_plans(db: AsyncSession, equipment_unit_id: UUID) -> list[Installa
 
 async def get_plan_by_id(db: AsyncSession, plan_id: UUID) -> InstallationPlan | None:
     stmt = select(InstallationPlan).where(
-        InstallationPlan.id == plan_id, InstallationPlan.is_deleted == False
+        InstallationPlan.id == plan_id, InstallationPlan.is_deleted.is_(False)
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()

@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Annotated
 from uuid import UUID
 
@@ -60,7 +60,7 @@ async def get_current_active_user(
     return user
 
 
-def require_permissions(*permission_codes: str) -> Callable[..., User]:
+def require_permissions(*permission_codes: str) -> Callable[..., Awaitable[User]]:
     async def dependency(user: Annotated[User, Depends(get_current_active_user)]) -> User:
         if user.is_superuser:
             return user
@@ -76,7 +76,7 @@ def require_permissions(*permission_codes: str) -> Callable[..., User]:
     return dependency
 
 
-def require_any_permission(*permission_codes: str) -> Callable[..., User]:
+def require_any_permission(*permission_codes: str) -> Callable[..., Awaitable[User]]:
     async def dependency(user: Annotated[User, Depends(get_current_active_user)]) -> User:
         if user.is_superuser:
             return user
