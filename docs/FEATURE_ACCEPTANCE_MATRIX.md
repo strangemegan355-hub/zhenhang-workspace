@@ -3,7 +3,7 @@
 > **说明**：本矩阵区分证据类型，避免把「有代码」写成「已验收」。  
 > 图例：✅ 运行验证 · 📄 代码/静态测试 · ☐ 未验证 · ⚠️ 部分/存疑
 
-最后更新：2026-10-23（BODY-CLOSE：审批金额视口 PASS + TRIAL-PR-0002 已批；UX-004 已验收；UX-006 卡门禁 PASS；UX-002 Tab / K-006 整套布局仍 gated；种子策略 43896d6）
+最后更新：2026-10-23（NON-UI：MinIO lifecycle 对齐去 xfail；K-005 quote_track_helpers；K-007 非阻塞 ruff；幂等单测；种子策略 43896d6；UI_PHASE_GATE 仍 ON）
 
 ---
 
@@ -16,7 +16,7 @@
 | 报价中心 | `/quotes`, `/quotes/customer` | `/quotes/*` | Quote… | 📄 PageHeader；对客金额 `align:right`；UX-002 侧栏 hidden + 页内深链；合并 Tab ☐（两套模型，非小补丁） | ✅ 场景 A API；视口页头可见；列表 loading 未断言金额（K-028） |
 | 项目 | `/projects`… | `/projects/*` | Project… | 📄 | ✅ 场景 B API；浏览器「项目台账」可开 |
 | 产品库 | `/products` | `/products/*` | Product | 📄 | ✅ sales 列表 200 |
-| 机型/BOM | `/machines`, `/boms` | … | Machine… | 📄 UX-001 侧栏 `hidden`（静态测） | ⚠️ URL/权限保留；侧栏不展示（非日常路径） |
+| 机型/BOM | `/machines`, `/boms` | … | Machine… | 📄 UX-001 侧栏 `hidden`；K-005 `quote_track_helpers` 产品优先 | ⚠️ URL/权限保留；machine-only 新建是否禁止 → DECISION |
 | 主数据 | customers 等 | … | … | 📄 | ✅ customers 列表 200 |
 | 采购 | `/procurement` | … | … | 📄 PageHeader + 主操作 + DataGrid 金额/数量 `align:right`；空材料/供应商引导链；`check-ui-batch` OK | ✅ 场景 C API；视口金额 `right=9/9`（试用 TRIAL-PR-*）；K-030 修列表 500 |
 | 财务 | `/accounting*` | `/accounting/*` | … | 📄 三页 FilterBar + `moneyCellClass`；未开记账提示指向 trialadmin；`check-ui-batch`+`tsc` OK | ✅ 场景 C/D API；视口金额 `right=3/3`（试用种子开记账 + draft 样例） |
@@ -31,7 +31,7 @@
 
 | 场景 | 步骤摘要 | 预期 | 结果 | 证据 |
 |---|---|---|---|---|
-| A 产品→报价 | 维护产品 → 报价选品 → 保存 → 重开核对金额 | 前后端金额一致、行快照保留 | ✅ API | `POST /quotes/wizard` → `Q20261023-0001` total **1600.0000**；`GET` 重读一致；`product_id` 保留 |
+| A 产品→报价 | 维护产品 → 报价选品 → 保存 → 重开核对金额 | 前后端金额一致、行快照保留；**合计服务端权威**（`strip_client_quote_totals` + 版本行 sum；Create DTO 无 client total） | ✅ API | `POST /quotes/wizard` → `Q20261023-0001` total **1600.0000**；`GET` 重读一致；`product_id` 保留；回归 `test_quote_track_and_totals` |
 | B 报价↔项目 | 建项目带 `primary_quote_id` → 客户自动一致；冲突 400；summary 关联报价 | 客户与报价一致 | ✅ API | `PRJ-20261023-001` 关联 `Q20261023-0001`；summary 返回 linked_quote |
 | C 采购→应付→付款 | 采购 → 下单 → 应付申请 → boss 审批 → 部分付款 | 余额一致、防重复申请 | ✅ API | `PR-20261023-*` → pending→approved → `PY-20261023-001`；重复申请 400 |
 | D 应收→收款→核销 | 应收 → 部分收款 → 超额拒绝 → 结清 | 余额准、超额 400 | ✅ API | `AR-20261023-003` → RC-001/002；settled=1000 open=0；超额 400 |
@@ -85,3 +85,4 @@ cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_ux_menu_and_dashb
 - 试用记账种子：`43896d6` 锁定本地库强制开记账 + 非本地拒绝；可选 `--with-pending-approval`（**默认关**）种 pending 应付供视口，不削弱财务策略。
 - K-030 / K-029 既有修复仍保留；E2E 仍用 `playwright-core`（无 `@playwright/test`）。
 - **GATED（勿开）：** ERP 前端 UI 重构 / UX-002 Tab 合并 / K-006「按角色换整套布局」。
+- **NON-UI（本批）：** MinIO lifecycle no-op（AbortIncomplete 不支持）；报价服务端合计权威 + 产品轨 helpers；财务幂等/防重单测；ruff/mypy 非阻塞基线；脚本 DB 55432 脚枪探测。

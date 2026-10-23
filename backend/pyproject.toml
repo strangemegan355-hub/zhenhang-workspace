@@ -14,10 +14,52 @@ asyncio_mode = "auto"
 # passing therefore says nothing about it.
 testpaths = ["tests"]
 
-# Not enforced anywhere yet: ruff is not a dependency, it is installed neither on PATH nor in the venv,
-# and no CI step runs it. Measured when this comment was written: 1044 lines across 392 Python files exceed
-# the 100-character limit below (the longest is 157), so the limit is a target rather than a description of
-# the code. Python has no linter or type checker in this repository; mypy and pytest-cov are absent too.
+# K-007: ruff/mypy are **non-blocking**. Run `python scripts/check_backend_lint.py` (or
+# `scripts/check_backend_lint.ps1` from repo root). Baseline counts live in
+# `logs/ruff-backend-baseline.txt`. CI must not fail on these until debt is cleared.
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["app", "scripts", "tests", "integration_tests", "workers"]
+exclude = [
+  ".venv",
+  "alembic/versions",
+]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "UP",  # pyupgrade
+  "B",   # bugbear
+  "SIM", # simplify
+]
+ignore = [
+  "E501",  # line length — large historical debt; tracked in baseline, not autofixed en masse
+  "B008",  # FastAPI Depends() in defaults is intentional
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B018"]
+"integration_tests/**" = ["E402"]
+"scripts/**" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = false
+warn_return_any = false
+check_untyped_defs = false
+pretty = true
+# Incremental adopt: start with core packages; expand later.
+files = [
+  "app/domains/quote/application/quote_track_helpers.py",
+  "app/domains/file/infrastructure/minio_client.py",
+]
+exclude = [
+  "alembic/versions/",
+  ".venv/",
+  "tests/",
+  "integration_tests/",
+]

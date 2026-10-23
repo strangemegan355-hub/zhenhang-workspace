@@ -23,12 +23,12 @@
 |---|---|---|---|---|
 | 租户隔离 | 应用层 data scope + tenant 模型 | Textile：Postgres RLS FORCE | 深度防御不足 | P2 评估 |
 | 财务过账 | AccountingEntry + Settlement 服务 | ERPNext GL 分录 | 需验证书据不可篡改与冲正规则 | P1 |
-| 幂等/防重 | 收款/付款核销已加 `FOR UPDATE` 行锁（2026-10-23）；其余业务仍部分覆盖 | Seller：显式 idempotency | 全链路未统一 | P1 进行中 |
+| 幂等/防重 | 收款/付款核销 `FOR UPDATE`；应收/应付申请防重；审批仅 pending；confirm/void 不可捷径 | Seller：显式 idempotency key | 服务层拒绝已钉住（`test_finance_idempotency_guards`）；全链路统一 Idempotency-Key 仍可选 | P2 |
 | API 类型 | 生成 SDK + hooks | OpenAPI diff CI | 已有 generate；需纳入 PR 门禁 | P2 |
 | UI 系统 | 主色/侧栏已换；列表页仍分散 | 统一 Design Token + PageHeader | 部分落地 | P2 继续统一组件 |
-| 测试 | 单测强、集成/E2E 弱 | Textile 有 integration + Playwright | 本地未跑 integration | P1 |
-| 代码静态 | 无 enforced ruff/mypy | 标杆 CI lint/typecheck | 漂移风险 | P3 |
-| 产品数据双轨 | Product + Machine 并存 | 单一 sellable item 主数据 | 侧栏已收敛到产品库；字段兼容保留 | P1 持续（报价向导仍可选手动） |
+| 测试 | 单测强；集成已跑 | Textile 有 integration + Playwright | 集成 **已绿**（lifecycle 对齐后无 xfail）；浏览器 E2E 仍以 API+关键 UI 为主 | P2 |
+| 代码静态 | ruff/mypy 配置 + 非阻塞脚本 | 标杆 CI lint/typecheck | **非阻塞**基线已建（K-007）；未进 CI fail | P3 |
+| 产品数据双轨 | Product + Machine 并存 | 单一 sellable item 主数据 | 侧栏产品优先；后端 `quote_track_helpers` 默认填充；字段兼容保留 | P1 余：是否禁止新建 machine-only（DECISION） |
 
 ---
 
@@ -42,11 +42,11 @@
 
 ## 4. 分阶段架构动作（与任务书批次对齐）
 
-### 第二批（P0/P1）
+### 第二批（P0/P1）— 2026-10-23 状态
 
-1. 跑通 `integration_tests` 并修复失败项。  
-2. 财务：梳理 `ledger_service` / settlement 事务边界，补「重复核销」用例。  
-3. 报价：服务端算价权威化验收（对齐 `costing_service` / quote domain）。
+1. ~~跑通 `integration_tests`~~ → 曾 **44 passed / 3 xfailed**（AbortIncomplete）；lifecycle 对齐 no-op 后该文件 **5 passed / 0 xfailed**（`logs/minio-lifecycle-align.txt`）。  
+2. ~~财务重复核销~~ → `FOR UPDATE` + 超额拒绝；单元钉 `test_finance_idempotency_guards`（`logs/idempotency-audit.txt`）。  
+3. ~~报价服务端算价权威~~ → `strip_client_quote_totals` + 版本行合计重算；`test_quote_track_and_totals` 回归钉住。
 
 ### 第三批（业务简化）
 

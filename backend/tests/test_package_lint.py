@@ -42,9 +42,10 @@ ROOT_CONFIG = REPO / "eslint.config.mjs"
 #                     which no page, app or package uses (round 121). Deleting the two files clears both.
 # The last three warnings are library notices and are unavoidable here.
 REVIEWED: set[tuple[str, str, int]] = {
-    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 76),
-    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 91),
-    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 103),
+    # Line numbers drift with DataGrid edits; same three deliberate setState-in-effect sites.
+    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 86),
+    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 101),
+    ("packages/data-grid/src/index.tsx", "react-hooks/set-state-in-effect", 113),
     ("packages/quote-builder/src/bom-tree-editor.tsx", "react-hooks/incompatible-library", 89),
     ("packages/quote-builder/src/quote-line-editor.tsx", "react-hooks/incompatible-library", 26),
     ("packages/quote-builder/src/use-undo-redo.ts", "react-hooks/set-state-in-effect", 20),

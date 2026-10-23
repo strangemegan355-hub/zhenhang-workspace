@@ -7,6 +7,12 @@ import sys
 import urllib.error
 import urllib.request
 
+try:
+    from _script_utils import warn_if_env_db_unreachable
+except ImportError:  # pragma: no cover - allow running without package path
+    def warn_if_env_db_unreachable() -> None:
+        return None
+
 # A trial runs on a server, not on the machine running this, so the host is overridable.
 BASE = os.getenv("ERP_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 # username, environment variable holding that account's password. These used to be literals,
@@ -50,6 +56,9 @@ def login(username: str, password: str) -> tuple[bool, str]:
 
 
 def main() -> int:
+    # Footgun: backend/.env often points at 5432 while the trial API uses 55432.
+    # Smoke talks to the API, but print/probe so operators notice a dead seed target.
+    warn_if_env_db_unreachable()
     failed = 0
     checked = 0
     for user, env_var in ACCOUNTS:

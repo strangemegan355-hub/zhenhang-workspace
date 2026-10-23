@@ -13,7 +13,7 @@ import sys
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import selectinload, sessionmaker
 
-from _script_utils import BACKEND_ROOT, database_url  # noqa: F401
+from _script_utils import BACKEND_ROOT, database_url, print_db_target  # noqa: F401
 from app.core.rbac import collect_permission_codes
 from app.models.role import Role
 from app.models.user import User
@@ -157,6 +157,7 @@ def _check(username: str, perms: set[str], is_superuser: bool) -> list[str]:
 
 def verify() -> int:
     failures: list[str] = []
+    print_db_target()
     engine = create_engine(database_url(), pool_pre_ping=True)
     SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 

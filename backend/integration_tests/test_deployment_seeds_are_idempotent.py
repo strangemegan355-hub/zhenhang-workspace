@@ -36,6 +36,10 @@ COUNTED_TABLES = ("sys_users", "workflow_states", "workflow_transitions", "sys_r
 def _run(script: str) -> tuple[int, str]:
     env = dict(os.environ)
     env.setdefault("BOOTSTRAP_ADMIN_PASSWORD", "integration-bootstrap-pw")
+    # Scripts import `app.*`; compose sets PYTHONPATH, but local pytest cwd alone is not enough.
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(BACKEND)] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else [])
+    )
     result = subprocess.run(
         [str(PYTHON), script],
         cwd=BACKEND,

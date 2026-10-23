@@ -23,8 +23,9 @@ class QuoteCreate(BaseModel):
 
     @model_validator(mode="after")
     def require_product_or_machine(self) -> QuoteCreate:
+        # Preferred path is product_id (K-005 / UX-001); machine_id remains for legacy/BOM quotes.
         if not self.machine_id and not self.product_id:
-            raise ValueError("machine_id or product_id is required")
+            raise ValueError("product_id is required (preferred); machine_id allowed for legacy quotes")
         return self
 
 
@@ -256,7 +257,7 @@ class QuoteWizardCreate(BaseModel):
     @model_validator(mode="after")
     def require_product_or_machine(self) -> QuoteWizardCreate:
         if not self.machine_id and not self.product_id:
-            raise ValueError("machine_id or product_id is required")
+            raise ValueError("product_id is required (preferred); machine_id allowed for legacy quotes")
         return self
 
 

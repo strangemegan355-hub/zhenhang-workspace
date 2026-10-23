@@ -26,12 +26,19 @@ def _quote_prefix() -> str:
 
 
 async def create_quote(db: AsyncSession, payload: dict, current_user):
+    from app.domains.quote.application.quote_track_helpers import (
+        apply_product_machine_defaults,
+        strip_client_quote_totals,
+    )
+
+    quote_payload = strip_client_quote_totals(dict(payload))
+    await apply_product_machine_defaults(db, quote_payload)
     seq = await repo.next_quote_sequence(db, _quote_prefix())
     quote_no = f"{_quote_prefix()}{seq:04d}"
     obj = await repo.create_quote(
         db,
         {
-            **payload,
+            **quote_payload,
             "quote_no": quote_no,
             "total_amount": Decimal("0"),
             "current_approval_order": 0,
@@ -268,19 +275,13 @@ async def list_export_templates() -> list[dict]:
 
 
 async def create_quote_wizard(db: AsyncSession, payload: dict, current_user):
+    from app.domains.quote.application.quote_track_helpers import apply_product_machine_defaults
+
     initial_items = payload.pop("initial_items", [])
     seed_from_product = payload.pop("seed_from_product", True)
     quote_payload = {k: v for k, v in payload.items() if k != "initial_items"}
+    await apply_product_machine_defaults(db, quote_payload)
     product_id = quote_payload.get("product_id")
-    if product_id and not quote_payload.get("machine_id"):
-        from app.services.product_service import get_product_or_none
-
-        product = await get_product_or_none(db, product_id)
-        if product:
-            if product.machine_id and not quote_payload.get("machine_id"):
-                quote_payload["machine_id"] = product.machine_id
-            if product.default_bom_id and not quote_payload.get("bom_id"):
-                quote_payload["bom_id"] = product.default_bom_id
 
     quote = await create_quote(db, quote_payload, current_user)
 

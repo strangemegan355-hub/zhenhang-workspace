@@ -30,7 +30,7 @@ from decimal import Decimal
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from _script_utils import database_url
+from _script_utils import database_url, print_db_target
 from app.models.accounting_entry import AccountingEntry
 from app.models.customer import Customer
 from app.models.material import Material
@@ -350,7 +350,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    url = database_url()
+    url = print_db_target()
     if not _is_local_db_url(url) and not args.allow_non_local:
         print(
             "REFUSED: seed_trial_money_viewport is local-trial only "

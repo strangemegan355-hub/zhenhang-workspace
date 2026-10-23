@@ -1,4 +1,4 @@
-"""Object storage access, and the one lifecycle rule this deployment applies.
+"""Object storage access, and the lifecycle stance this deployment takes.
 
 Object expiration is deliberately **not** configured here, even though the database carries a
 `file_lifecycle_policies` table with a 365-day default. Those rows were created automatically on the
@@ -7,18 +7,23 @@ enforced them. Translating that default into a real MinIO expiry rule would dele
 contracts, drawings and acceptance photos one year after upload — a decision nobody made and one
 that cannot be undone. Retention therefore stays an explicit, unenforced intent until an
 administrator chooses it deliberately.
+
+Incomplete multipart cleanup is also **not** applied via PutBucketLifecycle. MinIO rejects
+`AbortIncompleteMultipartUpload` rules (minio/minio#16120); the server cleans stale uploads via the
+global `api stale_uploads_expiry` setting (default 24h) instead. Calling `set_bucket_lifecycle`
+with an abort-only rule therefore never took effect and only produced InvalidArgument noise.
 """
 
 import logging
-from io import BytesIO
 from datetime import timedelta
+from io import BytesIO
 
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-#: Interrupted uploads leave orphaned parts behind. They are never a valid object, so removing them
-#: costs nothing; the delay only avoids racing an upload that is still in progress.
+#: Historical intent only — MinIO does not honour AbortIncompleteMultipartUpload on buckets.
+#: Incomplete multipart parts are purged by the server's `api stale_uploads_expiry` (default 24h).
 ABORT_INCOMPLETE_MULTIPART_DAYS = 7
 
 
@@ -80,37 +85,25 @@ def generate_thumbnail_object_name(object_name: str) -> str:
 
 
 def build_lifecycle_config():
-    """The lifecycle rules for this deployment, as a MinIO LifecycleConfig.
+    """Lifecycle rules this deployment would push — intentionally empty.
 
-    Exactly one rule: abort incomplete multipart uploads. It is the only one that cannot lose data.
+    MinIO rejects AbortIncompleteMultipartUpload (minio/minio#16120). We also never attach object
+    Expiration / Transition rules. Callers that still want a LifecycleConfig object get an empty
+    one so unit tests can assert the safety properties without talking to a server.
     """
-    from minio.commonconfig import Filter
-    from minio.lifecycleconfig import AbortIncompleteMultipartUpload, LifecycleConfig, Rule
+    from minio.lifecycleconfig import LifecycleConfig
 
-    return LifecycleConfig(
-        [
-            Rule(
-                status="Enabled",
-                # S3 requires every rule to carry a filter; without one MinIO rejects the whole request
-                # with InvalidArgument. An empty prefix means "every object", which is what aborting
-                # incomplete multipart uploads is meant to cover.
-                rule_filter=Filter(prefix=""),
-                rule_id="abort-incomplete-multipart-upload",
-                abort_incomplete_multipart_upload=AbortIncompleteMultipartUpload(
-                    days_after_initiation=ABORT_INCOMPLETE_MULTIPART_DAYS
-                ),
-            )
-        ]
-    )
+    return LifecycleConfig([])
 
 
 def apply_lifecycle_policies(bucket: str) -> None:
-    """Push the bucket lifecycle rules. Best-effort: storage trouble must not fail an upload."""
-    from minio.error import S3Error
+    """Documented no-op for MinIO: do not push AbortIncomplete or object-expiry rules.
 
-    try:
-        _client().set_bucket_lifecycle(bucket, build_lifecycle_config())
-    except S3Error as exc:
-        logger.warning("could not apply lifecycle rules to bucket %s: %s", bucket, exc.code)
-    except Exception:  # noqa: BLE001 - a bucket without lifecycle support, or MinIO unreachable
-        logger.exception("unexpected failure applying lifecycle rules to bucket %s", bucket)
+    Best-effort contract preserved: storage lifecycle must never fail an upload. Incomplete
+    multipart parts are left to the server's ``api stale_uploads_expiry``.
+    """
+    logger.info(
+        "skipping set_bucket_lifecycle for %s: MinIO rejects AbortIncompleteMultipartUpload "
+        "(minio/minio#16120; use api stale_uploads_expiry); object expiry rules are never applied",
+        bucket,
+    )

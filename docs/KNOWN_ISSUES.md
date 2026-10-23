@@ -1,6 +1,6 @@
-# 已知问题与风险清单
+﻿# 已知问题与风险清单
 
-> 更新时间：2026-10-23（BODY-CLOSE：审批金额视口 + TRIAL 批准样本；UX-004 文档对齐）  
+> 更新时间：2026-10-23（NON-UI batch：MinIO lifecycle 对齐、K-005 helpers、K-007 非阻塞 lint）  
 > 优先级：**P0** 严重 · **P1** 核心业务 · **P2** 体验/维护 · **P3** 一般优化
 
 | ID | 级别 | 问题 | 影响 | 状态 | 证据 |
@@ -9,10 +9,10 @@
 | K-002 | P2 | 工作区大量未提交修改，来源不明 | 协作/回滚困难 | **已缓解**：交付检查点 `a60c81c`（2026-10-23） | `git log -1` |
 | K-003 | P2 | UI 主色与任务书目标不一致（曾用 Frappe 黑灰 `#171717`，目标 `#1677ff`） | 品牌与现代化方向偏差 | **已修复**（2026-10-23） | `globals.css` + `app-shell` 深蓝侧栏 |
 | K-004 | P2 | `menu.ts` 注释称部分菜单「隐藏」，但 BOM/机型等仍在侧栏展示 | 信息架构文档与 UI 不一致 | **已修复**（2026-10-23） | 机型/BOM/选项组/验收/安装标 `hidden` |
-| K-005 | P1 | **产品库 vs 机型管理** 双轨：报价可关联 product_id 或 machine_id | 员工不知选哪条路径、数据重复维护风险 | **部分修复**：侧栏默认仅产品库；字段保留兼容 | quotes 模型 + menu V2.1 |
+| K-005 | P1 | **产品库 vs 机型管理** 双轨：报价可关联 product_id 或 machine_id | 员工不知选哪条路径、数据重复维护风险 | **后端部分修复**：`quote_track_helpers` 产品优先默认填充；schema 偏好 product；字段兼容保留。是否禁止新建 machine-only → **DECISION-NEEDED** | `quote_track_helpers.py`；UX-001 |
 | K-006 | P2 | 首页 Dashboard 多卡片/图表，是否均接真实 API 未在本轮点击验证 | 可能展示空数据或低价值指标 | **门禁已验**：财务/审批/工单卡按权限显隐；静态矩阵 + 四角色 headless `RESULT=PASS`（trialadmin/finance/sales/workshop）。「按角色换整套布局」仍 ☐ | UX-006；`logs/dashboard-role-cards-out.txt`；`run-dashboard-role-cards.mjs` |
-| K-007 | P3 | 后端无 enforced ruff/mypy（pyproject 自述） | 风格与类型漂移 | 已知 | `pyproject.toml` 注释 |
-| K-008 | P1 | 集成测试与 E2E 未在本轮执行 | 财务/权限/事务回归风险 | **已跑**：integration **44 passed / 3 xfailed**；浏览器 E2E 仍以 API+关键 UI 证据为主 | `logs/integration-pytest.txt` |
+| K-007 | P3 | 后端无 enforced ruff/mypy（pyproject 自述） | 风格与类型漂移 | **非阻塞已落地**：ruff+mypy 配置 + `scripts/check_backend_lint.py`；基线 `logs/ruff-backend-baseline.txt`；未进 CI fail | K-007；`check_backend_lint.ps1` |
+| K-008 | P1 | 集成测试与 E2E 未在本轮执行 | 财务/权限/事务回归风险 | **已跑**：MinIO AbortIncomplete（#16120）对齐 lifecycle no-op；integration xfails 消除；浏览器 E2E 仍以 API+局部 UI 为主 | `logs/nonui-smoke-*.txt`；`logs/minio-lifecycle-align.txt` |
 | K-009 | P2 | 本机 API / ready 不可用 | 无法试运行验收 | **已缓解**：API 已起；ready 已通 | live/ready 200 |
 | K-010 | P2 | README 仍以「后端阶段一」为主标题，与全栈现状不完全匹配 | 新人误解范围 | **已修复**（2026-10-23） | README 改为全栈标题与目录摘要 |
 | K-011 | P0 | Windows 上 `REDIS_URL=redis://localhost` 连不上（IPv6），`/health/ready` 挂死；依赖 Redis 的请求风险 | 就绪探针失败、业务可能卡住 | **已修复**（2026-10-23） | `.env`→`127.0.0.1`；`redis_client` 超时；ready `wait_for`；单测 setdefault 同步 |

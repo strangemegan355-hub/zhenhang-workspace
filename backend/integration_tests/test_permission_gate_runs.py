@@ -46,6 +46,10 @@ def _trial_roles_present(env: dict[str, str]) -> bool:
         "    found = session.execute(select(User).where(User.username == 'sales01')).scalar_one_or_none()\n"
         "print('yes' if found else 'no')\n"
     )
+    env = dict(env)
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(BACKEND)] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else [])
+    )
     try:
         result = subprocess.run(
             [sys.executable, "-c", code],
@@ -53,17 +57,23 @@ def _trial_roles_present(env: dict[str, str]) -> bool:
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=120,
         )
     except (OSError, subprocess.SubprocessError):
         return False
-    return result.returncode == 0 and "yes" in result.stdout
+    out = (result.stdout or "") + (result.stderr or "")
+    return result.returncode == 0 and "yes" in out
 
 
 def test_the_permission_gate_passes_on_this_database():
     if not SCRIPT.exists():
         pytest.skip("scripts/verify_permissions.py is not present")
     env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(BACKEND)] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else [])
+    )
     if not _trial_roles_present(env):
         pytest.skip("the trial roles are not provisioned in this database, so the gate has nothing to judge")
 
@@ -73,9 +83,11 @@ def test_the_permission_gate_passes_on_this_database():
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=300,
     )
-    output = result.stdout + result.stderr
+    output = (result.stdout or "") + (result.stderr or "")
     assert result.returncode == 0, (
         "the permission gate reported problems on this database. Round 114 established that its verdict depends on "
         f"which database it is pointed at, and this one is the integration database:\n{output[-3000:]}"

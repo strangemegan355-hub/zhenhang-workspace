@@ -18,7 +18,7 @@ import sys
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
-from _script_utils import BACKEND_ROOT, database_url  # noqa: F401
+from _script_utils import BACKEND_ROOT, database_url, print_db_target  # noqa: F401
 from app.core.security import get_password_hash
 from app.models.department import Department
 from app.models.permission import Permission
@@ -387,7 +387,8 @@ def _ensure_permission(db: Session, code: str, name: str, resource: str, action:
 
 
 def setup(*, dry_run: bool, reset_passwords: bool) -> None:
-    engine = create_engine(database_url(), pool_pre_ping=True)
+    url = print_db_target()
+    engine = create_engine(url, pool_pre_ping=True)
     SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
     with SessionLocal() as db:

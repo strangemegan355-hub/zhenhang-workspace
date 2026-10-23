@@ -49,6 +49,8 @@ NOT_A_CODE_SYMBOL = {
     # because that is how this document quotes code. Neither is a component.
     "NULL",
     "DELETE",
+    # KNOWN_ISSUES K-026: Pydantic schema in backend/app/schemas/quote.py — not a frontend export.
+    "QuoteCreate",
 }
 
 # Components the docs name that exist and that nothing renders. Reviewed, with the consequence recorded.

@@ -1,9 +1,8 @@
-"""The storage lifecycle must apply exactly one rule, and it must not be an expiry.
+"""The storage lifecycle must never expire objects, and must not pretend MinIO accepts abort rules.
 
-The dangerous version of "finishing the placeholder" is to sync `file_lifecycle_policies` rows into
-MinIO expiry rules: those rows were auto-created on first upload with a 365-day default attributed
-to the uploader, so it would delete customer documents a year later. These tests pin the safe
-behaviour, and they need neither MinIO nor a database.
+MinIO rejects `AbortIncompleteMultipartUpload` in PutBucketLifecycle (minio/minio#16120); incomplete
+multipart cleanup is server-side (`api stale_uploads_expiry`). These tests pin the safe client
+stance without needing MinIO or a database.
 
 `SECRET_KEY` is set before importing application modules, as elsewhere in this suite.
 """
@@ -17,16 +16,11 @@ import pytest
 os.environ.setdefault("SECRET_KEY", "0123456789012345678901234567890123")
 
 
-def test_lifecycle_applies_only_the_safe_rule():
+def test_lifecycle_config_has_no_rules():
     from app.domains.file.infrastructure.minio_client import build_lifecycle_config
 
     config = build_lifecycle_config()
-    rules = config.rules
-    assert len(rules) == 1, "only one lifecycle rule is intended"
-
-    rule = rules[0]
-    assert rule.abort_incomplete_multipart_upload is not None, "the abort rule is the whole point"
-    assert rule.abort_incomplete_multipart_upload.days_after_initiation >= 1
+    assert list(config.rules) == [], "MinIO abort rule is unsupported; config must stay empty"
 
 
 def test_lifecycle_sets_no_expiration():
@@ -40,40 +34,47 @@ def test_lifecycle_sets_no_expiration():
         assert rule.noncurrent_version_transition is None
 
 
+def test_apply_lifecycle_is_a_documented_noop(monkeypatch):
+    """apply_lifecycle_policies must not call set_bucket_lifecycle (abort rule is rejected)."""
+    from app.domains.file.infrastructure import minio_client
+
+    class TrackingClient:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def set_bucket_lifecycle(self, bucket, config):  # noqa: ANN001, ANN201
+            self.calls += 1
+
+    client = TrackingClient()
+    monkeypatch.setattr(minio_client, "_client", lambda: client)
+    minio_client.apply_lifecycle_policies("erp")
+    assert client.calls == 0, "must not push lifecycle docs MinIO will reject"
+
+
 def test_a_storage_failure_does_not_propagate(monkeypatch):
     from app.domains.file.infrastructure import minio_client
 
     class BrokenClient:
         def set_bucket_lifecycle(self, bucket, config):  # noqa: ANN001, ANN201
-            from minio.error import S3Error
-
-            raise S3Error(
-                code="NotImplemented",
-                message="lifecycle not supported",
-                resource=bucket,
-                request_id="t",
-                host_id="t",
-                response=None,
-            )
+            raise RuntimeError("should never be called")
 
     monkeypatch.setattr(minio_client, "_client", lambda: BrokenClient())
-    # Best-effort: an upload must not fail because the bucket cannot hold lifecycle rules.
+    # Best-effort: an upload must not fail because lifecycle is a no-op / unsupported.
     minio_client.apply_lifecycle_policies("erp")
 
 
 def test_uploads_do_not_fabricate_a_retention_policy():
     """A policy row must mean an administrator decided something, so no upload may create one."""
-    source = open(
-        os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "app",
-            "domains",
-            "file",
-            "application",
-            "file_application_service.py",
-        ),
-        encoding="utf-8",
-    ).read()
+    path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "app",
+        "domains",
+        "file",
+        "application",
+        "file_application_service.py",
+    )
+    with open(path, encoding="utf-8") as fh:
+        source = fh.read()
     assert "ensure_lifecycle_policy" not in source
     assert "create_lifecycle_policy" not in source
 

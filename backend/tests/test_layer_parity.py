@@ -110,9 +110,10 @@ LEGACY_EDGES: set[tuple[str, str]] = {
     ("app/domains/quote/application/quote_application_service.py", "app.services.audit_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.business_settings_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.product_pricing_service"),
-    ("app/domains/quote/application/quote_application_service.py", "app.services.product_service"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.quote_template_engine"),
     ("app/domains/quote/application/quote_application_service.py", "app.services.workflow_service"),
+    # K-005: product defaults for dual-track quotes; product_service remains legacy public surface.
+    ("app/domains/quote/application/quote_track_helpers.py", "app.services.product_service"),
     ("app/domains/quote/application/quote_export_payload.py", "app.services"),
     ("app/domains/quote/application/quote_option_service.py", "app.services"),
     ("app/domains/workflow/__init__.py", "app.services"),

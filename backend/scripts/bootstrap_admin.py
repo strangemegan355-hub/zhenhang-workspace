@@ -1,5 +1,12 @@
 import asyncio
 import os
+import sys
+from pathlib import Path
+
+# Allow `python scripts/bootstrap_admin.py` without an installed package / PYTHONPATH.
+_BACKEND_ROOT = Path(__file__).resolve().parents[1]
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
