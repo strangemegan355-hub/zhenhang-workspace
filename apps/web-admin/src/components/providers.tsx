@@ -7,7 +7,11 @@ import { ThemeProvider } from "next-themes";
 import * as React from "react";
 import { useAuthStore } from "@/store/auth-store";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+// Empty string is intentional for prod (same-origin via nginx). Only fall back when unset.
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL !== undefined
+    ? process.env.NEXT_PUBLIC_API_BASE_URL
+    : "http://127.0.0.1:8000";
 
 // Register before any child queryFn runs. useEffect is too late: the first React Query
 // fetch can start during commit, while effects still have not run — leaving baseURL/token

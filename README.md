@@ -1,38 +1,26 @@
-# 振航智能制造 ERP（后端阶段一）
+# 振航工业数字生态系统 ERP
 
-本仓库当前阶段交付：**标准化后端业务平台（FastAPI + PostgreSQL + Redis + JWT + RBAC + Workflow + Audit + Docker）**。
+全栈工业 ERP / MES 平台：**FastAPI 后端** + **Next.js 管理端** + **Vite 移动审批 / 车间看板**，含报价 BOM、审批、财务、实时协同与 Docker 生产编排。
+
+验收与部署见：`docs/DELIVERY_ACCEPTANCE.md` · `docs/DEPLOYMENT_AND_BACKUP_GUIDE.md` · `docs/DEMO_QUOTE.md`。
 
 ## 技术栈
 
-- FastAPI / Uvicorn
-- SQLAlchemy 2.x（Async + psycopg v3 / `postgresql+psycopg://`）
-- Alembic
-- PostgreSQL / Redis
-- JWT（`python-jose`）+ 密码哈希（`passlib[bcrypt]`）
-- Docker / Docker Compose
+- **后端：** FastAPI / SQLAlchemy 2 async / Alembic / PostgreSQL / Redis / MinIO / JWT+RBAC
+- **前端：** Next.js（web-admin）· Vite（mobile-app、workshop-terminal）· 共享 `packages/*`
+- **运行：** Docker Compose（开发 / `docker-compose.prod.yml` 生产）
 
-## 目录结构（后端）
+## 仓库结构（摘要）
 
 ```
-backend/
-  alembic/                 # 数据库迁移
-  app/
-    api/v1/endpoints/      # REST 路由（薄层）
-    config/                # 配置（pydantic-settings）
-    core/                  # 安全、依赖、RBAC 工具
-    db/                    # Engine / Session
-    integrations/ai/       # AI 扩展占位与约定（无业务耦合）
-    models/                # SQLAlchemy ORM
-    repositories/          # 数据访问层
-    schemas/               # Pydantic DTO
-    services/              # 领域服务/用例编排（兼容层）
-    domains/               # DDD 领域入口（逐步迁移）
-    main.py
-  scripts/                 # 运维脚本（初始化管理员）
-  tests/
-  integration_tests/       # Docker PostgreSQL/Redis 集成测试
-  Dockerfile
-  requirements.txt
+apps/web-admin/            # 管理端（Next.js）
+apps/mobile-app/           # 移动审批（Vite）
+apps/workshop-terminal/    # 车间看板（Vite）
+packages/                  # http-client / query-hooks / ui / realtime …
+backend/                   # FastAPI API、迁移、脚本、单测与 integration_tests
+deploy/                    # nginx、备份脚本
+docs/                      # 验收、安全、部署与任务书交付文档
+docker-compose*.yml
 ```
 
 ## 本地开发（Windows / Linux / macOS）

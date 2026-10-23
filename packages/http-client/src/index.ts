@@ -33,8 +33,9 @@ export function registerRefreshHandler(handler: () => Promise<RefreshResult>) {
 
 function resolveDefaultApiBaseUrl(): string {
   // Next injects process.env; Vite browsers do not — guard so mobile/workshop can load.
-  if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_BASE_URL) {
-    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  // Explicit empty string = same-origin (prod behind nginx). Unset = local API default.
+  if (typeof process !== "undefined" && process.env && "NEXT_PUBLIC_API_BASE_URL" in process.env) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
   }
   // Prefer 127.0.0.1 on Windows: `localhost` can resolve to ::1 first and stall.
   return "http://127.0.0.1:8000";

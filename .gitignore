@@ -38,6 +38,7 @@ logs/trial-passwords*
 # docker compose runtime data (placeholders under volumes/**/.gitkeep stay tracked)
 volumes/postgres/data/
 volumes/minio/.minio.sys/
+volumes/minio/erp-files/
 volumes/redis/appendonlydir/
 volumes/nginx/logs/*
 !volumes/nginx/logs/.gitkeep

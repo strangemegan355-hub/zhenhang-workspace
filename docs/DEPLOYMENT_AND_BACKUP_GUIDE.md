@@ -23,10 +23,14 @@
 ```powershell
 docker compose -f docker-compose.prod.yml --env-file backend/.env.prod config
 docker compose -f docker-compose.prod.yml --env-file backend/.env.prod up -d --build
+# api/web 重建后务必 reload，否则可能 502（上游 IP 缓存）
+powershell -NoProfile -File scripts\reload-prod-nginx.ps1
 ```
 
-- Nginx 终止 TLS、反代 Web/API/WS/SSE  
-- Web 使用 Next standalone + 静态资源复制（见 DELIVERY §5 `verify-web-standalone.ps1`）
+- **入口：** `http://127.0.0.1/login`（请用 **127.0.0.1**，勿用 `localhost`/IPv6；**不要**再用 `:3000`）
+- **口令：** `backend/.env.prod` → `BOOTSTRAP_ADMIN_PASSWORD`（不入库）
+- Nginx 反代 Web/API/WS/SSE；Web 为 Next standalone（见 DELIVERY §5）
+- `NEXT_PUBLIC_API_BASE_URL` 构建为空串时走**同源** `/api`（见 K-027）
 
 ---
 

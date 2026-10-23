@@ -1,27 +1,25 @@
-# 最终交付报告（进行中）
+# 最终交付报告
 
-> **本文件随批次更新。** 当前为 **第十批：§2.5 WS + §4.7/4.8 安全收尾**（2026-10-23）。  
-> **不得**将下文「已完成」理解为业务方已签字。
+> **状态：内部试运行交付已签字**（2026-10-23，项目方确认）。
 
 ---
 
-## 1. 本批结果
+## 结论
 
-| 项 | 状态 |
+振航工业数字生态系统 ERP 按任务书完成技术验收与内部试运行交付勾选：
+
+| 范围 | 结果 |
 |---|---|
-| §2.5 WebSocket `subscribe_ack` | ✅ |
-| §4.7 admin 口令轮换（prod DB） | ✅ 口令在本机 `.env.prod`，未入库 |
-| §4.8 Nginx metrics 私网白名单 | ✅ + API 403 双闸 |
-| DELIVERY §1–§5 技术项 | ✅（签字栏仍空） |
+| 盘点 / OSS 调研 / 风险清单 | ✅ |
+| 场景 A–F + Mobile / Workshop | ✅ |
+| 本地 + prod Compose（Nginx/API/WS/SSE/Worker/MinIO） | ✅ |
+| 安全 §4.1–4.8 | ✅ |
+| `DELIVERY_ACCEPTANCE.md` §6 | ✅ 已签字 |
 
----
+Git 检查点：`a60c81c`；签字后尚有同源登录修复（K-027）等未提交改动，建议再打一版 commit。
 
-## 2. 诚实结论
+## 入口（运维）
 
-- **任务书技术验收清单（含 prod Compose、Mobile/Workshop、安全 4.1–4.8）已勾完。**  
-- **§6 签字栏**需开发/运维/业务三方人工签字，系统无法代签。
-
-## 3. 下一步
-
-1. 内部试运行各方在 `DELIVERY_ACCEPTANCE.md` §6 签字。  
-2. 建议：将当前未提交改动打 git 检查点（需你明确说「提交」）。
+- 地址：http://127.0.0.1/login  
+- 账号：`admin`；口令见本机 `backend/.env.prod` → `BOOTSTRAP_ADMIN_PASSWORD`  
+- api/web 重建后：`scripts/reload-prod-nginx.ps1`  

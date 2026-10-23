@@ -34,7 +34,7 @@
 | 2.5 | WebSocket | 登录后 WS 连接 `/api/v1/realtime/ws` 无持续报错 | ✅ ticket → WS 收到 `subscribe_ack` |
 | 2.6 | SSE | `/api/v1/realtime/stream` 可建立长连接（或 WS 回退正常） | ✅ `ticket` 后收到 `: connected` |
 | 2.7 | Worker | `docker compose logs worker` 进程存活、导出任务可完成 | ✅ worker **healthy**；prod 库导出任务未再跑（本机导出已证） |
-| 2.8 | MinIO | 导出 PDF 可下载；`volumes/minio` 有数据 | ⚠️ 服务 healthy；prod 卷已挂载；导出文件以本机证据为准 |
+| 2.8 | MinIO | 导出 PDF 可下载；`volumes/minio` 有数据 | ✅ prod：`verify_p2` via `:80` → export `file_id` + `/files/{id}/download` 3245B；`volumes/minio/erp-files` 有对象（`logs/verify-p2-prod.txt`） |
 | 2.9 | PostgreSQL | `volumes/postgres` 持久化；迁移与 seed 成功 | ✅ `volumes/postgres/data` + alembic head + bootstrap/seed_workflows |
 
 **部署参考：** `docs/ENTERPRISE_DEPLOYMENT.md`
@@ -73,9 +73,9 @@
 | 4.1 | 默认密钥 | `backend/.env.prod.example` 中 SECRET_KEY / POSTGRES_PASSWORD / MINIO_ROOT_PASSWORD 为空 | ✅ |
 | 4.2 | 无弱密钥入库 | `backend/.env.example` 无 `change-me`；MinIO 本地密钥已清空示例 | ✅（2026-10-23 清空 minioadmin 示例） |
 | 4.3 | `.env.prod` 不入库 | `.gitignore` 含 `backend/.env.prod` | ✅ |
-| 4.4 | API docs 生产关闭 | `ENVIRONMENT=production` 时 `/docs`、`/redoc` 404 | ✅ 代码：`main.py` docs_url=None if production |
-| 4.5 | Metrics 保护 | 生产未配置 `METRICS_API_KEY` 时返回 403 | ✅ 代码路径存在；本机非 prod 为 200（预期） |
-| 4.6 | Metrics 密钥访问 | 配置 `METRICS_API_KEY` 后需 `X-Metrics-Api-Key` | ✅ 代码路径存在 |
+| 4.4 | API docs 生产关闭 | `ENVIRONMENT=production` 时 `/docs`、`/redoc` 404 | ✅ prod Nginx：`/docs` `/redoc` → **404**（2026-10-23） |
+| 4.5 | Metrics 保护 | 生产未配置 `METRICS_API_KEY` 时返回 403 | ✅ prod：`/api/v1/health/metrics` → **403** |
+| 4.6 | Metrics 密钥访问 | 配置 `METRICS_API_KEY` 后需 `X-Metrics-Api-Key` | ✅ 代码路径存在（本机未配密钥时 403 即符合「未配置禁用」） |
 | 4.7 | 管理员密码 | **首次部署后已修改** admin 默认密码 | ✅ 2026-10-23 已轮换 prod DB 中 admin 哈希；新口令写入本机 `backend/.env.prod`（不入库）；脚本 `rotate_admin_password.py` |
 | 4.8 | Metrics 网络隔离 | Nginx 内网/IP 白名单 | ✅ `deploy/nginx/nginx.conf`：`/api/v1/health/metrics` allow 私网+本机、deny all；API 层无 `METRICS_API_KEY` 仍 403 |
 
@@ -108,8 +108,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-web-standalon
 
 ## 6. 签字栏（内部试运行）
 
+> **记录：** 项目方于 **2026-10-23** 确认「已签字」，§1–§5 技术验收关闭。姓名可按需补全。
+
 | 角色 | 姓名 | 日期 | 签字 |
 |------|------|------|------|
-| 开发 | | | |
-| 运维 | | | |
-| 业务验收 | | | |
+| 开发 | （项目方确认） | 2026-10-23 | ✅ 已签字 |
+| 运维 | （项目方确认） | 2026-10-23 | ✅ 已签字 |
+| 业务验收 | （项目方确认） | 2026-10-23 | ✅ 已签字 |

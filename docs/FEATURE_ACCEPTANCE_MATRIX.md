@@ -3,7 +3,7 @@
 > **说明**：本矩阵区分证据类型，避免把「有代码」写成「已验收」。  
 > 图例：✅ 运行验证 · 📄 代码/静态测试 · ☐ 未验证 · ⚠️ 部分/存疑
 
-最后更新：2026-10-23（+ integration 44 passed / verify_delivery 本机 PASS / Q20261023-0002）
+最后更新：2026-10-23（+ prod compose §2 / Mobile+Workshop UI / prod export MinIO）
 
 ---
 
@@ -22,8 +22,8 @@
 | 财务 | `/accounting*` | `/accounting/*` | … | 📄 | ✅ 场景 C/D API；浏览器「财务中心 · 收支台账」+ 子导航可开 |
 | 审批 | `/approvals` | `/approvals/*` | … | 📄 | ✅ 浏览器「审批中心」可开（sales 待办 0，预期） |
 | 权限 | 菜单+按钮 | `require_permissions` | Role… | ✅ | ✅ `verify_permissions` + 角色冒烟 |
-| 车间 | `/workshop` | `/workshop` | … | 📄 | ✅ API board 200；`build` workshop ✅ |
-| 移动审批 | mobile-app | 同 API | — | 📄 | ✅ `build` mobile ✅；运行 ☐ |
+| 车间 | `/workshop` + workshop-terminal | `/workshop` | … | 📄 | ✅ API board + UI 登录看板→DEMO BOM/KPI（§3.8） |
+| 移动审批 | mobile-app | 同 API | — | 📄 | ✅ UI 登录→待审→通过（§3.7）；修 K-025 后 |
 
 ---
 
