@@ -68,4 +68,4 @@ PageHeader（含状态 Badge）
 - [x] 金额列 `moneyCellClass`（财务三页）；DataGrid 列级 `align:"right"`（采购单价/计划金额、对客报价含税总额）（K-028）  
 - [ ] 操作成功/失败 toast 或 inline 错误（各页既有，未本批统一）  
 - [ ] 对应 API 404 已在 route 对齐测试中覆盖  
-- [x] 浏览器视口冒烟（本批：`logs/run-viewport-core-lists.mjs` PASS；报价列表 loading / 采购空数据导致金额单元格未全断言，见 K-028/K-029）
+- [x] 浏览器视口冒烟（本批：`scripts/ui/run-viewport-core-lists.mjs` PASS；报价金额右齐已覆盖；采购无试用数据、财务未开记账时无金额单元格，见 K-028/K-029）

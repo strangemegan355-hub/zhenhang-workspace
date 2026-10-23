@@ -64,7 +64,11 @@ node logs/run-viewport-core-lists.mjs
 
 ### 本批 UI 缺口（诚实）
 
-- DataGrid **列级 `align` 已落地**；采购/对客报价金额列已 `align:"right"`（K-028 代码侧关闭）。
-- 视口已跑：`logs/run-viewport-core-lists.mjs` → `RESULT=PASS`（财务金额表头右齐；报价列表 headless 长期「加载报价列表…」；采购无数据无金额单元格）。
-- UI 表单自动登录未发出 XHR（K-029）；视口用 API+localStorage 注入绕过。
+- DataGrid **列级 `align` 已落地**；采购/对客报价金额列已 `align:"right"`（K-028）。
+- 视口已跑：`node scripts/ui/run-viewport-core-lists.mjs` → `RESULT=PASS`（`logs/viewport-core-lists-out.txt`）。
+  - 报价：列表可出、金额 `¥` 右齐抽样 `right=4/4`。
+  - 采购：库内无试用 materials/entries，**无法在浏览器验采购金额列**（非对齐缺陷）。
+  - 财务：若业务设置未开「记账功能」，页面提示开启、无金额单元格可断言。
+- K-029 已修：UI 登录在 headless 可发出 `/auth/login`；脚本仍保留 API+localStorage 注入兜底。
+- E2E 依赖：根目录 `devDependency` 为 `playwright-core@1.51.1`（供视口脚本）；**未安装** `@playwright/test`——`logs/playwright.config.mjs` 若要用 test runner 需另装，否则勿跑以免 npx 卡住。
 - 作废账目 / 付款核销等**不可逆财务操作**未在本批改口径，仍按既有 confirm 对话框。

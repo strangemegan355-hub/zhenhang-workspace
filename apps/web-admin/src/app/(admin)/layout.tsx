@@ -3,7 +3,7 @@
 import { useCurrentUserQuery } from "@zhenhang/query-hooks";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -12,11 +12,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const setUser = useAuthStore((s) => s.setUser);
   const clearSession = useAuthStore((s) => s.clearSession);
   const router = useRouter();
-  const currentUserQuery = useCurrentUserQuery(Boolean(token?.accessToken));
+  // Avoid bounce-to-login on hard navigation / Playwright inject before zustand persist rehydrates.
+  const [authReady, setAuthReady] = useState(() => useAuthStore.persist.hasHydrated());
+  const currentUserQuery = useCurrentUserQuery(Boolean(authReady && token?.accessToken));
 
   useEffect(() => {
+    const unsub = useAuthStore.persist.onFinishHydration(() => setAuthReady(true));
+    if (useAuthStore.persist.hasHydrated()) setAuthReady(true);
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!authReady) return;
     if (!token) router.replace("/login");
-  }, [router, token]);
+  }, [authReady, router, token]);
 
   useEffect(() => {
     if (currentUserQuery.data) {

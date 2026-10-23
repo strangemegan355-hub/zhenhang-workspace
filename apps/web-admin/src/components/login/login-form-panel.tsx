@@ -5,7 +5,7 @@ import { useLoginMutation } from "@zhenhang/query-hooks";
 import { apiClient } from "@zhenhang/http-client";
 import { AlertCircle, Eye, EyeOff, Lock, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuthStore } from "@/store/auth-store";
@@ -18,12 +18,23 @@ const loginSchema = z.object({
 type LoginInput = z.infer<typeof loginSchema>;
 type ApiWrap<T> = { code: string; message: string; data: T };
 
-type AxiosLikeError = { response?: { status?: number; data?: { message?: string; detail?: { detail?: string } | string } }; message?: string; code?: string };
+type AxiosLikeError = {
+  response?: { status?: number; data?: { message?: string; detail?: { detail?: string } | string } };
+  message?: string;
+  code?: string;
+};
 
 function mapProfile(profile: Record<string, unknown>, username: string) {
   const roles = Array.isArray(profile.roles) ? (profile.roles as Array<Record<string, unknown>>) : [];
   const permissions = Array.isArray(profile.permissions) ? (profile.permissions as string[]) : [];
-  return { id: String(profile.id ?? ""), username: String(profile.username ?? username), full_name: profile.full_name ? String(profile.full_name) : undefined, roles: roles.map((r) => String(r.code ?? r.name ?? "role")), permissions, data_scope: String(profile.data_scope ?? "self") };
+  return {
+    id: String(profile.id ?? ""),
+    username: String(profile.username ?? username),
+    full_name: profile.full_name ? String(profile.full_name) : undefined,
+    roles: roles.map((r) => String(r.code ?? r.name ?? "role")),
+    permissions,
+    data_scope: String(profile.data_scope ?? "self"),
+  };
 }
 
 function resolveLoginError(err: unknown): string {
@@ -39,26 +50,63 @@ function resolveLoginError(err: unknown): string {
   return apiMessage || e.message || "登录失败，请稍后重试";
 }
 
+/** Prefer DOM/FormData so headless fill still submits even if RHF missed onChange (K-029). */
+function readLoginFields(formEl: HTMLFormElement | null, rhf: LoginInput): LoginInput {
+  const fd = formEl ? new FormData(formEl) : null;
+  const username = String(fd?.get("username") ?? rhf.username ?? "").trim();
+  const password = String(fd?.get("password") ?? rhf.password ?? "");
+  return { username, password };
+}
+
 export function LoginFormPanel() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
   const loginMutation = useLoginMutation();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  // Gate submit until hydration — early automation clicks otherwise native-POST with no /auth/login XHR (K-029).
+  const [hydrated, setHydrated] = useState(false);
 
-  const form = useForm<LoginInput>({ resolver: zodResolver(loginSchema), defaultValues: { username: "", password: "" } });
+  const form = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { username: "", password: "" },
+  });
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const onSubmit = async (data: LoginInput) => {
     setErrorMessage(null);
     try {
       const token = await loginMutation.mutateAsync(data);
-      useAuthStore.getState().setTokens({ accessToken: token.access_token, refreshToken: token.refresh_token });
+      useAuthStore.getState().setTokens({
+        accessToken: token.access_token,
+        refreshToken: token.refresh_token,
+      });
       const { data: meWrap } = await apiClient.get<ApiWrap<Record<string, unknown>>>("/api/v1/users/me");
-      setSession({ accessToken: token.access_token, refreshToken: token.refresh_token }, mapProfile(meWrap.data, data.username));
+      setSession(
+        { accessToken: token.access_token, refreshToken: token.refresh_token },
+        mapProfile(meWrap.data, data.username),
+      );
       router.push("/dashboard");
     } catch (err) {
       setErrorMessage(resolveLoginError(err));
     }
+  };
+
+  const submitFromEvent = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const merged = readLoginFields(e.currentTarget, form.getValues());
+    form.setValue("username", merged.username, { shouldValidate: true, shouldDirty: true });
+    form.setValue("password", merged.password, { shouldValidate: true, shouldDirty: true });
+    const parsed = loginSchema.safeParse(merged);
+    if (!parsed.success) {
+      void form.handleSubmit(onSubmit)(e);
+      return;
+    }
+    void onSubmit(parsed.data);
   };
 
   return (
@@ -76,10 +124,11 @@ export function LoginFormPanel() {
           <form
             className="space-y-3"
             method="post"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void form.handleSubmit(onSubmit)(e);
-            }}
+            action="#"
+            data-testid="login-form"
+            data-hydrated={hydrated ? "1" : "0"}
+            suppressHydrationWarning
+            onSubmit={submitFromEvent}
           >
             <div>
               <label htmlFor="username" className="mb-1 block text-[12px] font-medium text-[var(--color-text)]">
@@ -132,14 +181,22 @@ export function LoginFormPanel() {
             </div>
 
             {errorMessage && (
-              <div className="flex items-center gap-2 rounded border border-[var(--color-danger)]/30 bg-[var(--color-accent-soft)] px-3 py-2 text-[12px] text-[var(--color-danger)]" role="alert">
+              <div
+                className="flex items-center gap-2 rounded border border-[var(--color-danger)]/30 bg-[var(--color-accent-soft)] px-3 py-2 text-[12px] text-[var(--color-danger)]"
+                role="alert"
+              >
                 <AlertCircle size={14} />
                 {errorMessage}
               </div>
             )}
 
-            <button type="submit" disabled={loginMutation.isPending} className="btn-primary h-8 w-full">
-              {loginMutation.isPending ? "登录中…" : "登录"}
+            <button
+              type="submit"
+              disabled={!hydrated || loginMutation.isPending}
+              data-testid="login-submit"
+              className="btn-primary h-8 w-full"
+            >
+              {!hydrated ? "准备中…" : loginMutation.isPending ? "登录中…" : "登录"}
             </button>
           </form>
         </div>

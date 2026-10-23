@@ -496,9 +496,8 @@ function QuotesPageContent() {
 
   const workflowActions = actionsQuery.data ?? [];
   const centerWorkflowActions = workflowState === "reviewing" ? [] : workflowActions;
-  // Machines are an advanced/legacy path (menu hidden); do not block the product-first
-  // quote list or customer/product dropdowns on machinesQuery latency or failure.
-  const masterLoading = customersQuery.isLoading || productsQuery.isLoading;
+  // List loading must NOT wait on customers/products: boss lacks master:customer:read (403
+  // retries kept the sidebar on「加载报价列表…」forever). Master data only gates the create form.
 
   return (
     <IndustrialPage fill className="!gap-0 !p-0">
@@ -540,7 +539,7 @@ function QuotesPageContent() {
             onImportBom={bomId ? importBomToLines : undefined}
             onImportProduct={productId && !readOnly ? () => void importProductToLines() : undefined}
             readOnly={readOnly}
-            loading={listQuery.isLoading || masterLoading}
+            loading={listQuery.isLoading}
           />
 
           <main className="flex min-h-0 min-w-0 flex-col bg-[var(--color-surface)]">

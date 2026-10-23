@@ -7,6 +7,10 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(rootDir, "../.."),
+  // Next 16 blocks cross-origin access to /_next/* in dev. Playwright/scripts use
+  // http://127.0.0.1:3000 while the bundler may treat host checks strictly — without this,
+  // client hydration never finishes (login stuck on「准备中…」, quotes stuck on「加载报价列表…」).
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   transpilePackages: [
     "@zhenhang/ui",
     "@zhenhang/auth",
