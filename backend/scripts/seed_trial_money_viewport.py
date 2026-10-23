@@ -7,11 +7,14 @@ It is NOT an optional viewport switch. Never blind-run against production.
 
 Idempotent: re-run skips existing TRIAL-* codes / request_nos / entry_nos.
 Does NOT weaken permissions or confirm/void finance entries — only draft sample rows + business.settings flags.
+Optional ``--with-pending-approval`` (OFF by default) may add one pending procurement-payable
+request for approvals money viewport; still local-only; never auto-approves.
 
 Usage (backend venv; local trial often 55432):
   $env:DATABASE_URL="postgresql+psycopg://erp:erp@127.0.0.1:55432/erp_db"
   python -u scripts/seed_trial_money_viewport.py
   python -u scripts/seed_trial_money_viewport.py --dry-run
+  python -u scripts/seed_trial_money_viewport.py --with-pending-approval
   # non-local URL refused unless:
   python -u scripts/seed_trial_money_viewport.py --allow-non-local
 """
@@ -32,6 +35,7 @@ from app.models.accounting_entry import AccountingEntry
 from app.models.customer import Customer
 from app.models.material import Material
 from app.models.procurement_entry import ProcurementEntry
+from app.models.procurement_payable_request import ProcurementPayableRequest
 from app.models.supplier import Supplier
 from app.models.system_config import SystemConfig
 from app.models.user import User
@@ -40,6 +44,7 @@ from app.services.business_settings_service import CONFIG_GROUP, CONFIG_KEY, def
 TRIAL_MATERIAL_CODE = "TRIAL-MAT-001"
 TRIAL_SUPPLIER_CODE = "TRIAL-SUP-001"
 TRIAL_PROC_NOS = ("TRIAL-PR-0001", "TRIAL-PR-0002")
+TRIAL_PROC_PENDING_NO = "TRIAL-PR-0003"
 TRIAL_AR_NO = "TRIAL-AR-0001"
 TRIAL_AP_NO = "TRIAL-AP-0001"
 
@@ -237,9 +242,107 @@ def _is_local_db_url(url: str) -> bool:
     )
 
 
+def _pick_requester(db: Session) -> User | None:
+    for username in ("finance01", "trialadmin", "boss"):
+        user = db.execute(select(User).where(User.username == username)).scalar_one_or_none()
+        if user is not None:
+            return user
+    return db.execute(select(User).order_by(User.created_at.asc()).limit(1)).scalar_one_or_none()
+
+
+def _ensure_pending_approval(
+    db: Session,
+    material: Material | None,
+    supplier: Supplier | None,
+    *,
+    dry_run: bool,
+) -> None:
+    """Optional: one pending procurement-payable for approvals money viewport (no approve)."""
+    pending = db.execute(
+        select(ProcurementPayableRequest)
+        .join(ProcurementEntry, ProcurementPayableRequest.procurement_entry_id == ProcurementEntry.id)
+        .where(
+            ProcurementPayableRequest.is_deleted.is_(False),
+            ProcurementPayableRequest.approval_status == "pending",
+            ProcurementEntry.request_no.like("TRIAL-PR-%"),
+            ProcurementEntry.is_deleted.is_(False),
+        )
+        .limit(1)
+    ).scalar_one_or_none()
+    if pending is not None:
+        print(f"  ~ pending approval exists id={pending.id} (skip)")
+        return
+
+    entry = db.execute(
+        select(ProcurementEntry).where(
+            ProcurementEntry.request_no == TRIAL_PROC_PENDING_NO,
+            ProcurementEntry.is_deleted.is_(False),
+        )
+    ).scalar_one_or_none()
+    if entry is None:
+        qty, unit_price = Decimal("2"), Decimal("50.00")
+        print(f"  + procurement {TRIAL_PROC_PENDING_NO} amount={qty * unit_price} (pending-approval sample)")
+        if dry_run:
+            print("  ~ dry-run — pending approval not created")
+            return
+        if material is None or supplier is None:
+            print("  ! skip pending: missing material/supplier")
+            return
+        entry = ProcurementEntry(
+            request_no=TRIAL_PROC_PENDING_NO,
+            material_id=material.id,
+            supplier_id=supplier.id,
+            qty=qty,
+            unit_price=unit_price,
+            lead_days=7,
+            need_date=date.today(),
+            status="ordered",
+            transferred_to_actual=False,
+            payable_status="none",
+            remark="viewport money seed — pending approval sample",
+        )
+        db.add(entry)
+        db.flush()
+    elif entry.payable_status in ("posted", "pending") or entry.status == "planned":
+        # Already used or not eligible — do not mutate approved finance path.
+        print(
+            f"  ~ {TRIAL_PROC_PENDING_NO} status={entry.status} payable={entry.payable_status} "
+            "(not eligible for new pending; skip)"
+        )
+        return
+
+    amount = (Decimal(str(entry.qty)) * Decimal(str(entry.unit_price))).quantize(Decimal("0.01"))
+    if amount <= 0:
+        print(f"  ! skip pending: invalid amount on {TRIAL_PROC_PENDING_NO}")
+        return
+    requester = _pick_requester(db)
+    if requester is None:
+        print("  ! skip pending: no user for requested_by")
+        return
+    print(f"  + pending payable request {TRIAL_PROC_PENDING_NO} amount={amount} by={requester.username}")
+    if dry_run:
+        return
+    db.add(
+        ProcurementPayableRequest(
+            procurement_entry_id=entry.id,
+            requested_by=requester.id,
+            requested_amount=amount,
+            approval_status="pending",
+            created_by=requester.id,
+        )
+    )
+    entry.payable_status = "pending"
+    entry.status = "ordered"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--with-pending-approval",
+        action="store_true",
+        help="Also seed one pending TRIAL procurement-payable (default OFF; local-only; no auto-approve).",
+    )
     parser.add_argument(
         "--allow-non-local",
         action="store_true",
@@ -255,7 +358,10 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
-    print(f"seed_trial_money_viewport db={url.split('@')[-1]} dry_run={args.dry_run}")
+    print(
+        f"seed_trial_money_viewport db={url.split('@')[-1]} dry_run={args.dry_run} "
+        f"with_pending_approval={args.with_pending_approval}"
+    )
     engine = create_engine(url, connect_args={"connect_timeout": 8})
     SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
     with SessionLocal() as db:
@@ -279,6 +385,10 @@ def main() -> int:
         else:
             print("  ! no customer — receivable sample skipped")
         _ensure_accounting(db, customer=customer, supplier=supplier, dry_run=args.dry_run)
+        if args.with_pending_approval:
+            _ensure_pending_approval(db, material, supplier, dry_run=args.dry_run)
+        else:
+            print("  ~ pending approval skipped (pass --with-pending-approval to enable)")
         if args.dry_run:
             print("DRY_RUN done (no commit)")
             return 0

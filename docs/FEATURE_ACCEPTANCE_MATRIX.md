@@ -3,7 +3,7 @@
 > **说明**：本矩阵区分证据类型，避免把「有代码」写成「已验收」。  
 > 图例：✅ 运行验证 · 📄 代码/静态测试 · ☐ 未验证 · ⚠️ 部分/存疑
 
-最后更新：2026-10-23（UX-006 四角色 Dashboard 卡门禁 headless PASS；UX-002 Tab 评估暂缓；审批金额视口仍无待办样本；记账种子策略见 43896d6 负责人决策）
+最后更新：2026-10-23（BODY-CLOSE：审批金额视口 PASS + TRIAL-PR-0002 已批；UX-004 已验收；UX-006 卡门禁 PASS；UX-002 Tab / K-006 整套布局仍 gated；种子策略 43896d6）
 
 ---
 
@@ -20,7 +20,7 @@
 | 主数据 | customers 等 | … | … | 📄 | ✅ customers 列表 200 |
 | 采购 | `/procurement` | … | … | 📄 PageHeader + 主操作 + DataGrid 金额/数量 `align:right`；空材料/供应商引导链；`check-ui-batch` OK | ✅ 场景 C API；视口金额 `right=9/9`（试用 TRIAL-PR-*）；K-030 修列表 500 |
 | 财务 | `/accounting*` | `/accounting/*` | … | 📄 三页 FilterBar + `moneyCellClass`；未开记账提示指向 trialadmin；`check-ui-batch`+`tsc` OK | ✅ 场景 C/D API；视口金额 `right=3/3`（试用种子开记账 + draft 样例） |
-| 审批 | `/approvals` | `/approvals/*` | … | 📄 金额/优惠列 `align:right`；文案强调本页处理勿重复录入；`check-ui-batch` | ✅ 壳层视口 OK；⚠️ inbox=0，**未**做有金额行的视口右齐（见 `logs/approvals-money-align-note.txt`） |
+| 审批 | `/approvals` | `/approvals/*` | … | 📄 金额/优惠列 `align:right`；文案强调本页处理勿重复录入；`check-ui-batch` | ✅ 视口金额 `right=4/4`（TRIAL-PR-0002 待办样本）；随后 boss `/approvals/action` **approve** PASS（本地 55432）；见 `logs/approvals-money-align-*.txt` + `logs/approvals-trial-approve-*.json` |
 | 权限 | 菜单+按钮 | `require_permissions` | Role… | ✅ | ✅ `verify_permissions` + 角色冒烟 |
 | 车间 | `/workshop` + workshop-terminal | `/workshop` | … | 📄 | ✅ API board + UI 登录看板→DEMO BOM/KPI（§3.8） |
 | 移动审批 | mobile-app | 同 API | — | 📄 | ✅ UI 登录→待审→通过（§3.7）；修 K-025 后 |
@@ -59,6 +59,8 @@ cd apps/web-admin; npx tsc --noEmit -p tsconfig.json
 # 试用金额环境（指向与 API 同一库；本机常为 55432，见 README / .env.example）：
 #   $env:DATABASE_URL="postgresql+psycopg://erp:erp@127.0.0.1:55432/erp_db"
 #   python -u backend/scripts/seed_trial_money_viewport.py
+# 可选（默认关）：再种一条采购应付 pending，供审批金额视口（仍仅本地库）：
+#   python -u backend/scripts/seed_trial_money_viewport.py --with-pending-approval
 node scripts/ui/run-viewport-core-lists.mjs
 # 结果：logs/viewport-core-lists-out.txt（含 /approvals）
 
@@ -77,7 +79,9 @@ cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_ux_menu_and_dashb
 - DataGrid **列级 `align` 已落地**；采购/对客报价/审批金额列已 `align:"right"`（K-028/K-030）。
 - 视口列表：`run-viewport-core-lists.mjs` → `RESULT=PASS`（报价/采购/财务金额右齐；审批壳层 OK）。
 - UX-006 / K-006：**四角色 Dashboard 卡显隐** headless `RESULT=PASS`（API 权限与 DOM 一致；证据 `logs/dashboard-role-cards-out.txt` + `viewport-dashboard-*.png`）。「整套按角色换布局」仍 ☐。
-- UX-002：侧栏 hidden + 报价中心页内深链 ✅；**合并 Tab 暂缓**（两套模型，非小补丁）。
-- 审批金额视口：本机 inbox=0；**未**新建待办样例（避免盲种业务审批流）；静态 `align:right` + `check-ui-batch`；见 `logs/approvals-money-align-note.txt`。
-- 试用记账种子：`43896d6` 已按负责人决策锁定 `seed_trial_money_viewport` 本地库强制开记账 + 非本地拒绝（`--allow-non-local`）。
+- UX-002：侧栏 hidden + 报价中心页内深链 ✅；**合并 Tab 暂缓 / UI_PHASE_GATE**（两套模型，非小补丁）。
+- UX-004：**已验收** — 前端选报价锁定客户；服务端 create/update 冲突 **400**；场景 B API 已覆盖。
+- 审批金额视口：✅ PASS（`money=right=4/4`）；样本 `TRIAL-PR-0002` 应付申请 → boss 批准（本地 55432 only）；证据 `logs/approvals-money-align-note.txt`、`logs/approvals-trial-approve-note.txt`。
+- 试用记账种子：`43896d6` 锁定本地库强制开记账 + 非本地拒绝；可选 `--with-pending-approval`（**默认关**）种 pending 应付供视口，不削弱财务策略。
 - K-030 / K-029 既有修复仍保留；E2E 仍用 `playwright-core`（无 `@playwright/test`）。
+- **GATED（勿开）：** ERP 前端 UI 重构 / UX-002 Tab 合并 / K-006「按角色换整套布局」。
